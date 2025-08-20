@@ -1,0 +1,359 @@
+/**
+ * Exemplo de integração completa do Product Tracking com Auto-Detection
+ * Demonstra como usar o sistema na prática em componentes React
+ */
+
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/router';
+import { trackProductView, trackAddToCart, trackPurchase } from '@/lib/product-tracking';
+import { useAutoDetectedPlan, generateCheckoutUrl, formatPrice } from '@/lib/plan-detector';
+
+// =============================================
+// 1. COMPONENTE DE PLANOS COM AUTO-DETECTION
+// =============================================
+
+export const PlanosPageExample: React.FC = () => {
+  const router = useRouter();
+  const { recommendedPlan, userRegion, isLoading } = useAutoDetectedPlan();
+
+  // Track page view automaticamente com plano recomendado
+  useEffect(() => {
+    if (recommendedPlan && userRegion) {
+      trackProductView(recommendedPlan.planId, {
+        page_location: '/planos',
+        user_region: userRegion.region,
+        user_country: userRegion.country,
+        auto_recommended: true
+      });
+    }
+  }, [recommendedPlan, userRegion]);
+
+  if (isLoading) {
+    return <div>Detectando melhor plano para você...</div>;
+  }
+
+  const handleSelectPlan = (planId: string) => {
+    // Track add to cart
+    trackAddToCart(planId, 1);
+    
+    // Redirecionar para checkout
+    const checkoutUrl = generateCheckoutUrl(planId);
+    router.push(checkoutUrl);
+  };
+
+  return (
+    <div className="planos-container">
+      <h1>Escolha seu Plano MarketBOT</h1>
+      
+      {/* Plano Recomendado */}
+      {recommendedPlan && (
+        <div className="plano-recomendado">
+          <div className="badge">Recomendado para você</div>
+          <h2>{recommendedPlan.planName}</h2>
+          <div className="price">
+            {formatPrice(recommendedPlan.price, recommendedPlan.currency)}
+            {recommendedPlan.type === 'subscription' && '/mês'}
+          </div>
+          <ul>
+            {recommendedPlan.features.map((feature, index) => (
+              <li key={index}>{feature}</li>
+            ))}
+          </ul>
+          <button 
+            onClick={() => handleSelectPlan(recommendedPlan.planId)}
+            className="btn-primary"
+          >
+            Contratar {recommendedPlan.planName}
+          </button>
+        </div>
+      )}
+
+      {/* Outros Planos */}
+      <div className="outros-planos">
+        {userRegion?.region === 'brazil' ? (
+          <>
+            <PlanCard 
+              planId="brasil_pro"
+              name="Brasil PRO"
+              price={297}
+              currency="BRL"
+              type="subscription"
+              onSelect={handleSelectPlan}
+            />
+            <PlanCard 
+              planId="brasil_flex"
+              name="Brasil FLEX"
+              price={150}
+              currency="BRL"
+              type="prepaid"
+              onSelect={handleSelectPlan}
+            />
+          </>
+        ) : (
+          <>
+            <PlanCard 
+              planId="global_pro"
+              name="Global PRO"
+              price={50}
+              currency="USD"
+              type="subscription"
+              onSelect={handleSelectPlan}
+            />
+            <PlanCard 
+              planId="global_flex"
+              name="Global FLEX"
+              price={30}
+              currency="USD"
+              type="prepaid"
+              onSelect={handleSelectPlan}
+            />
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// =============================================
+// 2. COMPONENTE DE CARD DE PLANO
+// =============================================
+
+interface PlanCardProps {
+  planId: string;
+  name: string;
+  price: number;
+  currency: string;
+  type: 'subscription' | 'prepaid';
+  onSelect: (planId: string) => void;
+}
+
+const PlanCard: React.FC<PlanCardProps> = ({ 
+  planId, 
+  name, 
+  price, 
+  currency, 
+  type, 
+  onSelect 
+}) => {
+  const handleViewDetails = () => {
+    // Track interest in specific plan
+    trackProductView(planId, {
+      interaction_type: 'card_view',
+      plan_comparison: true
+    });
+  };
+
+  return (
+    <div className="plan-card" onMouseEnter={handleViewDetails}>
+      <h3>{name}</h3>
+      <div className="price">
+        {formatPrice(price, currency)}
+        {type === 'subscription' && '/mês'}
+        {type === 'prepaid' && ' recarga mín.'}
+      </div>
+      <button 
+        onClick={() => onSelect(planId)}
+        className="btn-outline"
+      >
+        Selecionar {name}
+      </button>
+    </div>
+  );
+};
+
+// =============================================
+// 3. CHECKOUT COM TRACKING AUTOMÁTICO
+// =============================================
+
+export const CheckoutPageExample: React.FC = () => {
+  const router = useRouter();
+  const { plan } = router.query;
+  const planId = Array.isArray(plan) ? plan[0] : plan || 'brasil_pro';
+
+  // Track início do checkout
+  useEffect(() => {
+    if (planId) {
+      // Facebook Pixel InitiateCheckout
+      if (typeof window !== 'undefined' && window.trackFBInitiateCheckout) {
+        const planConfig = getPlanConfig(planId);
+        window.trackFBInitiateCheckout({
+          value: planConfig.price,
+          currency: planConfig.currency,
+          plan: planConfig.name
+        });
+      }
+    }
+  }, [planId]);
+
+  const handlePaymentSuccess = (transactionData: any) => {
+    // Track purchase com dados completos
+    trackPurchase(
+      planId,
+      transactionData.orderId,
+      1,
+      {
+        payment_method: transactionData.paymentMethod,
+        coupon: transactionData.coupon,
+        channel: 'website',
+        userTier: 'new',
+        conversion_path: 'direct'
+      }
+    );
+
+    // Redirecionar para sucesso
+    router.push(`/checkout/success?order=${transactionData.orderId}`);
+  };
+
+  return (
+    <div className="checkout-container">
+      <h1>Finalizar Assinatura</h1>
+      {/* Formulário de checkout */}
+    </div>
+  );
+};
+
+// =============================================
+// 4. LANDING PAGE COM TRACKING INTELIGENTE
+// =============================================
+
+export const LandingPageExample: React.FC = () => {
+  const { recommendedPlan, userRegion } = useAutoDetectedPlan();
+
+  // Track landing page view
+  useEffect(() => {
+    if (userRegion) {
+      // Track page view genérico
+      if (typeof gtag !== 'undefined') {
+        gtag('event', 'page_view', {
+          page_title: 'MarketBOT - Landing Page',
+          page_location: window.location.href,
+          user_region: userRegion.region,
+          recommended_plan: recommendedPlan?.planId
+        });
+      }
+    }
+  }, [userRegion, recommendedPlan]);
+
+  const handleCTAClick = () => {
+    if (recommendedPlan) {
+      // Track lead generation
+      trackLead(recommendedPlan.planId, 'signup', recommendedPlan.price * 0.1);
+      
+      // Redirecionar para planos
+      const checkoutUrl = generateCheckoutUrl(recommendedPlan.planId);
+      window.location.href = checkoutUrl;
+    }
+  };
+
+  return (
+    <div className="landing-page">
+      <section className="hero">
+        <h1>MarketBOT - IA de Trading que Só Lucra se Você Lucrar</h1>
+        <p>Automatize seus trades com nossa IA e maximize seus lucros</p>
+        
+        {recommendedPlan && (
+          <div className="cta-section">
+            <p>Recomendado para {userRegion?.region === 'brazil' ? 'Brasil' : 'Global'}:</p>
+            <button onClick={handleCTAClick} className="cta-button">
+              Começar com {recommendedPlan.planName} - {formatPrice(recommendedPlan.price, recommendedPlan.currency)}
+            </button>
+          </div>
+        )}
+      </section>
+
+      {/* Resto da landing page */}
+    </div>
+  );
+};
+
+// =============================================
+// 5. FUNCTIONS AUXILIARES
+// =============================================
+
+function getPlanConfig(planId: string) {
+  const configs = {
+    brasil_pro: { name: 'Brasil PRO', price: 297, currency: 'BRL' },
+    brasil_flex: { name: 'Brasil FLEX', price: 150, currency: 'BRL' },
+    global_pro: { name: 'Global PRO', price: 50, currency: 'USD' },
+    global_flex: { name: 'Global FLEX', price: 30, currency: 'USD' }
+  };
+  
+  return configs[planId as keyof typeof configs] || configs.brasil_pro;
+}
+
+// =============================================
+// 6. HOOK PARA TRACKING AUTOMÁTICO DE SCROLL
+// =============================================
+
+export const useScrollTracking = (planId: string) => {
+  useEffect(() => {
+    let tracked25 = false;
+    let tracked50 = false;
+    let tracked75 = false;
+
+    const handleScroll = () => {
+      const scrollPercent = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+      
+      if (scrollPercent > 25 && !tracked25) {
+        tracked25 = true;
+        trackLead(planId, 'engagement_25', 0);
+      }
+      
+      if (scrollPercent > 50 && !tracked50) {
+        tracked50 = true;
+        trackLead(planId, 'engagement_50', 0);
+      }
+      
+      if (scrollPercent > 75 && !tracked75) {
+        tracked75 = true;
+        trackLead(planId, 'engagement_75', 0);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [planId]);
+};
+
+// =============================================
+// 7. HOOK PARA TRACKING DE TEMPO NA PÁGINA
+// =============================================
+
+export const useTimeTracking = (planId: string) => {
+  useEffect(() => {
+    const startTime = Date.now();
+    let tracked30s = false;
+    let tracked60s = false;
+    let tracked120s = false;
+
+    const interval = setInterval(() => {
+      const timeSpent = Date.now() - startTime;
+      
+      if (timeSpent > 30000 && !tracked30s) {
+        tracked30s = true;
+        trackLead(planId, 'time_30s', 0);
+      }
+      
+      if (timeSpent > 60000 && !tracked60s) {
+        tracked60s = true;
+        trackLead(planId, 'time_60s', 0);
+      }
+      
+      if (timeSpent > 120000 && !tracked120s) {
+        tracked120s = true;
+        trackLead(planId, 'time_120s', 0);
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [planId]);
+};
+
+export default {
+  PlanosPageExample,
+  CheckoutPageExample,
+  LandingPageExample,
+  useScrollTracking,
+  useTimeTracking
+};

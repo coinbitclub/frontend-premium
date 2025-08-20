@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CoinBitClub Premium - Plataforma avançada de trading de criptomoedas com inteligência artificial">
+    <meta name="keywords" content="trading, bitcoin, criptomoedas, sinais, análise técnica, IA">
+    <title>CoinBitClub Premium - {{PAGE_TITLE}}</title>
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-F2M0MG8B5H"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-F2M0MG8B5H');
+    </script>
+    
+    <!-- React & Next.js Dependencies -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Additional Libraries -->
+    <script src="https://unpkg.com/recharts@2.8.0/esm/index.js" type="module"></script>
+    <script src="https://unpkg.com/framer-motion@11/dist/framer-motion.umd.js"></script>
+    
+    <style>
+        /* Base Styles */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+
+        /* Theme Controls */
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 50;
+        }
+        
+        .language-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 5rem;
+            z-index: 50;
+        }
+
+        /* Dark Theme */
+        .dark {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+            color: #f1f5f9 !important;
+        }
+        
+        .dark .bg-white {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+            border-color: #475569 !important;
+        }
+        
+        .dark .border-gray-200 {
+            border-color: #475569 !important;
+        }
+        
+        .dark .text-gray-600 {
+            color: #cbd5e1 !important;
+        }
+        
+        .dark .text-gray-500 {
+            color: #94a3b8 !important;
+        }
+        
+        .dark .text-gray-800 {
+            color: #e2e8f0 !important;
+        }
+        
+        .dark .text-gray-900 {
+            color: #f1f5f9 !important;
+        }
+
+        /* Component Styles */
+        .card {
+            padding: 1.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dark .card {
+            background: linear-gradient(135deg, #374151 0%, #4b5563 100%) !important;
+            border-color: #6b7280 !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .language-toggle {
+                right: 1rem;
+                top: 4rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <!-- Theme Toggle -->
+    <button onclick="toggleTheme()" class="theme-toggle bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full shadow-lg transition-colors">
+        🌙
+    </button>
+
+    <!-- Language Toggle -->
+    <button onclick="toggleLanguage()" class="language-toggle bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-full shadow-lg transition-colors text-sm font-medium">
+        <span id="langFlag">🇧🇷</span> <span id="langCode">PT</span>
+    </button>
+
+    <!-- Page Content -->
+    <div id="app">
+        {{CONTENT}}
+    </div>
+
+    <!-- Base JavaScript -->
+    <script>
+        // Theme System
+        function toggleTheme() {
+            const html = document.documentElement;
+            const body = document.body;
+            const button = document.querySelector('.theme-toggle');
+            
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                body.classList.remove('dark');
+                button.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.classList.add('dark');
+                body.classList.add('dark');
+                button.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            }
+
+            // Analytics Event
+            gtag('event', 'theme_change', {
+                'theme': html.classList.contains('dark') ? 'dark' : 'light',
+                'event_category': 'engagement'
+            });
+        }
+
+        function loadSavedTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const html = document.documentElement;
+            const body = document.body;
+            const button = document.querySelector('.theme-toggle');
+            
+            if (savedTheme === 'dark') {
+                html.classList.add('dark');
+                body.classList.add('dark');
+                button.textContent = '☀️';
+            } else {
+                html.classList.remove('dark');
+                body.classList.remove('dark');
+                button.textContent = '🌙';
+            }
+        }
+
+        // Language System
+        const translations = {
+            'pt': {
+                'welcome': 'Bem-vindo',
+                'dashboard': 'Dashboard',
+                'trading': 'Trading',
+                'analytics': 'Analytics',
+                'settings': 'Configurações',
+                'profile': 'Perfil',
+                'logout': 'Sair'
+            },
+            'en': {
+                'welcome': 'Welcome',
+                'dashboard': 'Dashboard',
+                'trading': 'Trading',
+                'analytics': 'Analytics',
+                'settings': 'Settings',
+                'profile': 'Profile',
+                'logout': 'Logout'
+            }
+        };
+
+        let currentLanguage = 'pt';
+
+        function toggleLanguage() {
+            currentLanguage = currentLanguage === 'pt' ? 'en' : 'pt';
+            
+            const flagElement = document.getElementById('langFlag');
+            const codeElement = document.getElementById('langCode');
+            
+            if (currentLanguage === 'en') {
+                flagElement.textContent = '🇺🇸';
+                codeElement.textContent = 'EN';
+                document.getElementById('html-root').setAttribute('lang', 'en-US');
+            } else {
+                flagElement.textContent = '🇧🇷';
+                codeElement.textContent = 'PT';
+                document.getElementById('html-root').setAttribute('lang', 'pt-BR');
+            }
+
+            updateTranslations();
+            localStorage.setItem('language', currentLanguage);
+
+            // Analytics Event
+            gtag('event', 'language_change', {
+                'new_language': currentLanguage,
+                'event_category': 'engagement'
+            });
+        }
+
+        function updateTranslations() {
+            const elementsToTranslate = document.querySelectorAll('[data-i18n]');
+            elementsToTranslate.forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (translations[currentLanguage][key]) {
+                    element.textContent = translations[currentLanguage][key];
+                }
+            });
+        }
+
+        function loadSavedLanguage() {
+            const savedLang = localStorage.getItem('language') || 'pt';
+            if (savedLang !== currentLanguage) {
+                currentLanguage = savedLang;
+                toggleLanguage();
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSavedTheme();
+            loadSavedLanguage();
+
+            // Analytics Page View
+            gtag('event', 'page_view', {
+                'page_title': document.title,
+                'page_location': window.location.href,
+                'language': currentLanguage
+            });
+        });
+    </script>
+</body>
+</html>

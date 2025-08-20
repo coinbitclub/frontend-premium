@@ -1,0 +1,1497 @@
+import React, { useState, useEffect } from 'react';
+import { NextPage } from 'next';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js';
+
+// Registrar componentes do Chart.js
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
+
+import { 
+  FiDollarSign, 
+  FiTrendingUp, 
+  FiTrendingDown,
+  FiPlus, 
+  FiMinus,
+  FiFilter,
+  FiDownload,
+  FiCalendar,
+  FiPieChart,
+  FiBarChart,
+  FiRefreshCw,
+  FiEye,
+  FiTarget,
+  FiUsers,
+  FiCreditCard,
+  FiArrowUpRight,
+  FiArrowDownLeft,
+  FiActivity,
+  FiPercent,
+  FiGift,
+  FiSettings,
+  FiX
+} from 'react-icons/fi';
+import { useLanguage } from '../../hooks/useLanguage';
+import AdminLayout from '../../components/AdminLayout';
+
+interface FinancialRecord {
+  id: string;
+  type: 'revenue' | 'expense' | 'commission';
+  category: string;
+  description: string;
+  amount: number;
+  date: string;
+  user?: string;
+  status: 'pending' | 'completed' | 'cancelled';
+  reference?: string;
+  isRecurring?: boolean;
+  recurringType?: 'monthly' | 'quarterly' | 'yearly';
+  nextRecurrenceDate?: string;
+}
+
+interface NewRecordForm {
+  type: 'revenue' | 'expense';
+  category: string;
+  description: string;
+  amount: string;
+  date: string;
+  isRecurring: boolean;
+  recurringType: 'monthly' | 'quarterly' | 'yearly';
+  recurringEndDate?: string;
+}
+
+interface FinancialStats {
+  totalRevenue: number;
+  totalExpenses: number;
+  totalCommissions: number;
+  netProfit: number;
+  monthlyGrowth: number;
+  pendingCommissions: number;
+  averageTicket: number;
+  activeSubscriptions: number;
+}
+
+interface ChartData {
+  revenues: Array<{ month: string; amount: number }>;
+  expenses: Array<{ month: string; amount: number }>;
+  commissions: Array<{ month: string; amount: number }>;
+  categories: Array<{ name: string; amount: number; color: string }>;
+}
+
+const AdminFinancial: NextPage = () => {
+  const [records, setRecords] = useState<FinancialRecord[]>([]);
+  const [stats, setStats] = useState<FinancialStats | null>(null);
+  const [chartData, setChartData] = useState<ChartData | null>(null);
+  const [filterType, setFilterType] = useState<'all' | 'revenue' | 'expense' | 'commission'>('all');
+  const [filterPeriod, setFilterPeriod] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
+  const [selectedRecord, setSelectedRecord] = useState<FinancialRecord | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newRecord, setNewRecord] = useState<NewRecordForm>({
+    type: 'revenue',
+    category: '',
+    description: '',
+    amount: '',
+    date: new Date().toISOString().split('T')[0],
+    isRecurring: false,
+    recurringType: 'monthly'
+  });
+  const { language } = useLanguage();
+
+  // Categorias para receitas e despesas
+  const revenueCategories = [
+    'Assinatura Premium',
+    'Assinatura VIP', 
+    'Upgrade de Plano',
+    'Taxa de Entrada',
+    'Comissão de Performance',
+    'Serviços Adicionais',
+    'Outros'
+  ];
+
+  const expenseCategories = [
+    'Infraestrutura',
+    'Marketing',
+    'Equipe',
+    'Ferramentas',
+    'Licenças',
+    'Suporte',
+    'Outros'
+  ];
+
+  // Funções para manipular o novo registro
+  const handleNewRecord = () => {
+    setShowAddModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setNewRecord({
+      type: 'revenue',
+      category: '',
+      description: '',
+      amount: '',
+      date: new Date().toISOString().split('T')[0],
+      isRecurring: false,
+      recurringType: 'monthly'
+    });
+  };
+
+  const handleSaveRecord = () => {
+    if (!newRecord.category || !newRecord.amount || !newRecord.description) {
+      alert('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    const record: FinancialRecord = {
+      id: Date.now().toString(),
+      type: newRecord.type,
+      category: newRecord.category,
+      amount: parseFloat(newRecord.amount.toString()),
+      description: newRecord.description,
+      date: newRecord.date,
+      status: 'completed',
+      reference: `${newRecord.type.toUpperCase()}-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 6)}`,
+      isRecurring: newRecord.isRecurring,
+      recurringType: newRecord.isRecurring ? newRecord.recurringType : undefined,
+      nextRecurrenceDate: newRecord.isRecurring ? 
+        new Date(new Date(newRecord.date).getTime() + (newRecord.recurringType === 'monthly' ? 30 : 
+        newRecord.recurringType === 'quarterly' ? 90 : 365) * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : undefined
+    };
+
+    // Aqui seria adicionado à lista de registros
+    console.log('Novo registro criado:', record);
+    alert('Registro criado com sucesso!');
+    handleCloseModal();
+  };
+
+  // Mock data - em produção viria da API
+  const mockRecords: FinancialRecord[] = [
+    {
+      id: '1',
+      type: 'revenue',
+      category: 'Assinatura Premium',
+      description: 'Renovação mensal - João Silva',
+      amount: 99.99,
+      date: '2025-08-16',
+      user: 'joao@example.com',
+      status: 'completed',
+      reference: 'SUB-2025-001'
+    },
+    {
+      id: '2',
+      type: 'commission',
+      category: 'Afiliação',
+      description: 'Comissão de indicação - Maria Santos',
+      amount: 25.00,
+      date: '2025-08-15',
+      user: 'maria@example.com',
+      status: 'pending',
+      reference: 'COM-2025-234'
+    },
+    {
+      id: '3',
+      type: 'expense',
+      category: 'Infraestrutura',
+      description: 'Servidor AWS - Agosto 2025',
+      amount: -450.00,
+      date: '2025-08-15',
+      status: 'completed',
+      reference: 'EXP-2025-089'
+    },
+    {
+      id: '4',
+      type: 'revenue',
+      category: 'Assinatura VIP',
+      description: 'Upgrade de plano - Carlos Lima',
+      amount: 299.99,
+      date: '2025-08-14',
+      user: 'carlos@example.com',
+      status: 'completed',
+      reference: 'SUB-2025-002'
+    },
+    {
+      id: '5',
+      type: 'commission',
+      category: 'Afiliação',
+      description: 'Comissão de vendas - Ana Costa',
+      amount: 45.50,
+      date: '2025-08-14',
+      user: 'ana@example.com',
+      status: 'completed',
+      reference: 'COM-2025-235'
+    }
+  ];
+
+  const mockStats: FinancialStats = {
+    totalRevenue: 45620.80,
+    totalExpenses: 12340.50,
+    totalCommissions: 8450.25,
+    netProfit: 24830.05,
+    monthlyGrowth: 15.3,
+    pendingCommissions: 1250.75,
+    averageTicket: 156.50,
+    activeSubscriptions: 567
+  };
+
+  const mockChartData: ChartData = {
+    revenues: [
+      { month: 'Jan', amount: 35000 },
+      { month: 'Fev', amount: 38000 },
+      { month: 'Mar', amount: 42000 },
+      { month: 'Abr', amount: 39000 },
+      { month: 'Mai', amount: 45000 },
+      { month: 'Jun', amount: 48000 },
+      { month: 'Jul', amount: 44000 },
+      { month: 'Ago', amount: 46000 }
+    ],
+    expenses: [
+      { month: 'Jan', amount: 12000 },
+      { month: 'Fev', amount: 11500 },
+      { month: 'Mar', amount: 13000 },
+      { month: 'Abr', amount: 12800 },
+      { month: 'Mai', amount: 14000 },
+      { month: 'Jun', amount: 13500 },
+      { month: 'Jul', amount: 12200 },
+      { month: 'Ago', amount: 12340 }
+    ],
+    commissions: [
+      { month: 'Jan', amount: 6500 },
+      { month: 'Fev', amount: 7200 },
+      { month: 'Mar', amount: 8100 },
+      { month: 'Abr', amount: 7800 },
+      { month: 'Mai', amount: 8500 },
+      { month: 'Jun', amount: 9200 },
+      { month: 'Jul', amount: 8800 },
+      { month: 'Ago', amount: 8450 }
+    ],
+    categories: [
+      { name: 'Assinaturas', amount: 32000, color: '#8B5CF6' },
+      { name: 'Upgrades', amount: 8500, color: '#3B82F6' },
+      { name: 'API Premium', amount: 5120, color: '#10B981' },
+      { name: 'Outros', amount: 2000, color: '#F59E0B' }
+    ]
+  };
+
+  useEffect(() => {
+    // Simular carregamento de dados
+    setTimeout(() => {
+      setRecords(mockRecords);
+      setStats(mockStats);
+      setChartData(mockChartData);
+      setLoading(false);
+    }, 1000);
+
+    // Analytics
+    if (typeof gtag !== 'undefined') {
+      gtag('event', 'admin_financial_view', {
+        event_category: 'admin_navigation',
+        page_title: 'Admin Financial Control'
+      });
+    }
+  }, []);
+
+  const filteredRecords = records.filter(record => {
+    const matchesType = filterType === 'all' || record.type === filterType;
+    
+    // Filtro de período
+    const recordDate = new Date(record.date);
+    const now = new Date();
+    const periodDays = {
+      '7d': 7,
+      '30d': 30,
+      '90d': 90,
+      '1y': 365
+    }[filterPeriod];
+    
+    const periodStart = new Date(now.getTime() - (periodDays * 24 * 60 * 60 * 1000));
+    const matchesPeriod = recordDate >= periodStart;
+    
+    return matchesType && matchesPeriod;
+  });
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(Math.abs(value));
+  };
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('pt-BR');
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'revenue': return 'text-green-400';
+      case 'expense': return 'text-red-400';
+      case 'commission': return 'text-blue-400';
+      default: return 'text-gray-400';
+    }
+  };
+
+  const getTypeBg = (type: string) => {
+    switch (type) {
+      case 'revenue': return 'bg-green-500/20 border-green-500/50';
+      case 'expense': return 'bg-red-500/20 border-red-500/50';
+      case 'commission': return 'bg-blue-500/20 border-blue-500/50';
+      default: return 'bg-gray-500/20 border-gray-500/50';
+    }
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'revenue': return <FiArrowUpRight className="w-4 h-4" />;
+      case 'expense': return <FiArrowDownLeft className="w-4 h-4" />;
+      case 'commission': return <FiTarget className="w-4 h-4" />;
+      default: return <FiActivity className="w-4 h-4" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'text-green-400 bg-green-500/20';
+      case 'pending': return 'text-yellow-400 bg-yellow-500/20';
+      case 'cancelled': return 'text-red-400 bg-red-500/20';
+      default: return 'text-gray-400 bg-gray-500/20';
+    }
+  };
+
+  if (loading) {
+    return (
+      <AdminLayout title="Controle Financeiro - CoinBitClub Admin">
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-blue-900/20 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-400 mx-auto mb-4"></div>
+            <p className="text-gray-300">
+              {language === 'pt' ? 'Carregando dados financeiros...' : 'Loading financial data...'}
+            </p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  return (
+    <AdminLayout title="Controle Financeiro - CoinBitClub Admin">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-blue-900/20">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-purple-900/30 via-blue-900/30 to-purple-900/30 backdrop-blur-md border-b border-purple-500/20 sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent flex items-center gap-3">
+                  <FiDollarSign className="text-purple-400" />
+                  {language === 'pt' ? 'Controle Financeiro' : 'Financial Control'}
+                </h1>
+                <p className="text-gray-400 mt-1">
+                  {language === 'pt' ? 'Gestão de receitas, despesas e comissões' : 'Manage revenues, expenses and commissions'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => {/* Export financial data */}}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 text-blue-400 rounded-lg transition-all"
+                >
+                  <FiDownload className="w-4 h-4" />
+                  <span className="text-sm">{language === 'pt' ? 'Relatório' : 'Report'}</span>
+                </button>
+
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 text-purple-400 rounded-lg transition-all"
+                >
+                  <FiPlus className="w-4 h-4" />
+                  <span className="text-sm">{language === 'pt' ? 'Novo Registro' : 'New Record'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto p-6 space-y-6">
+          {/* Financial Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-br from-green-900/50 to-emerald-900/50 backdrop-blur-md rounded-xl p-6 border border-green-500/20"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <FiTrendingUp className="text-green-400 text-xl" />
+                <h3 className="text-white font-semibold">Receitas</h3>
+              </div>
+              <div className="text-3xl font-bold text-white mb-2">{formatCurrency(stats?.totalRevenue || 0)}</div>
+              <div className="text-sm text-green-400 flex items-center gap-1">
+                <FiArrowUpRight className="w-3 h-3" />
+                +{stats?.monthlyGrowth}% este mês
+              </div>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-gradient-to-br from-red-900/50 to-rose-900/50 backdrop-blur-md rounded-xl p-6 border border-red-500/20"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <FiTrendingDown className="text-red-400 text-xl" />
+                <h3 className="text-white font-semibold">Despesas</h3>
+              </div>
+              <div className="text-3xl font-bold text-white mb-2">{formatCurrency(stats?.totalExpenses || 0)}</div>
+              <div className="text-sm text-gray-400">
+                Custos operacionais
+              </div>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-gradient-to-br from-blue-900/50 to-indigo-900/50 backdrop-blur-md rounded-xl p-6 border border-blue-500/20"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <FiTarget className="text-blue-400 text-xl" />
+                <h3 className="text-white font-semibold">Comissões</h3>
+              </div>
+              <div className="text-3xl font-bold text-white mb-2">{formatCurrency(stats?.totalCommissions || 0)}</div>
+              <div className="text-sm text-yellow-400">
+                {formatCurrency(stats?.pendingCommissions || 0)} pendentes
+              </div>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-md rounded-xl p-6 border border-purple-500/20"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <FiBarChart className="text-purple-400 text-xl" />
+                <h3 className="text-white font-semibold">Lucro Líquido</h3>
+              </div>
+              <div className="text-3xl font-bold text-white mb-2">{formatCurrency(stats?.netProfit || 0)}</div>
+              <div className="text-sm text-gray-400">
+                Margem: {stats ? Math.round((stats.netProfit / stats.totalRevenue) * 100) : 0}%
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-md rounded-xl p-6 border border-purple-500/20"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <FiCreditCard className="text-purple-400 text-xl" />
+                <h3 className="text-white font-semibold">Ticket Médio</h3>
+              </div>
+              <div className="text-2xl font-bold text-white mb-2">{formatCurrency(stats?.averageTicket || 0)}</div>
+              <div className="text-sm text-gray-400">Por transação</div>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-md rounded-xl p-6 border border-purple-500/20"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <FiUsers className="text-blue-400 text-xl" />
+                <h3 className="text-white font-semibold">Assinantes Ativos</h3>
+              </div>
+              <div className="text-2xl font-bold text-white mb-2">{stats?.activeSubscriptions.toLocaleString()}</div>
+              <div className="text-sm text-gray-400">Pagantes mensais</div>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-md rounded-xl p-6 border border-purple-500/20"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <FiPercent className="text-green-400 text-xl" />
+                <h3 className="text-white font-semibold">Taxa de Conversão</h3>
+              </div>
+              <div className="text-2xl font-bold text-white mb-2">23.5%</div>
+              <div className="text-sm text-gray-400">Free para pago</div>
+            </motion.div>
+          </div>
+
+          {/* Revenue Chart */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-md rounded-xl p-6 border border-purple-500/20"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                <FiBarChart className="text-purple-400" />
+                Evolução Financeira
+              </h3>
+              <div className="flex items-center gap-2">
+                <select
+                  value={filterPeriod}
+                  onChange={(e) => setFilterPeriod(e.target.value as any)}
+                  className="bg-gray-800/50 border border-gray-600/50 rounded-lg text-white px-3 py-2 focus:outline-none focus:border-purple-500/50"
+                >
+                  <option value="7d">7 dias</option>
+                  <option value="30d">30 dias</option>
+                  <option value="90d">90 dias</option>
+                  <option value="1y">1 ano</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Enhanced Financial Overview Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              {/* Receitas Card */}
+              <div className="bg-gradient-to-br from-green-500/20 to-emerald-600/20 rounded-xl p-6 border border-green-500/30">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-500/20 rounded-lg">
+                      <FiTrendingUp className="w-5 h-5 text-green-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">Receitas</h3>
+                      <p className="text-sm text-gray-400">Este mês</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center gap-1 text-green-400 text-sm font-medium">
+                      <FiArrowUpRight className="w-4 h-4" />
+                      +15.3%
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="text-2xl font-bold text-white">
+                    {formatCurrency(stats?.totalRevenue || 0)}
+                  </div>
+                  
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Mês anterior:</span>
+                    <span className="text-gray-300">{formatCurrency((stats?.totalRevenue || 0) / 1.153)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Meta mensal:</span>
+                    <span className="text-green-400">{formatCurrency(50000)}</span>
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(((stats?.totalRevenue || 0) / 50000) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-gray-400 text-center">
+                    {Math.round(((stats?.totalRevenue || 0) / 50000) * 100)}% da meta atingida
+                  </div>
+                </div>
+              </div>
+
+              {/* Despesas Card */}
+              <div className="bg-gradient-to-br from-red-500/20 to-rose-600/20 rounded-xl p-6 border border-red-500/30">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-red-500/20 rounded-lg">
+                      <FiTrendingDown className="w-5 h-5 text-red-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">Despesas</h3>
+                      <p className="text-sm text-gray-400">Este mês</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center gap-1 text-red-400 text-sm font-medium">
+                      <FiArrowDownLeft className="w-4 h-4" />
+                      -2.1%
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="text-2xl font-bold text-white">
+                    {formatCurrency(stats?.totalExpenses || 0)}
+                  </div>
+                  
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Mês anterior:</span>
+                    <span className="text-gray-300">{formatCurrency((stats?.totalExpenses || 0) / 0.979)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Orçamento:</span>
+                    <span className="text-orange-400">{formatCurrency(15000)}</span>
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-red-500 to-rose-500 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(((stats?.totalExpenses || 0) / 15000) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-gray-400 text-center">
+                    {Math.round(((stats?.totalExpenses || 0) / 15000) * 100)}% do orçamento usado
+                  </div>
+                </div>
+              </div>
+
+              {/* Comissões Card */}
+              <div className="bg-gradient-to-br from-blue-500/20 to-cyan-600/20 rounded-xl p-6 border border-blue-500/30">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/20 rounded-lg">
+                      <FiUsers className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">Comissões</h3>
+                      <p className="text-sm text-gray-400">Este mês</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center gap-1 text-blue-400 text-sm font-medium">
+                      <FiArrowUpRight className="w-4 h-4" />
+                      +8.7%
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="text-2xl font-bold text-white">
+                    {formatCurrency(stats?.totalCommissions || 0)}
+                  </div>
+                  
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Pendentes:</span>
+                    <span className="text-yellow-400">{formatCurrency(stats?.pendingCommissions || 0)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Taxa média:</span>
+                    <span className="text-blue-400">12.5%</span>
+                  </div>
+                  
+                  {/* Progress Bar for Commission Goal */}
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(((stats?.totalCommissions || 0) / 10000) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-gray-400 text-center">
+                    {Math.round(((stats?.totalCommissions || 0) / 10000) * 100)}% da meta de comissões
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Financial Summary Card */}
+            <div className="bg-gradient-to-br from-purple-500/20 to-indigo-600/20 rounded-xl p-6 border border-purple-500/30 mb-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-purple-500/20 rounded-lg">
+                    <FiDollarSign className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-white">Resumo Financeiro</h3>
+                    <p className="text-sm text-gray-400">Visão geral do período</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-white">
+                    {formatCurrency(stats?.netProfit || 0)}
+                  </div>
+                  <div className="text-sm text-gray-400">Lucro Líquido</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gray-800/30 rounded-lg p-4 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <FiActivity className="w-4 h-4 text-purple-400" />
+                    <span className="text-sm text-gray-400">Margem Bruta</span>
+                  </div>
+                  <div className="text-lg font-bold text-white">
+                    {((((stats?.totalRevenue || 0) - (stats?.totalExpenses || 0)) / (stats?.totalRevenue || 1)) * 100).toFixed(1)}%
+                  </div>
+                </div>
+
+                <div className="bg-gray-800/30 rounded-lg p-4 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <FiTarget className="w-4 h-4 text-blue-400" />
+                    <span className="text-sm text-gray-400">Ticket Médio</span>
+                  </div>
+                  <div className="text-lg font-bold text-white">
+                    {formatCurrency(stats?.averageTicket || 0)}
+                  </div>
+                </div>
+
+                <div className="bg-gray-800/30 rounded-lg p-4 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <FiUsers className="w-4 h-4 text-green-400" />
+                    <span className="text-sm text-gray-400">Assinantes</span>
+                  </div>
+                  <div className="text-lg font-bold text-white">
+                    {stats?.activeSubscriptions || 0}
+                  </div>
+                </div>
+
+                <div className="bg-gray-800/30 rounded-lg p-4 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <FiPercent className="w-4 h-4 text-yellow-400" />
+                    <span className="text-sm text-gray-400">Crescimento</span>
+                  </div>
+                  <div className="text-lg font-bold text-green-400">
+                    +{stats?.monthlyGrowth || 0}%
+                  </div>
+                </div>
+              </div>
+
+              {/* ROI and Performance Indicators */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-800/30 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-gray-400">ROI (Return on Investment)</span>
+                    <FiTrendingUp className="w-4 h-4 text-green-400" />
+                  </div>
+                  <div className="text-xl font-bold text-green-400">
+                    {(((stats?.netProfit || 0) / (stats?.totalExpenses || 1)) * 100).toFixed(1)}%
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Retorno sobre investimento
+                  </div>
+                </div>
+
+                <div className="bg-gray-800/30 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-gray-400">Eficiência Operacional</span>
+                    <FiBarChart className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <div className="text-xl font-bold text-blue-400">
+                    {(100 - ((stats?.totalExpenses || 0) / (stats?.totalRevenue || 1)) * 100).toFixed(1)}%
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Eficiência nos custos
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Enhanced Category Breakdown */}
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-4">
+                <FiPieChart className="w-5 h-5 text-purple-400" />
+                <h3 className="text-lg font-semibold text-white">Distribuição por Categoria</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {chartData?.categories.map((category, index) => (
+                  <div key={category.name} className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-5 border border-gray-700/50 hover:border-purple-500/30 transition-all duration-300">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div 
+                        className="w-4 h-4 rounded-full shadow-lg" 
+                        style={{ backgroundColor: category.color }}
+                      ></div>
+                      <div className="text-sm font-medium text-gray-300">{category.name}</div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="text-xl font-bold text-white">
+                        {formatCurrency(category.amount)}
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-400">Participação:</span>
+                        <span className="text-purple-400 font-medium">
+                          {((category.amount / (chartData?.categories.reduce((sum, cat) => sum + cat.amount, 0) || 1)) * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      
+                      {/* Progress bar showing category percentage */}
+                      <div className="w-full bg-gray-700/50 rounded-full h-1.5">
+                        <div 
+                          className="h-1.5 rounded-full transition-all duration-500"
+                          style={{ 
+                            backgroundColor: category.color,
+                            width: `${(category.amount / (chartData?.categories.reduce((sum, cat) => sum + cat.amount, 0) || 1)) * 100}%` 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Financial Evolution Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Revenue Evolution */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-md rounded-xl p-6 border border-purple-500/20"
+            >
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <FiTrendingUp className="text-green-400" />
+                {language === 'pt' ? 'Evolução de Receitas' : 'Revenue Evolution'}
+              </h3>
+              <div className="h-64">
+                <Line
+                  data={{
+                    labels: chartData?.revenues.map(r => r.month) || [],
+                    datasets: [
+                      {
+                        label: language === 'pt' ? 'Receitas' : 'Revenue',
+                        data: chartData?.revenues.map(r => r.amount) || [],
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { display: false },
+                    },
+                    scales: {
+                      x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: '#9CA3AF' },
+                      },
+                      y: {
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: '#9CA3AF' },
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </motion.div>
+
+            {/* Expenses vs Revenue Comparison */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-md rounded-xl p-6 border border-purple-500/20"
+            >
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <FiDollarSign className="text-blue-400" />
+                {language === 'pt' ? 'Receitas vs Despesas' : 'Revenue vs Expenses'}
+              </h3>
+              <div className="h-64">
+                <Bar
+                  data={{
+                    labels: chartData?.revenues.map(r => r.month) || [],
+                    datasets: [
+                      {
+                        label: language === 'pt' ? 'Receitas' : 'Revenue',
+                        data: chartData?.revenues.map(r => r.amount) || [],
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderColor: '#10B981',
+                        borderWidth: 1,
+                      },
+                      {
+                        label: language === 'pt' ? 'Despesas' : 'Expenses',
+                        data: chartData?.expenses.map(e => e.amount) || [],
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                        borderColor: '#EF4444',
+                        borderWidth: 1,
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { 
+                        display: true,
+                        labels: { color: '#9CA3AF' }
+                      },
+                    },
+                    scales: {
+                      x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: '#9CA3AF' },
+                      },
+                      y: {
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: '#9CA3AF' },
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </motion.div>
+
+            {/* Categories Distribution */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-md rounded-xl p-6 border border-purple-500/20"
+            >
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <FiSettings className="text-purple-400" />
+                {language === 'pt' ? 'Distribuição por Categoria' : 'Category Distribution'}
+              </h3>
+              <div className="h-64 flex items-center justify-center">
+                <div className="w-full max-w-xs">
+                  <Doughnut
+                    data={{
+                      labels: chartData?.categories.map(c => c.name) || [],
+                      datasets: [
+                        {
+                          data: chartData?.categories.map(c => c.amount) || [],
+                          backgroundColor: chartData?.categories.map(c => c.color) || [],
+                          borderColor: chartData?.categories.map(c => c.color) || [],
+                          borderWidth: 2,
+                        },
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'bottom',
+                          labels: { 
+                            color: '#9CA3AF',
+                            usePointStyle: true,
+                            padding: 15,
+                          }
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Commission Evolution */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9 }}
+              className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-md rounded-xl p-6 border border-purple-500/20"
+            >
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <FiUsers className="text-blue-400" />
+                {language === 'pt' ? 'Evolução de Comissões' : 'Commission Evolution'}
+              </h3>
+              <div className="h-64">
+                <Line
+                  data={{
+                    labels: chartData?.commissions.map(c => c.month) || [],
+                    datasets: [
+                      {
+                        label: language === 'pt' ? 'Comissões' : 'Commissions',
+                        data: chartData?.commissions.map(c => c.amount) || [],
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { display: false },
+                    },
+                    scales: {
+                      x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: '#9CA3AF' },
+                      },
+                      y: {
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: '#9CA3AF' },
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Filters and Search */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+            className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-md rounded-xl p-6 border border-purple-500/20"
+          >
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div className="flex items-center gap-4 flex-1">
+                <div className="flex items-center gap-2">
+                  <FiFilter className="text-gray-400 w-4 h-4" />
+                  <select
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value as any)}
+                    className="bg-gray-800/50 border border-gray-600/50 rounded-lg text-white px-3 py-2 focus:outline-none focus:border-purple-500/50"
+                  >
+                    <option value="all">Todos os Tipos</option>
+                    <option value="revenue">Receitas</option>
+                    <option value="expense">Despesas</option>
+                    <option value="commission">Comissões</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <FiCalendar className="text-gray-400 w-4 h-4" />
+                  <select
+                    value={filterPeriod}
+                    onChange={(e) => setFilterPeriod(e.target.value as any)}
+                    className="bg-gray-800/50 border border-gray-600/50 rounded-lg text-white px-3 py-2 focus:outline-none focus:border-purple-500/50"
+                  >
+                    <option value="7d">Últimos 7 dias</option>
+                    <option value="30d">Últimos 30 dias</option>
+                    <option value="90d">Últimos 90 dias</option>
+                    <option value="1y">Último ano</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {/* Refresh data */}}
+                  className="p-2 bg-gray-700/50 hover:bg-gray-600/50 border border-gray-600/50 rounded-lg text-gray-400 hover:text-white transition-all"
+                >
+                  <FiRefreshCw className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Financial Records */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9 }}
+            className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-md rounded-xl border border-purple-500/20 overflow-hidden"
+          >
+            <div className="p-6 border-b border-gray-700/50">
+              <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                <FiActivity className="text-purple-400" />
+                Registros Financeiros ({filteredRecords.length})
+              </h3>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-800/50 border-b border-gray-700/50">
+                  <tr>
+                    <th className="text-left p-4 text-gray-300 font-medium">Tipo</th>
+                    <th className="text-left p-4 text-gray-300 font-medium">Categoria</th>
+                    <th className="text-left p-4 text-gray-300 font-medium">Descrição</th>
+                    <th className="text-left p-4 text-gray-300 font-medium">Valor</th>
+                    <th className="text-left p-4 text-gray-300 font-medium">Data</th>
+                    <th className="text-left p-4 text-gray-300 font-medium">Status</th>
+                    <th className="text-left p-4 text-gray-300 font-medium">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <AnimatePresence>
+                    {filteredRecords.map((record, index) => (
+                      <motion.tr
+                        key={record.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="border-b border-gray-700/30 hover:bg-gray-800/30 transition-colors"
+                      >
+                        <td className="p-4">
+                          <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border ${getTypeBg(record.type)}`}>
+                            {getTypeIcon(record.type)}
+                            <span className={getTypeColor(record.type)}>
+                              {record.type === 'revenue' ? 'Receita' : record.type === 'expense' ? 'Despesa' : 'Comissão'}
+                            </span>
+                          </span>
+                        </td>
+                        <td className="p-4 text-white font-medium">{record.category}</td>
+                        <td className="p-4">
+                          <div className="text-white">{record.description}</div>
+                          {record.user && (
+                            <div className="text-sm text-gray-400">{record.user}</div>
+                          )}
+                          {record.reference && (
+                            <div className="text-xs text-gray-500">{record.reference}</div>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          <div className={`font-bold text-lg ${record.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {record.amount >= 0 ? '+' : ''}{formatCurrency(record.amount)}
+                          </div>
+                        </td>
+                        <td className="p-4 text-gray-300">{formatDate(record.date)}</td>
+                        <td className="p-4">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(record.status)}`}>
+                            {record.status === 'completed' ? 'Concluído' : record.status === 'pending' ? 'Pendente' : 'Cancelado'}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setSelectedRecord(record)}
+                              className="p-2 bg-blue-500/20 hover:bg-blue-500/30 rounded-lg text-blue-400 hover:text-blue-300 transition-all"
+                              title="Ver detalhes"
+                            >
+                              <FiEye className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Record Details Modal */}
+      <RecordDetailsModal 
+        record={selectedRecord}
+        onClose={() => setSelectedRecord(null)}
+        language={language}
+      />
+
+      {/* Add Record Modal */}
+      <AddRecordModal 
+        isOpen={showAddModal}
+        onClose={handleCloseModal}
+        language={language}
+        newRecord={newRecord}
+        setNewRecord={setNewRecord}
+        onSave={handleSaveRecord}
+        revenueCategories={revenueCategories}
+        expenseCategories={expenseCategories}
+      />
+    </AdminLayout>
+  );
+};
+
+// Modal Components
+const RecordDetailsModal: React.FC<{
+  record: FinancialRecord | null;
+  onClose: () => void;
+  language: string;
+}> = ({ record, onClose, language }) => {
+  if (!record) return null;
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(Math.abs(value));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-6 w-full max-w-lg border border-purple-500/20"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold text-white">
+            Detalhes do Registro
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white transition-all"
+          >
+            <FiX className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gray-800/50 rounded-lg p-4">
+              <div className="text-sm text-gray-400 mb-1">Tipo</div>
+              <div className="text-white font-medium">
+                {record.type === 'revenue' ? 'Receita' : record.type === 'expense' ? 'Despesa' : 'Comissão'}
+              </div>
+            </div>
+            <div className="bg-gray-800/50 rounded-lg p-4">
+              <div className="text-sm text-gray-400 mb-1">Status</div>
+              <div className="text-white font-medium">
+                {record.status === 'completed' ? 'Concluído' : record.status === 'pending' ? 'Pendente' : 'Cancelado'}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-800/50 rounded-lg p-4">
+            <div className="text-sm text-gray-400 mb-1">Categoria</div>
+            <div className="text-white font-medium">{record.category}</div>
+          </div>
+
+          <div className="bg-gray-800/50 rounded-lg p-4">
+            <div className="text-sm text-gray-400 mb-1">Descrição</div>
+            <div className="text-white">{record.description}</div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gray-800/50 rounded-lg p-4">
+              <div className="text-sm text-gray-400 mb-1">Valor</div>
+              <div className={`text-2xl font-bold ${record.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {record.amount >= 0 ? '+' : ''}{formatCurrency(record.amount)}
+              </div>
+            </div>
+            <div className="bg-gray-800/50 rounded-lg p-4">
+              <div className="text-sm text-gray-400 mb-1">Data</div>
+              <div className="text-white font-medium">
+                {new Date(record.date).toLocaleDateString('pt-BR')}
+              </div>
+            </div>
+          </div>
+
+          {record.user && (
+            <div className="bg-gray-800/50 rounded-lg p-4">
+              <div className="text-sm text-gray-400 mb-1">Usuário</div>
+              <div className="text-white">{record.user}</div>
+            </div>
+          )}
+
+          {record.reference && (
+            <div className="bg-gray-800/50 rounded-lg p-4">
+              <div className="text-sm text-gray-400 mb-1">Referência</div>
+              <div className="text-white font-mono">{record.reference}</div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 pt-6">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-all"
+          >
+            Fechar
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+const AddRecordModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  language: string;
+  newRecord: NewRecordForm;
+  setNewRecord: React.Dispatch<React.SetStateAction<NewRecordForm>>;
+  onSave: () => void;
+  revenueCategories: string[];
+  expenseCategories: string[];
+}> = ({ isOpen, onClose, language, newRecord, setNewRecord, onSave, revenueCategories, expenseCategories }) => {
+  if (!isOpen) return null;
+
+  const categories = newRecord.type === 'revenue' ? revenueCategories : expenseCategories;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-purple-500/20"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold text-white">
+            {language === 'pt' ? 'Novo Registro Financeiro' : 'New Financial Record'}
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white transition-all"
+          >
+            <FiX className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-6">
+          {/* Tipo de registro */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              {language === 'pt' ? 'Tipo de Registro' : 'Record Type'}
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setNewRecord({...newRecord, type: 'revenue', category: ''})}
+                className={`p-3 rounded-lg border transition-all ${
+                  newRecord.type === 'revenue'
+                    ? 'bg-green-500/20 border-green-500 text-green-400'
+                    : 'bg-gray-700 border-gray-600 text-gray-400 hover:bg-gray-600'
+                }`}
+              >
+                <FiTrendingUp className="w-5 h-5 mx-auto mb-1" />
+                <div className="text-sm">{language === 'pt' ? 'Receita' : 'Revenue'}</div>
+              </button>
+              <button
+                onClick={() => setNewRecord({...newRecord, type: 'expense', category: ''})}
+                className={`p-3 rounded-lg border transition-all ${
+                  newRecord.type === 'expense'
+                    ? 'bg-red-500/20 border-red-500 text-red-400'
+                    : 'bg-gray-700 border-gray-600 text-gray-400 hover:bg-gray-600'
+                }`}
+              >
+                <FiTrendingDown className="w-5 h-5 mx-auto mb-1" />
+                <div className="text-sm">{language === 'pt' ? 'Despesa' : 'Expense'}</div>
+              </button>
+            </div>
+          </div>
+
+          {/* Categoria */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              {language === 'pt' ? 'Categoria' : 'Category'} *
+            </label>
+            <select
+              value={newRecord.category}
+              onChange={(e) => setNewRecord({...newRecord, category: e.target.value})}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="">{language === 'pt' ? 'Selecione uma categoria' : 'Select a category'}</option>
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Valor */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              {language === 'pt' ? 'Valor (R$)' : 'Amount ($)'} *
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={newRecord.amount}
+              onChange={(e) => setNewRecord({...newRecord, amount: e.target.value})}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="0.00"
+            />
+          </div>
+
+          {/* Descrição */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              {language === 'pt' ? 'Descrição' : 'Description'} *
+            </label>
+            <textarea
+              value={newRecord.description}
+              onChange={(e) => setNewRecord({...newRecord, description: e.target.value})}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              rows={3}
+              placeholder={language === 'pt' ? 'Descreva o registro financeiro...' : 'Describe the financial record...'}
+            />
+          </div>
+
+          {/* Data */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              {language === 'pt' ? 'Data' : 'Date'} *
+            </label>
+            <input
+              type="date"
+              value={newRecord.date}
+              onChange={(e) => setNewRecord({...newRecord, date: e.target.value})}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+
+          {/* Recorrência */}
+          <div className="space-y-4">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="isRecurring"
+                checked={newRecord.isRecurring}
+                onChange={(e) => setNewRecord({...newRecord, isRecurring: e.target.checked})}
+                className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500"
+              />
+              <label htmlFor="isRecurring" className="ml-2 text-sm text-gray-300">
+                {language === 'pt' ? 'Registro recorrente' : 'Recurring record'}
+              </label>
+            </div>
+
+            {newRecord.isRecurring && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  {language === 'pt' ? 'Frequência de Recorrência' : 'Recurrence Frequency'}
+                </label>
+                <select
+                  value={newRecord.recurringType}
+                  onChange={(e) => setNewRecord({...newRecord, recurringType: e.target.value as 'monthly' | 'quarterly' | 'yearly'})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="weekly">{language === 'pt' ? 'Semanal' : 'Weekly'}</option>
+                  <option value="monthly">{language === 'pt' ? 'Mensal' : 'Monthly'}</option>
+                  <option value="yearly">{language === 'pt' ? 'Anual' : 'Yearly'}</option>
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex gap-3 pt-6 mt-6 border-t border-gray-700">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-all"
+          >
+            {language === 'pt' ? 'Cancelar' : 'Cancel'}
+          </button>
+          <button
+            onClick={onSave}
+            className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-all"
+          >
+            {language === 'pt' ? 'Criar Registro' : 'Create Record'}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+export default AdminFinancial;

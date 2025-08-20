@@ -1,0 +1,886 @@
+// 📊 DATA TABLES PREMIUM
+// Tabelas enterprise para operações, histórico e dados de trading
+
+import React, { useState, useMemo, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import {
+  ChevronDown,
+  ChevronUp,
+  Search,
+  Filter,
+  Download,
+  RefreshCw,
+  MoreHorizontal,
+  Eye,
+  ExternalLink,
+  Copy,
+  TrendingUp,
+  TrendingDown
+} from 'lucide-react';
+import { formatCurrency, formatDate, formatPercentage, formatEmptyField } from '../../types/backend';
+
+// 🎯 TIPOS BASE PARA TABELAS
+export interface TableColumn<T = any> {
+  key: keyof T | string;
+  label: string;
+  sortable?: boolean;
+  filterable?: boolean;
+  width?: string | number;
+  align?: 'left' | 'center' | 'right';
+  formatter?: (value: any, row: T) => React.ReactNode;
+  className?: string;
+  headerClassName?: string;
+}
+
+export interface TableProps<T = any> {
+  data: T[];
+  columns: TableColumn<T>[];
+  loading?: boolean;
+  searchable?: boolean;
+  filterable?: boolean;
+  sortable?: boolean;
+  pagination?: boolean;
+  pageSize?: number;
+  onRowClick?: (row: T, index: number) => void;
+  onRowAction?: (action: string, row: T) => void;
+  emptyMessage?: string;
+  className?: string;
+  variant?: 'default' | 'trading' | 'financial' | 'admin';
+  realTime?: boolean;
+  exportable?: boolean;
+  onExport?: () => void;
+  onRefresh?: () => void;
+}
+
+export interface SortConfig {
+  key: string | null;
+  direction: 'asc' | 'desc';
+}
+
+// 📊 TRADING OPERATIONS TABLE
+interface TradingOperation {
+  id: string;
+  user_id: string;
+  symbol: string;
+  side: 'BUY' | 'SELL';
+  quantity: number;
+  price: number;
+  total: number;
+  profit_loss?: number;
+  status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+  exchange: 'BINANCE' | 'BYBIT';
+  created_at: string;
+  completed_at?: string;
+}
+
+export const TradingOperationsTable: React.FC<{
+  operations: TradingOperation[];
+  loading?: boolean;
+  onRowClick?: (operation: TradingOperation) => void;
+  currency?: 'USD' | 'BRL';
+}> = ({ 
+  operations, 
+  loading = false, 
+  onRowClick,
+  currency = 'USD'
+}) => {
+  const columns: TableColumn<TradingOperation>[] = [
+    {
+      key: 'symbol',
+      label: 'Par',
+      sortable: true,
+      width: '120px',
+      formatter: (value, row) => (
+        <div className="flex items-center gap-2">
+          <span className="font-mono font-semibold">{value || '-'}</span>
+          <span className="text-xs text-gray-500">{row.exchange}</span>
+        </div>
+      )
+    },
+    {
+      key: 'side',
+      label: 'Lado',
+      sortable: true,
+      width: '80px',
+      align: 'center',
+      formatter: (value) => (
+        <span className={`
+          px-2 py-1 text-xs font-semibold rounded-full
+          ${value === 'BUY' 
+            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+          }
+        `}>
+          {value || '-'}
+        </span>
+      )
+    },
+    {
+      key: 'quantity',
+      label: 'Quantidade',
+      sortable: true,
+      align: 'right',
+      formatter: (value) => (
+        <span className="font-mono">
+          {value ? value.toFixed(8) : '-'}
+        </span>
+      )
+    },
+    {
+      key: 'price',
+      label: 'Preço',
+      sortable: true,
+      align: 'right',
+      formatter: (value) => (
+        <span className="font-mono">
+          {value ? formatCurrency(value, currency) : '-'}
+        </span>
+      )
+    },
+    {
+      key: 'total',
+      label: 'Total',
+      sortable: true,
+      align: 'right',
+      formatter: (value) => (
+        <span className="font-mono font-semibold">
+          {value ? formatCurrency(value, currency) : '-'}
+        </span>
+      )
+    },
+    {
+      key: 'profit_loss',
+      label: 'P&L',
+      sortable: true,
+      align: 'right',
+      formatter: (value) => {
+        if (value === null || value === undefined) return <span>-</span>;
+        const isProfit = value >= 0;
+        return (
+          <div className="flex items-center justify-end gap-1">
+            {isProfit ? (
+              <TrendingUp size={14} className="text-green-500" />
+            ) : (
+              <TrendingDown size={14} className="text-red-500" />
+            )}
+            <span className={`font-mono font-semibold ${
+              isProfit ? 'text-green-600' : 'text-red-600'
+            }`}>
+              {formatCurrency(value, currency)}
+            </span>
+          </div>
+        );
+      }
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      sortable: true,
+      width: '100px',
+      align: 'center',
+      formatter: (value) => {
+        const statusConfig = {
+          PENDING: { color: 'yellow', label: 'Pendente' },
+          COMPLETED: { color: 'green', label: 'Concluída' },
+          CANCELLED: { color: 'red', label: 'Cancelada' }
+        };
+        const config = statusConfig[value as keyof typeof statusConfig];
+        
+        return (
+          <span className={`
+            px-2 py-1 text-xs font-medium rounded-full
+            bg-${config?.color}-100 text-${config?.color}-800
+            dark:bg-${config?.color}-900 dark:text-${config?.color}-200
+          `}>
+            {config?.label || '-'}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'created_at',
+      label: 'Data',
+      sortable: true,
+      width: '150px',
+      formatter: (value) => (
+        <span className="text-sm">
+          {value ? formatDate(value) : '-'}
+        </span>
+      )
+    }
+  ];
+
+  return (
+    <DataTable
+      data={operations}
+      columns={columns}
+      loading={loading}
+      onRowClick={onRowClick}
+      variant="trading"
+      searchable
+      sortable
+      pagination
+      pageSize={25}
+      realTime
+      exportable
+      emptyMessage="Nenhuma operação encontrada"
+    />
+  );
+};
+
+// 💰 BALANCE HISTORY TABLE
+interface BalanceHistory {
+  id: string;
+  user_id: string;
+  balance_type: 'real_balance' | 'admin_balance' | 'commission_balance' | 'prepaid_balance';
+  amount_before: number;
+  amount_after: number;
+  change_amount: number;
+  operation_type: 'DEPOSIT' | 'WITHDRAWAL' | 'TRADE_PROFIT' | 'TRADE_LOSS' | 'COMMISSION' | 'ADMIN_ADJUSTMENT';
+  description: string;
+  created_at: string;
+}
+
+export const BalanceHistoryTable: React.FC<{
+  history: BalanceHistory[];
+  loading?: boolean;
+  currency?: 'USD' | 'BRL';
+}> = ({ 
+  history, 
+  loading = false,
+  currency = 'USD'
+}) => {
+  const columns: TableColumn<BalanceHistory>[] = [
+    {
+      key: 'balance_type',
+      label: 'Tipo de Saldo',
+      sortable: true,
+      formatter: (value) => {
+        const typeLabels = {
+          real_balance: 'Real',
+          admin_balance: 'Admin',
+          commission_balance: 'Comissão',
+          prepaid_balance: 'Pré-pago'
+        };
+        const colors = {
+          real_balance: 'blue',
+          admin_balance: 'purple',
+          commission_balance: 'green',
+          prepaid_balance: 'orange'
+        };
+        const color = colors[value as keyof typeof colors];
+        
+        return (
+          <span className={`
+            px-2 py-1 text-xs font-medium rounded-full
+            bg-${color}-100 text-${color}-800
+            dark:bg-${color}-900 dark:text-${color}-200
+          `}>
+            {typeLabels[value as keyof typeof typeLabels] || '-'}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'operation_type',
+      label: 'Operação',
+      sortable: true,
+      formatter: (value) => {
+        const operationLabels = {
+          DEPOSIT: 'Depósito',
+          WITHDRAWAL: 'Saque',
+          TRADE_PROFIT: 'Lucro Trade',
+          TRADE_LOSS: 'Perda Trade',
+          COMMISSION: 'Comissão',
+          ADMIN_ADJUSTMENT: 'Ajuste Admin'
+        };
+        return operationLabels[value as keyof typeof operationLabels] || '-';
+      }
+    },
+    {
+      key: 'amount_before',
+      label: 'Saldo Anterior',
+      align: 'right',
+      sortable: true,
+      formatter: (value) => (
+        <span className="font-mono text-sm text-gray-600 dark:text-gray-400">
+          {value ? formatCurrency(value, currency) : '-'}
+        </span>
+      )
+    },
+    {
+      key: 'change_amount',
+      label: 'Alteração',
+      align: 'right',
+      sortable: true,
+      formatter: (value) => {
+        if (value === null || value === undefined) return <span>-</span>;
+        const isPositive = value >= 0;
+        return (
+          <span className={`font-mono font-semibold ${
+            isPositive ? 'text-green-600' : 'text-red-600'
+          }`}>
+            {isPositive ? '+' : ''}{formatCurrency(value, currency)}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'amount_after',
+      label: 'Saldo Final',
+      align: 'right',
+      sortable: true,
+      formatter: (value) => (
+        <span className="font-mono font-semibold">
+          {value ? formatCurrency(value, currency) : '-'}
+        </span>
+      )
+    },
+    {
+      key: 'description',
+      label: 'Descrição',
+      formatter: (value) => (
+        <span className="text-sm text-gray-700 dark:text-gray-300">
+          {value || '-'}
+        </span>
+      )
+    },
+    {
+      key: 'created_at',
+      label: 'Data',
+      sortable: true,
+      width: '150px',
+      formatter: (value) => (
+        <span className="text-sm">
+          {value ? formatDate(value) : '-'}
+        </span>
+      )
+    }
+  ];
+
+  return (
+    <DataTable
+      data={history}
+      columns={columns}
+      loading={loading}
+      variant="financial"
+      searchable
+      sortable
+      pagination
+      pageSize={20}
+      exportable
+      emptyMessage="Nenhum histórico de saldo encontrado"
+    />
+  );
+};
+
+// 👥 USERS ADMIN TABLE
+interface UserData {
+  id: string;
+  name: string;
+  email: string;
+  role: 'USUARIO' | 'AFILIADO' | 'ADMIN' | 'GESTOR' | 'OPERADOR';
+  profile_type: string;
+  real_balance: number;
+  admin_balance: number;
+  commission_balance: number;
+  prepaid_balance: number;
+  is_active: boolean;
+  created_at: string;
+  last_login?: string;
+}
+
+export const UsersAdminTable: React.FC<{
+  users: UserData[];
+  loading?: boolean;
+  onRowClick?: (user: UserData) => void;
+  onUserAction?: (action: string, user: UserData) => void;
+  currency?: 'USD' | 'BRL';
+}> = ({ 
+  users, 
+  loading = false,
+  onRowClick,
+  onUserAction,
+  currency = 'USD'
+}) => {
+  const columns: TableColumn<UserData>[] = [
+    {
+      key: 'name',
+      label: 'Nome',
+      sortable: true,
+      filterable: true,
+      formatter: (value, row) => (
+        <div>
+          <div className="font-medium">{value || '-'}</div>
+          <div className="text-sm text-gray-500">{row.email || '-'}</div>
+        </div>
+      )
+    },
+    {
+      key: 'role',
+      label: 'Perfil',
+      sortable: true,
+      filterable: true,
+      formatter: (value, row) => (
+        <div>
+          <span className={`
+            px-2 py-1 text-xs font-medium rounded-full
+            ${value === 'ADMIN' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+              value === 'AFILIADO' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+              'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+            }
+          `}>
+            {value || '-'}
+          </span>
+          {row.profile_type && (
+            <div className="text-xs text-gray-500 mt-1">{row.profile_type}</div>
+          )}
+        </div>
+      )
+    },
+    {
+      key: 'real_balance',
+      label: 'Saldo Real',
+      align: 'right',
+      sortable: true,
+      formatter: (value) => (
+        <span className="font-mono">
+          {value ? formatCurrency(value, currency) : '-'}
+        </span>
+      )
+    },
+    {
+      key: 'admin_balance',
+      label: 'Saldo Admin',
+      align: 'right',
+      sortable: true,
+      formatter: (value) => (
+        <span className="font-mono">
+          {value ? formatCurrency(value, currency) : '-'}
+        </span>
+      )
+    },
+    {
+      key: 'is_active',
+      label: 'Status',
+      sortable: true,
+      align: 'center',
+      formatter: (value) => (
+        <span className={`
+          px-2 py-1 text-xs font-medium rounded-full
+          ${value 
+            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+          }
+        `}>
+          {value ? 'Ativo' : 'Inativo'}
+        </span>
+      )
+    },
+    {
+      key: 'last_login',
+      label: 'Último Login',
+      sortable: true,
+      formatter: (value) => (
+        <span className="text-sm">
+          {value ? formatDate(value) : 'Nunca'}
+        </span>
+      )
+    },
+    {
+      key: 'created_at',
+      label: 'Criado em',
+      sortable: true,
+      formatter: (value) => (
+        <span className="text-sm">
+          {value ? formatDate(value) : '-'}
+        </span>
+      )
+    },
+    {
+      key: 'actions',
+      label: 'Ações',
+      width: '100px',
+      align: 'center',
+      formatter: (_, row) => (
+        <div className="flex items-center justify-center gap-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onUserAction?.('view', row);
+            }}
+            className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+            title="Ver detalhes"
+          >
+            <Eye size={16} />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onUserAction?.('edit', row);
+            }}
+            className="p-1 text-gray-400 hover:text-green-600 transition-colors"
+            title="Editar"
+          >
+            <ExternalLink size={16} />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onUserAction?.('more', row);
+            }}
+            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            title="Mais ações"
+          >
+            <MoreHorizontal size={16} />
+          </button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <DataTable
+      data={users}
+      columns={columns}
+      loading={loading}
+      onRowClick={onRowClick}
+      variant="admin"
+      searchable
+      filterable
+      sortable
+      pagination
+      pageSize={15}
+      exportable
+      emptyMessage="Nenhum usuário encontrado"
+    />
+  );
+};
+
+// 📊 GENERIC DATA TABLE COMPONENT
+export const DataTable = <T extends Record<string, any>>({
+  data,
+  columns,
+  loading = false,
+  searchable = false,
+  filterable = false,
+  sortable = false,
+  pagination = false,
+  pageSize = 10,
+  onRowClick,
+  emptyMessage = 'Nenhum dado disponível',
+  className = '',
+  variant = 'default',
+  realTime = false,
+  exportable = false,
+  onExport,
+  onRefresh
+}: TableProps<T>) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState<Record<string, string>>({});
+
+  // Filtros e busca
+  const filteredData = useMemo(() => {
+    let result = [...data];
+
+    // Busca textual
+    if (searchable && searchTerm) {
+      result = result.filter(row =>
+        Object.values(row).some(value =>
+          String(value || '').toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      );
+    }
+
+    // Filtros por coluna
+    if (filterable && Object.keys(filters).length > 0) {
+      result = result.filter(row =>
+        Object.entries(filters).every(([key, filterValue]) =>
+          filterValue === '' || String(row[key] || '').toLowerCase().includes(filterValue.toLowerCase())
+        )
+      );
+    }
+
+    return result;
+  }, [data, searchTerm, filters, searchable, filterable]);
+
+  // Ordenação
+  const sortedData = useMemo(() => {
+    if (!sortable || !sortConfig.key) return filteredData;
+
+    return [...filteredData].sort((a, b) => {
+      const aValue = a[sortConfig.key!];
+      const bValue = b[sortConfig.key!];
+
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+
+      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredData, sortConfig, sortable]);
+
+  // Paginação
+  const paginatedData = useMemo(() => {
+    if (!pagination) return sortedData;
+    
+    const startIndex = (currentPage - 1) * pageSize;
+    return sortedData.slice(startIndex, startIndex + pageSize);
+  }, [sortedData, currentPage, pageSize, pagination]);
+
+  const totalPages = Math.ceil(sortedData.length / pageSize);
+
+  const handleSort = useCallback((key: string) => {
+    if (!sortable) return;
+    
+    setSortConfig(current => ({
+      key,
+      direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  }, [sortable]);
+
+  const handleExport = useCallback(() => {
+    if (onExport) {
+      onExport();
+    } else {
+      // Export padrão para CSV
+      const headers = columns.map(col => col.label).join(',');
+      const rows = sortedData.map(row =>
+        columns.map(col => {
+          const value = row[col.key as keyof T];
+          return `"${String(value || '').replace(/"/g, '""')}"`;
+        }).join(',')
+      );
+      
+      const csv = [headers, ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `export_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+    }
+  }, [columns, sortedData, onExport]);
+
+  if (loading) {
+    return (
+      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg ${className}`}>
+        <div className="p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden ${className}`}>
+      {/* Header com controles */}
+      {(searchable || filterable || exportable || realTime) && (
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              {searchable && (
+                <div className="relative">
+                  <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
+              
+              {realTime && (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  Tempo real
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              {onRefresh && (
+                <button
+                  onClick={onRefresh}
+                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  title="Atualizar"
+                >
+                  <RefreshCw size={18} />
+                </button>
+              )}
+              
+              {exportable && (
+                <button
+                  onClick={handleExport}
+                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  title="Exportar"
+                >
+                  <Download size={18} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tabela */}
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50 dark:bg-gray-900">
+            <tr>
+              {columns.map((column, index) => (
+                <th
+                  key={index}
+                  className={`
+                    px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider
+                    ${column.align === 'center' ? 'text-center' : column.align === 'right' ? 'text-right' : 'text-left'}
+                    ${column.sortable ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800' : ''}
+                    ${column.headerClassName || ''}
+                  `}
+                  style={{ width: column.width }}
+                  onClick={() => column.sortable && handleSort(column.key as string)}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>{column.label}</span>
+                    {column.sortable && (
+                      <div className="flex flex-col">
+                        <ChevronUp 
+                          size={12} 
+                          className={`
+                            ${sortConfig.key === column.key && sortConfig.direction === 'asc' 
+                              ? 'text-blue-500' 
+                              : 'text-gray-300'
+                            }
+                          `} 
+                        />
+                        <ChevronDown 
+                          size={12} 
+                          className={`
+                            ${sortConfig.key === column.key && sortConfig.direction === 'desc' 
+                              ? 'text-blue-500' 
+                              : 'text-gray-300'
+                            }
+                          `} 
+                        />
+                      </div>
+                    )}
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            {paginatedData.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} className="px-6 py-12 text-center">
+                  <div className="text-gray-500 dark:text-gray-400">
+                    <p>{emptyMessage}</p>
+                    <p className="text-sm mt-1">-</p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              paginatedData.map((row, rowIndex) => (
+                <motion.tr
+                  key={rowIndex}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: rowIndex * 0.05 }}
+                  className={`
+                    ${onRowClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700' : ''}
+                    transition-colors
+                  `}
+                  onClick={() => onRowClick?.(row, rowIndex)}
+                >
+                  {columns.map((column, columnIndex) => (
+                    <td
+                      key={columnIndex}
+                      className={`
+                        px-4 py-3 whitespace-nowrap text-sm
+                        ${column.align === 'center' ? 'text-center' : column.align === 'right' ? 'text-right' : 'text-left'}
+                        ${column.className || ''}
+                      `}
+                    >
+                      {column.formatter 
+                        ? column.formatter(row[column.key as keyof T], row)
+                        : formatEmptyField(row[column.key as keyof T])
+                      }
+                    </td>
+                  ))}
+                </motion.tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Paginação */}
+      {pagination && totalPages > 1 && (
+        <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-700 dark:text-gray-300">
+              Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, sortedData.length)} de {sortedData.length} itens
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Anterior
+              </button>
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const page = i + 1;
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`
+                        px-3 py-1 text-sm rounded-md
+                        ${currentPage === page
+                          ? 'bg-blue-500 text-white'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                        }
+                      `}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Próxima
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default {
+  DataTable,
+  TradingOperationsTable,
+  BalanceHistoryTable,
+  UsersAdminTable
+};
