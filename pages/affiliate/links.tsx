@@ -9,7 +9,7 @@ import {
   FiTrash2,
   FiPlus,
   FiExternalLink,
-  FiBarChart3,
+  FiBarChart,
   FiEye,
   FiMousePointer,
   FiUserPlus,
@@ -276,7 +276,7 @@ const AffiliateLinks: React.FC = () => {
             className="bg-gradient-to-br from-emerald-900/40 to-emerald-800/30 backdrop-blur-sm rounded-xl border border-emerald-500/30 p-6"
           >
             <div className="flex items-center gap-3 mb-4">
-              <FiBarChart3 className="w-8 h-8 text-emerald-400" />
+              <FiBarChart className="w-8 h-8 text-emerald-400" />
               <div>
                 <h3 className="text-lg font-bold text-emerald-400">
                   {language === 'pt' ? 'Comissões' : 'Commissions'}

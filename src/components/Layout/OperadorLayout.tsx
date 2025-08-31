@@ -7,7 +7,7 @@ import {
   FiTrendingUp, 
   FiMonitor, 
   FiActivity, 
-  FiBarChart2 as FiBarChart3,
+  FiBarChart2,
   FiMenu,
   FiX,
   FiLogOut,
@@ -30,7 +30,7 @@ const OperadorLayout: React.FC<OperadorLayoutProps> = ({ children, title = 'Dash
     { name: 'Trading', href: '/operador/trading', icon: FiTrendingUp },
     { name: 'Monitoramento', href: '/operador/monitoring', icon: FiMonitor },
     { name: 'Sinais', href: '/operador/signals', icon: FiActivity },
-    { name: 'Performance', href: '/operador/performance', icon: FiBarChart3 },
+    { name: 'Performance', href: '/operador/performance', icon: FiBarChart2 },
   ];
 
   const handleLogout = () => {
