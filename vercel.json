@@ -76,11 +76,6 @@
       "source": "/dashboard",
       "destination": "/admin/dashboard",
       "permanent": false
-    },
-    {
-      "source": "/home",
-      "destination": "/home",
-      "permanent": false
     }
   ],
   "rewrites": [
