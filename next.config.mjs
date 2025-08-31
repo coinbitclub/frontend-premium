@@ -98,11 +98,6 @@ const nextConfig = {
   async redirects() {
     return [
       {
-        source: '/home',
-        destination: '/home',
-        permanent: true,
-      },
-      {
         source: '/index',
         destination: '/home',
         permanent: true,
