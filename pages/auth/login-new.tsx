@@ -189,7 +189,7 @@ const LoginPage: NextPage = () => {
         <div className="relative flex min-h-screen items-center justify-center p-8">
           {/* Back to Home Button */}
           <Link
-            href="/landingpage/home"
+            href="/home"
             className="absolute top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2 text-gray-400 hover:text-orange-400 transition-colors z-10 text-sm sm:text-base"
           >
             <FaArrowLeft />

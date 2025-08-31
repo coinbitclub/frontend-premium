@@ -1081,6 +1081,14 @@ const VipPromotionModal: React.FC<{
   const affiliate = affiliates.find(a => a.id === affiliateId);
   const isCurrentlyVip = affiliate?.isVipAffiliate || false;
 
+  // Format currency utility function
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
   const handlePromoteToVip = async () => {
     if (!affiliateId) return;
 

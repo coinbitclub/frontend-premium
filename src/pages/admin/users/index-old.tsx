@@ -292,7 +292,7 @@ const AdminUsers: NextPage = () => {
                 <FiUsers className="text-blue-400 text-xl" />
                 <h3 className="text-white font-semibold">Total</h3>
               </div>
-              <div className="text-3xl font-bold text-white mb-2">{stats.totalUsers.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-white mb-2">{stats?.totalUsers?.toLocaleString() || 0}</div>
               <div className="text-sm text-gray-400">Usuários cadastrados</div>
             </motion.div>
 
@@ -306,7 +306,7 @@ const AdminUsers: NextPage = () => {
                 <FiUserCheck className="text-green-400 text-xl" />
                 <h3 className="text-white font-semibold">Ativos</h3>
               </div>
-              <div className="text-3xl font-bold text-white mb-2">{stats.activeUsers.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-white mb-2">{stats?.activeUsers?.toLocaleString() || 0}</div>
               <div className="text-sm text-gray-400">Em operação</div>
             </motion.div>
 
@@ -320,7 +320,7 @@ const AdminUsers: NextPage = () => {
                 <FiStar className="text-yellow-400 text-xl" />
                 <h3 className="text-white font-semibold">Afiliados</h3>
               </div>
-              <div className="text-3xl font-bold text-white mb-2">{stats.affiliates}</div>
+              <div className="text-3xl font-bold text-white mb-2">{stats?.affiliates || 0}</div>
               <div className="text-sm text-gray-400">Programa de afiliados</div>
             </motion.div>
 
@@ -334,24 +334,24 @@ const AdminUsers: NextPage = () => {
                 <FiTrendingUp className="text-emerald-400 text-xl" />
                 <h3 className="text-white font-semibold">Novos (30d)</h3>
               </div>
-              <div className="text-3xl font-bold text-white mb-2">{stats.newUsers30d}</div>
+              <div className="text-3xl font-bold text-white mb-2">{stats?.newUsers30d || 0}</div>
               <div className="text-sm text-gray-400">Últimos 30 dias</div>
             </motion.div>
           </div>
         )}
-              <p className="text-2xl font-bold text-green-600">{stats.active_users}</p>
+              <p className="text-2xl font-bold text-green-600">{stats?.activeUsers || 0}</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow">
               <h3 className="text-sm font-medium text-gray-500">Em Trial</h3>
-              <p className="text-2xl font-bold text-blue-600">{stats.trial_users}</p>
+              <p className="text-2xl font-bold text-blue-600">{stats?.trialUsers || 0}</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow">
               <h3 className="text-sm font-medium text-gray-500">Afiliados</h3>
-              <p className="text-2xl font-bold text-purple-600">{stats.affiliates}</p>
+              <p className="text-2xl font-bold text-purple-600">{stats?.affiliates || 0}</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow">
               <h3 className="text-sm font-medium text-gray-500">Novos (30d)</h3>
-              <p className="text-2xl font-bold text-orange-600">{stats.new_users_30d}</p>
+              <p className="text-2xl font-bold text-orange-600">{stats?.newUsers30d || 0}</p>
             </div>
           </div>
         )}

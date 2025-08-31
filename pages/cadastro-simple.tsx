@@ -52,7 +52,7 @@ const CadastroSimplePage: NextPage = () => {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
         {/* Header simples */}
         <div className="flex justify-between items-center p-6">
-          <Link href="/landingpage/home" className="text-white hover:text-purple-400 transition-colors">
+          <Link href="/home" className="text-white hover:text-purple-400 transition-colors">
             <FaArrowLeft className="text-xl" />
           </Link>
           <h1 className="text-white text-xl font-bold">Cadastro CoinBitClub</h1>

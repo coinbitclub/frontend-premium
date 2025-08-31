@@ -252,7 +252,7 @@ const PrivacyPage: NextPage = () => {
         <header className="bg-gray-900/80 backdrop-blur-md border-b border-gray-700/30 sticky top-0 z-50">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between h-16">
-              <Link href="/landingpage/home" className="flex items-center gap-3">
+              <Link href="/home" className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center">
                   <span className="text-black font-bold text-lg">C</span>
                 </div>
@@ -274,7 +274,7 @@ const PrivacyPage: NextPage = () => {
                 </div>
 
                 <Link
-                  href="/landingpage/home"
+                  href="/home"
                   className="flex items-center gap-2 text-gray-400 hover:text-orange-400 transition-colors"
                 >
                   <FaArrowLeft />

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { motion, AnimatePresence } from 'framer-motion';
-import RobotDemoLanding from '../../components/RobotDemoLanding';
+import RobotDemoLanding from '../components/RobotDemoLanding';
 
 type Language = 'pt' | 'en';
 
@@ -115,9 +115,9 @@ export default function HomePage() {
   const texts = {
     pt: {
       title: 'MARKETBOT',
-      subtitle: 'a IA que transforma sinais em',
-      highlight: 'lucro real em DÓLAR',
-      description: 'O robô de trade automatizado que só lucra se você lucrar! Conecte sua conta Binance ou Bybit e comece a lucrar em poucos cliques.',
+      subtitle: 'a IA DE TRADE AUTOMATIZADO que transforma sinais em',
+      highlight: 'LUCR0 EM DÓLAR',
+      description: 'O robô que trabalha 24/7 e só lucra se você lucrar! Conecte sua conta Binance ou Bybit e comece a lucrar em poucos cliques.',
       freeTrialBtn: '🚀 Teste Grátis 7 Dias',
       watchDemoBtn: '🎥 Como Funciona',
       stats: {
@@ -181,9 +181,9 @@ export default function HomePage() {
     },
     en: {
       title: 'MARKETBOT',
-      subtitle: 'the robot that transforms signals into',
-      highlight: 'real profit in DOLLARS',
-      description: 'The automated trading AI that only profits if you profit! Connect your Binance or Bybit account and start profiting in just a few clicks.',
+      subtitle: 'the AUTOMATED TRADING AI that transforms signals into',
+      highlight: 'DOLLAR PROFIT',
+      description: 'The robot that works 24/7 and only profits if you profit! Connect your Binance or Bybit account and start earning in just a few clicks.',
       freeTrialBtn: '🚀 Free 7-Day Trial',
       watchDemoBtn: '🎥 How It Works',
       stats: {
@@ -222,7 +222,7 @@ export default function HomePage() {
           },
           {
             q: "What's the minimum amount to start?",
-            a: "The minimum amount varies by chosen plan, starting from $100 BRL or $30 USD, depending on the country"
+            a: "The minimum amount varies by chosen plan, starting from $150 BRL or $30 USD, depending on the country."
           },
           {
             q: "How does the affiliate system work?",
@@ -235,7 +235,7 @@ export default function HomePage() {
         ]
       },
       footer: {
-        description: 'MARKETBOT: the automated trading robot that transforms crypto signals into real dollars. Cutting-edge technology to maximize your results in the cryptocurrency market.',
+        description: 'MARKETBOT: the automated trading robot that only profits if you profit. Cutting-edge technology to maximize your results in the cryptocurrency market.',
         contact: 'Contact',
         hours: 'Hours',
         support: '24/7 Support',
@@ -269,19 +269,67 @@ export default function HomePage() {
       <Head>
         <title>
           {currentLanguage === 'pt' 
-            ? 'CoinBitClub MarketBot - Trading Automatizado de Criptomoedas com IA' 
-            : 'CoinBitClub MarketBot - AI-Powered Automated Cryptocurrency Trading'
+            ? 'CoinBitClub MarketBot - IA de trading automatizado que só ganha se você ganhar' 
+            : 'CoinBitClub MarketBot - AI Trading Bot That Only Wins If You Win'
           }
         </title>
         <meta 
           name="description" 
           content={currentLanguage === 'pt' 
-            ? "Plataforma de trading automatizado de criptomoedas com IA. Ganhe dinheiro no piloto automático 24/7. Comissão apenas sobre lucros reais." 
-            : "AI-powered automated cryptocurrency trading platform. Make money on autopilot 24/7. Commission only on real profits."
+            ? "Ganhe em dólar no piloto automático 24/7. Comissão apenas sobre lucros reais. Teste grátis 7 dias!" 
+            : "Earn dollars on autopilot 24/7. Commission only on real profits. Free 7-day trial!"
           } 
         />
+        <meta 
+          name="keywords" 
+          content={currentLanguage === 'pt' 
+            ? "trading automatizado, criptomoedas, bitcoin, bot trading, IA trading, robô trading, binance, bybit, lucro automático, trading bot" 
+            : "automated trading, cryptocurrency, bitcoin, trading bot, AI trading, robot trading, binance, bybit, automatic profit, crypto bot"
+          } 
+        />
+        
+        {/* Open Graph Meta Tags */}
+        <meta property="og:title" content={
+          currentLanguage === 'pt' 
+            ? 'CoinBitClub MarketBot - IA de trading automatizado que só ganha se você ganhar' 
+            : 'CoinBitClub MarketBot - AI Trading Bot That Only Wins If You Win'
+        } />
+        <meta property="og:description" content={
+          currentLanguage === 'pt' 
+            ? "Ganhe em dólar no piloto automático 24/7. Comissão apenas sobre lucros reais. Teste grátis 7 dias!" 
+            : "Earn dollars on autopilot 24/7. Commission only on real profits. Free 7-day trial!"
+        } />
+        <meta property="og:image" content="https://coinbitclub.com/logo-nova.jpg" />
+        <meta property="og:url" content="https://coinbitclub.com/home" />
+        
+        {/* Twitter Card Meta Tags */}
+        <meta name="twitter:title" content={
+          currentLanguage === 'pt' 
+            ? 'CoinBitClub MarketBot - IA de trading automatizado que só ganha se você ganhar' 
+            : 'CoinBitClub MarketBot - AI Trading Bot That Only Wins If You Win'
+        } />
+        <meta name="twitter:description" content={
+          currentLanguage === 'pt' 
+            ? "Ganhe em dólar no piloto automático 24/7. Teste grátis 7 dias." 
+            : "Earn dollars on autopilot 24/7. Free 7-day trial."
+        } />
+        <meta name="twitter:image" content="https://coinbitclub.com/logo-nova.jpg" />
+        
+        {/* Additional SEO Meta Tags */}
+        <meta name="author" content="CoinBitClub" />
+        <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+        <meta name="googlebot" content="index, follow" />
+        <meta name="bingbot" content="index, follow" />
+        
+        {/* Canonical URL */}
+        <link rel="canonical" href="https://coinbitclub.com/home" />
+        
+        {/* Alternate languages */}
+        <link rel="alternate" hrefLang="pt-BR" href="https://coinbitclub.com/home" />
+        <link rel="alternate" hrefLang="en" href="https://coinbitclub.com/home" />
+        <link rel="alternate" hrefLang="x-default" href="https://coinbitclub.com/home" />
+        
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="robots" content="index, follow" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
@@ -300,11 +348,11 @@ export default function HomePage() {
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center transform hover:scale-110 transition-transform">
                   <span className="text-black font-bold text-lg sm:text-xl">₿</span>
                 </div>
-                <div className="hidden sm:block">
+                <div className="flex flex-col">
                   <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
                     CoinBitClub
                   </h1>
-                  <p className="text-xs text-gray-400">MarketBot</p>
+                  <p className="text-sm text-yellow-400 font-medium">MarketBot</p>
                 </div>
               </motion.div>
 
@@ -477,12 +525,80 @@ export default function HomePage() {
         </header>
 
         {/* Hero Section */}
-        <section className="pt-20 pb-12 md:pt-24 md:pb-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-          <div className="container mx-auto text-center relative z-10">
-            {/* Background Effects */}
+        <section className="pt-16 pb-12 md:pt-20 md:pb-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+          <div className="container mx-auto text-center relative z-10 min-h-[70vh] flex flex-col justify-center">
+            {/* Background Effects Aprimorados */}
             <div className="absolute inset-0 -z-10">
-              <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-yellow-500/10 rounded-full blur-3xl"></div>
-              <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl"></div>
+              {/* Gradientes principais */}
+              <motion.div 
+                className="absolute top-1/4 left-1/4 w-72 h-72 bg-yellow-500/15 rounded-full blur-3xl"
+                animate={{
+                  scale: [1, 1.1, 1],
+                  opacity: [0.1, 0.2, 0.1],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  repeatType: "reverse",
+                }}
+              />
+              <motion.div 
+                className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-orange-500/15 rounded-full blur-3xl"
+                animate={{
+                  scale: [1.1, 1, 1.1],
+                  opacity: [0.15, 0.1, 0.15],
+                }}
+                transition={{
+                  duration: 5,
+                  repeat: Infinity,
+                  repeatType: "reverse",
+                }}
+              />
+              <motion.div 
+                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-green-500/10 rounded-full blur-3xl"
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.1, 0.2, 0.1],
+                }}
+                transition={{
+                  duration: 6,
+                  repeat: Infinity,
+                  repeatType: "reverse",
+                }}
+              />
+              
+              {/* Partículas de brilho reduzidas */}
+              {[...Array(8)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-1 h-1 bg-yellow-400/40 rounded-full"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                  }}
+                  animate={{
+                    opacity: [0, 0.8, 0],
+                    scale: [0, 1, 0],
+                  }}
+                  transition={{
+                    duration: 3 + Math.random() * 2,
+                    repeat: Infinity,
+                    delay: Math.random() * 2,
+                  }}
+                />
+              ))}
+              
+              {/* Grid pattern sutil */}
+              <div 
+                className="absolute inset-0 opacity-3"
+                style={{
+                  backgroundImage: `
+                    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+                    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)
+                  `,
+                  backgroundSize: '60px 60px'
+                }}
+              />
             </div>
 
             <motion.div
@@ -491,90 +607,333 @@ export default function HomePage() {
               transition={{ duration: 0.8 }}
               className="mb-8 md:mb-12"
             >
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 md:mb-6">
-                <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-                  {t.title}
+              {/* Título MARKETBOT com design aprimorado */}
+              <motion.h1 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 1, delay: 0.2 }}
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-6 md:mb-8 relative"
+                style={{ letterSpacing: '0.05em' }}
+              >
+                <span 
+                  className="bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 bg-clip-text text-transparent relative inline-block"
+                  style={{
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundImage: 'linear-gradient(to right, #fde047, #fb923c, #ef4444)',
+                  }}
+                >
+                  MARKETBOT
+                  {/* Efeito de brilho animado */}
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                    animate={{
+                      x: ['-100%', '100%'],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      repeatType: "loop",
+                      ease: "linear",
+                    }}
+                    style={{
+                      clipPath: 'polygon(0 0, 100% 0, 95% 100%, 0% 100%)',
+                    }}
+                  />
                 </span>
-              </h1>
-              <p className="text-xl md:text-2xl lg:text-3xl text-slate-300 mb-2">
-                {t.subtitle}
-              </p>
-              <p className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
-                {t.highlight}
-              </p>
+              </motion.h1>
+              
+              {/* Subtítulo com hierarquia visual melhorada - Versão dinâmica por idioma */}
+              {currentLanguage === 'pt' ? (
+                <div className="text-lg md:text-xl lg:text-2xl xl:text-3xl text-slate-300 mb-2 leading-relaxed">
+                  <motion.p 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: 0.4 }}
+                    className="mb-1"
+                  >
+                    a{' '}
+                    <span className="font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                      IA DE TRADE AUTOMATIZADO
+                    </span>
+                    {' '}que transforma sinais em
+                  </motion.p>
+                  <motion.p 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: 0.6 }}
+                    className="font-black text-xl md:text-2xl lg:text-3xl xl:text-4xl"
+                  >
+                    <span 
+                      className="bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 bg-clip-text text-transparent animate-pulse"
+                      style={{
+                        filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.4))',
+                        textShadow: '0 0 20px rgba(34, 197, 94, 0.3)'
+                      }}
+                    >
+                      LUCRO EM DÓLAR
+                    </span>
+                  </motion.p>
+                </div>
+              ) : (
+                <div className="text-lg md:text-xl lg:text-2xl xl:text-3xl text-slate-300 mb-2 leading-relaxed">
+                  <motion.p 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: 0.4 }}
+                    className="mb-1"
+                  >
+                    the{' '}
+                    <span className="font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                      AUTOMATED TRADING AI
+                    </span>
+                    {' '}that transforms signals into
+                  </motion.p>
+                  <motion.p 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: 0.6 }}
+                    className="font-black text-xl md:text-2xl lg:text-3xl xl:text-4xl"
+                  >
+                    <span 
+                      className="bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 bg-clip-text text-transparent animate-pulse"
+                      style={{
+                        filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.4))',
+                        textShadow: '0 0 20px rgba(34, 197, 94, 0.3)'
+                      }}
+                    >
+                      DOLLAR PROFIT
+                    </span>
+                  </motion.p>
+                </div>
+              )}
             </motion.div>
 
-            <motion.p
+            {/* Chamada complementar aprimorada - Versão dinâmica por idioma */}
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto mb-8 md:mb-12 leading-relaxed"
+              transition={{ duration: 0.8, delay: 0.8 }}
+              className="mb-8 md:mb-10"
             >
-              {t.description}
-            </motion.p>
+              {currentLanguage === 'pt' ? (
+                <>
+                  <p className="text-lg md:text-xl lg:text-2xl text-slate-200 max-w-4xl mx-auto leading-relaxed relative">
+                    <span className="font-semibold">O robô que opera </span>
+                    <span className="font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                      24/7
+                    </span>
+                    <span className="font-semibold"> e só ganha quando </span>
+                    <span className="font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent relative">
+                      você ganha
+                      {/* Efeito de destaque animado */}
+                      <motion.div
+                        className="absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-green-400 to-emerald-400 rounded"
+                        initial={{ width: 0 }}
+                        animate={{ width: '100%' }}
+                        transition={{ duration: 1, delay: 1.5 }}
+                      />
+                    </span>
+                    <span className="font-semibold">!</span>
+                  </p>
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.8, delay: 1.2 }}
+                    className="text-base md:text-lg text-slate-400 max-w-3xl mx-auto mt-3 leading-relaxed"
+                  >
+                    Conecte sua conta Binance ou Bybit e comece a lucrar em poucos cliques.
+                  </motion.p>
+                </>
+              ) : (
+                <>
+                  <p className="text-lg md:text-xl lg:text-2xl text-slate-200 max-w-4xl mx-auto leading-relaxed relative">
+                    <span className="font-semibold">The robot that works </span>
+                    <span className="font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                      24/7
+                    </span>
+                    <span className="font-semibold"> and only profits when </span>
+                    <span className="font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent relative">
+                      you profit
+                      {/* Efeito de destaque animado */}
+                      <motion.div
+                        className="absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-green-400 to-emerald-400 rounded"
+                        initial={{ width: 0 }}
+                        animate={{ width: '100%' }}
+                        transition={{ duration: 1, delay: 1.5 }}
+                      />
+                    </span>
+                    <span className="font-semibold">!</span>
+                  </p>
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.8, delay: 1.2 }}
+                    className="text-base md:text-lg text-slate-400 max-w-3xl mx-auto mt-3 leading-relaxed"
+                  >
+                    Connect your Binance or Bybit account and start earning in just a few clicks.
+                  </motion.p>
+                </>
+              )}
+            </motion.div>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12 md:mb-16"
+              transition={{ duration: 0.8, delay: 1.0 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-10 md:mb-12"
             >
+              {/* Botão principal - Teste Grátis */}
               <motion.button
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ 
+                  scale: 1.05,
+                  boxShadow: "0 15px 30px rgba(234, 179, 8, 0.3)"
+                }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   trackCTAClick('register', 'hero');
                   router.push('/auth/register-new');
                 }}
-                className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-8 py-4 rounded-xl font-bold text-lg hover:from-yellow-400 hover:to-orange-400 transition-all shadow-2xl transform hover:shadow-yellow-500/25"
+                className="relative bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-black px-8 py-4 rounded-xl font-black text-base lg:text-lg hover:from-yellow-300 hover:via-orange-400 hover:to-red-400 transition-all shadow-xl transform group overflow-hidden"
               >
-                {t.freeTrialBtn}
+                {/* Efeito de brilho no hover */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                  initial={{ x: '-100%' }}
+                  whileHover={{ x: '100%' }}
+                  transition={{ duration: 0.6 }}
+                />
+                <span className="relative z-10 flex items-center gap-2">
+                  <span className="text-xl">🚀</span>
+                  {t.freeTrialBtn}
+                </span>
+                {/* Pulso de destaque */}
+                <motion.div
+                  className="absolute inset-0 rounded-xl bg-gradient-to-r from-yellow-400 to-orange-500"
+                  animate={{
+                    scale: [1, 1.03, 1],
+                    opacity: [0, 0.2, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    repeatType: "loop",
+                  }}
+                />
               </motion.button>
               
+              {/* Botão secundário - Como Funciona */}
               <motion.button
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ 
+                  scale: 1.05,
+                  borderColor: "rgb(234 179 8)",
+                  backgroundColor: "rgba(234, 179, 8, 0.1)"
+                }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   trackModalOpen('video_demo');
                   setShowVideoModal(true);
                 }}
-                className="border-2 border-slate-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:border-yellow-500 hover:bg-yellow-500/10 transition-all backdrop-blur-sm"
+                className="relative border-2 border-slate-500 text-white px-8 py-4 rounded-xl font-bold text-base lg:text-lg hover:border-yellow-400 transition-all backdrop-blur-sm bg-slate-800/30 hover:bg-slate-700/50 group"
               >
-                {t.watchDemoBtn}
+                <span className="relative z-10 flex items-center gap-2">
+                  <span className="text-xl">🎥</span>
+                  {t.watchDemoBtn}
+                </span>
+                {/* Efeito de background no hover */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-yellow-400/10 to-orange-500/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                />
               </motion.button>
             </motion.div>
 
-            {/* Stats */}
+            {/* Stats com design aprimorado */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 lg:gap-8 max-w-4xl mx-auto"
+              transition={{ duration: 0.8, delay: 1.2 }}
+              className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 lg:gap-6 max-w-4xl mx-auto"
             >
-              <div className="text-center bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 md:p-4 lg:p-6 border border-slate-700/30">
-                <div className="text-xl md:text-2xl lg:text-3xl font-bold text-yellow-400 mb-1 md:mb-2">
+              {/* Operações */}
+              <motion.div 
+                whileHover={{ scale: 1.03, y: -3 }}
+                className="text-center bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl p-3 md:p-4 lg:p-5 border border-slate-700/30 hover:border-yellow-500/50 transition-all duration-300 group relative overflow-hidden"
+              >
+                {/* Efeito de fundo no hover */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                />
+                <motion.div 
+                  className="text-xl md:text-2xl lg:text-3xl font-black text-yellow-400 mb-1 md:mb-2 relative z-10"
+                  animate={{ 
+                    textShadow: ["0 0 0px rgba(234, 179, 8, 0)", "0 0 15px rgba(234, 179, 8, 0.4)", "0 0 0px rgba(234, 179, 8, 0)"]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
                   {operationStats.totalTrades.toLocaleString()}
-                </div>
-                <div className="text-xs md:text-sm lg:text-base text-slate-400">{t.stats.trades}</div>
-              </div>
-              <div className="text-center bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 md:p-4 lg:p-6 border border-slate-700/30">
-                <div className="text-xl md:text-2xl lg:text-3xl font-bold text-green-400 mb-1 md:mb-2">
+                </motion.div>
+                <div className="text-xs md:text-sm text-slate-400 font-medium relative z-10">{t.stats.trades}</div>
+              </motion.div>
+
+              {/* Taxa de Sucesso */}
+              <motion.div 
+                whileHover={{ scale: 1.03, y: -3 }}
+                className="text-center bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl p-3 md:p-4 lg:p-5 border border-slate-700/30 hover:border-green-500/50 transition-all duration-300 group relative overflow-hidden"
+              >
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                />
+                <motion.div 
+                  className="text-xl md:text-2xl lg:text-3xl font-black text-green-400 mb-1 md:mb-2 relative z-10"
+                  animate={{ 
+                    textShadow: ["0 0 0px rgba(34, 197, 94, 0)", "0 0 15px rgba(34, 197, 94, 0.4)", "0 0 0px rgba(34, 197, 94, 0)"]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+                >
                   {operationStats.successRate.toFixed(1)}%
-                </div>
-                <div className="text-xs md:text-sm lg:text-base text-slate-400">{t.stats.successRate}</div>
-              </div>
-              <div className="text-center bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 md:p-4 lg:p-6 border border-slate-700/30">
-                <div className="text-xl md:text-2xl lg:text-3xl font-bold text-blue-400 mb-1 md:mb-2">
+                </motion.div>
+                <div className="text-xs md:text-sm text-slate-400 font-medium relative z-10">{t.stats.successRate}</div>
+              </motion.div>
+
+              {/* Lucro Total */}
+              <motion.div 
+                whileHover={{ scale: 1.03, y: -3 }}
+                className="text-center bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl p-3 md:p-4 lg:p-5 border border-slate-700/30 hover:border-blue-500/50 transition-all duration-300 group relative overflow-hidden"
+              >
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                />
+                <motion.div 
+                  className="text-xl md:text-2xl lg:text-3xl font-black text-blue-400 mb-1 md:mb-2 relative z-10"
+                  animate={{ 
+                    textShadow: ["0 0 0px rgba(59, 130, 246, 0)", "0 0 15px rgba(59, 130, 246, 0.4)", "0 0 0px rgba(59, 130, 246, 0)"]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+                >
                   ${(operationStats.totalProfit / 1000000).toFixed(1)}M
-                </div>
-                <div className="text-xs md:text-sm lg:text-base text-slate-400">{t.stats.totalProfit}</div>
-              </div>
-              <div className="text-center bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 md:p-4 lg:p-6 border border-slate-700/30">
-                <div className="text-xl md:text-2xl lg:text-3xl font-bold text-purple-400 mb-1 md:mb-2">
+                </motion.div>
+                <div className="text-xs md:text-sm text-slate-400 font-medium relative z-10">{t.stats.totalProfit}</div>
+              </motion.div>
+
+              {/* Usuários Ativos */}
+              <motion.div 
+                whileHover={{ scale: 1.03, y: -3 }}
+                className="text-center bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl p-3 md:p-4 lg:p-5 border border-slate-700/30 hover:border-purple-500/50 transition-all duration-300 group relative overflow-hidden"
+              >
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                />
+                <motion.div 
+                  className="text-xl md:text-2xl lg:text-3xl font-black text-purple-400 mb-1 md:mb-2 relative z-10"
+                  animate={{ 
+                    textShadow: ["0 0 0px rgba(168, 85, 247, 0)", "0 0 15px rgba(168, 85, 247, 0.4)", "0 0 0px rgba(168, 85, 247, 0)"]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 1.5 }}
+                >
                   {operationStats.activeUsers.toLocaleString()}
-                </div>
-                <div className="text-xs md:text-sm lg:text-base text-slate-400">{t.stats.activeUsers}</div>
-              </div>
+                </motion.div>
+                <div className="text-xs md:text-sm text-slate-400 font-medium relative z-10">{t.stats.activeUsers}</div>
+              </motion.div>
             </motion.div>
           </div>
         </section>
@@ -639,7 +998,7 @@ export default function HomePage() {
               </AnimatePresence>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto mb-8">
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -816,17 +1175,17 @@ export default function HomePage() {
                   </button>
                 </div>
                 
-                <div className="aspect-video bg-slate-900 rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-8 h-8 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
-                    </div>
-                    <p className="text-slate-400">
-                      {currentLanguage === 'pt' ? 'Vídeo demonstrativo em breve' : 'Demo video coming soon'}
-                    </p>
-                  </div>
+                <div className="aspect-video bg-slate-900 rounded-lg overflow-hidden">
+                  <iframe
+                    width="100%"
+                    height="100%"
+                    src="https://www.youtube.com/embed/u8Ylcs4LXg0"
+                    title={currentLanguage === 'pt' ? 'Como Funciona o MARKETBOT' : 'How MARKETBOT Works'}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="w-full h-full"
+                  ></iframe>
                 </div>
               </motion.div>
             </motion.div>
@@ -979,7 +1338,7 @@ export default function HomePage() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center space-x-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white px-6 py-3 rounded-xl font-medium transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
                   >
-                    <span className="text-xl">�</span>
+                    <span className="text-xl">📸</span>
                     <span>@coinbitclub</span>
                   </a>
                 </div>

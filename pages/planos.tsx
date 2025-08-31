@@ -134,7 +134,7 @@ const PlansPage: NextPage = () => {
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between h-16">
               {/* Logo */}
-              <Link href="/landingpage/home" className="flex items-center gap-3">
+              <Link href="/home" className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center">
                   <span className="text-black font-bold text-lg">C</span>
                 </div>
@@ -143,7 +143,7 @@ const PlansPage: NextPage = () => {
 
               {/* Desktop Navigation */}
               <nav className="hidden md:flex items-center gap-8">
-                <Link href="/landingpage/home" className="text-gray-300 hover:text-white transition-colors">
+                <Link href="/home" className="text-gray-300 hover:text-white transition-colors">
                   {language === 'pt' ? 'Início' : 'Home'}
                 </Link>
                 <Link href="/planos" className="text-orange-400 font-semibold">
@@ -183,7 +183,7 @@ const PlansPage: NextPage = () => {
             {showMobileMenu && (
               <div className="md:hidden bg-gray-800/90 backdrop-blur-sm border-t border-gray-700/30">
                 <div className="py-4 space-y-2">
-                  <Link href="/landingpage/home" className="block px-4 py-2 text-gray-300 hover:text-white transition-colors">
+                  <Link href="/home" className="block px-4 py-2 text-gray-300 hover:text-white transition-colors">
                     {language === 'pt' ? 'Início' : 'Home'}
                   </Link>
                   <Link href="/planos" className="block px-4 py-2 text-orange-400 font-semibold">
