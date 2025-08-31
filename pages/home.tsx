@@ -134,15 +134,7 @@ export default function HomePage() {
         title: 'Como Funciona o MARKETBOT',
         subtitle: 'Entenda em 2 minutos como transformamos sinais em lucros reais'
       },
-      affiliate: {
-        title: 'Programa de Afiliados',
-        subtitle: 'Ganhe 1,5% de comissão sobre os lucros dos seus indicados',
-        description: 'Indique amigos e ganhe uma porcentagem dos lucros deles. Quanto mais pessoas você indicar, mais você ganha!',
-        commission: '1,5% de comissão',
-        realtime: 'Conversão em bônus com +10%',
-        dashboard: 'Dashboard exclusivo',
-        cta: 'Tornar-se Afiliado'
-      },
+
       faq: {
         title: 'Perguntas Frequentes',
         questions: [
@@ -157,10 +149,6 @@ export default function HomePage() {
           {
             q: "Qual o valor mínimo para começar?",
             a: "O valor mínimo varia conforme o plano escolhido, começando a partir de R$150 ou R$30USD, conforme país"
-          },
-          {
-            q: "Como funciona o sistema de afiliados?",
-            a: "Você ganha 1,5% de comissão sobre os lucros reais dos usuários que você indicar. Quanto mais indicações ativas, maior sua renda passiva."
           },
           {
             q: "É seguro deixar o robô operando sozinho?",
@@ -200,15 +188,7 @@ export default function HomePage() {
         title: 'How MARKETBOT Works',
         subtitle: 'Understand in 2 minutes how we transform signals into real profits'
       },
-      affiliate: {
-        title: 'Affiliate Program',
-        subtitle: 'Earn 1.5% commission on your referrals\' profits',
-        description: 'Refer friends and earn a percentage of their profits. The more people you refer, the more you earn!',
-        commission: '1.5% commission',
-        realtime: 'Bonus conversion with +10%',
-        dashboard: 'Exclusive dashboard',
-        cta: 'Become an Affiliate'
-      },
+
       faq: {
         title: 'Frequently Asked Questions',
         questions: [
@@ -223,10 +203,6 @@ export default function HomePage() {
           {
             q: "What's the minimum amount to start?",
             a: "The minimum amount varies by chosen plan, starting from $150 BRL or $30 USD, depending on the country."
-          },
-          {
-            q: "How does the affiliate system work?",
-            a: "You earn 1.5% commission on the real profits of users you refer. The more active referrals, the higher your passive income."
           },
           {
             q: "Is it safe to let the robot operate alone?",
@@ -968,107 +944,6 @@ export default function HomePage() {
             <div className="max-w-6xl mx-auto">
               <RobotDemoLanding currentLanguage={currentLanguage} />
             </div>
-          </div>
-        </section>
-
-        {/* Affiliate Section */}
-        <section className="py-12 md:py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-800/50 to-slate-900/50">
-          <div className="container mx-auto">
-            <div className="text-center mb-12 md:mb-16">
-              <AnimatePresence mode="wait">
-                <motion.h2
-                  key={`affiliate-title-${currentLanguage}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent"
-                >
-                  {t.affiliate.title}
-                </motion.h2>
-                <motion.p
-                  key={`affiliate-subtitle-${currentLanguage}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ delay: 0.1 }}
-                  className="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto mb-8"
-                >
-                  {t.affiliate.subtitle}
-                </motion.p>
-              </AnimatePresence>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto mb-8">
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="text-center bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-green-500/20"
-              >
-                <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">💰</span>
-                </div>
-                <h3 className="text-xl font-bold text-green-400 mb-2">{t.affiliate.commission}</h3>
-                <p className="text-slate-300 text-sm">
-                  {currentLanguage === 'pt' 
-                    ? 'Sobre os lucros reais dos seus indicados'
-                    : 'On real profits from your referrals'
-                  }
-                </p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="text-center bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-blue-500/20"
-              >
-                <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">⚡</span>
-                </div>
-                <h3 className="text-xl font-bold text-blue-400 mb-2">{t.affiliate.realtime}</h3>
-                <p className="text-slate-300 text-sm">
-                  {currentLanguage === 'pt' 
-                    ? 'Receba suas comissões automaticamente'
-                    : 'Receive your commissions automatically'
-                  }
-                </p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="text-center bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-purple-500/20"
-              >
-                <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">📊</span>
-                </div>
-                <h3 className="text-xl font-bold text-purple-400 mb-2">{t.affiliate.dashboard}</h3>
-                <p className="text-slate-300 text-sm">
-                  {currentLanguage === 'pt' 
-                    ? 'Acompanhe seus ganhos em tempo real'
-                    : 'Track your earnings in real-time'
-                  }
-                </p>
-              </motion.div>
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="text-center"
-            >
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/affiliate')}
-                className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-4 rounded-xl font-bold text-lg hover:from-green-400 hover:to-emerald-400 transition-all shadow-2xl"
-              >
-                {t.affiliate.cta}
-              </motion.button>
-            </motion.div>
           </div>
         </section>
 
