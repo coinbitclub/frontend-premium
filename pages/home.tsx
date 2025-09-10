@@ -1041,7 +1041,7 @@ export default function Home() {
             </div>
           </motion.button>
           <motion.a
-            href="https://wa.me/5521999596652"
+            href="https://wa.me/5521995966652"
             target="_blank"
             rel="noopener noreferrer"
             whileHover={{ scale: 1.1, rotate: -5 }}
