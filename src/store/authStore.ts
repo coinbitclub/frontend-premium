@@ -27,19 +27,61 @@ export interface AuthState {
 }
 
 // Mock store - replace with real Zustand implementation
-export const useAuthStore = (): AuthState => ({
-  user: null, // For dashboard redirect, we need null to trigger login redirect
-  isAuthenticated: false,
-  isLoading: false,
-  token: null,
-  refreshToken: null,
-  login: async () => ({ success: false }),
-  logout: () => {},
-  setUser: () => {},
-  setToken: () => {},
-  clearAuth: () => {},
-  refreshTokenAction: async () => false
-});
+export const useAuthStore = (): AuthState => {
+  // Verificar se há usuário logado no localStorage
+  const getStoredUser = (): User | null => {
+    if (typeof window === 'undefined') return null;
+    
+    try {
+      const userData = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+      
+      if (userData && token) {
+        return JSON.parse(userData);
+      }
+    } catch (error) {
+      console.error('Error parsing stored user data:', error);
+    }
+    
+    return null;
+  };
+
+  const storedUser = getStoredUser();
+  const isAuthenticated = !!storedUser;
+
+  return {
+    user: storedUser,
+    isAuthenticated,
+    isLoading: false,
+    token: typeof window !== 'undefined' ? localStorage.getItem('token') : null,
+    refreshToken: null,
+    login: async () => ({ success: false }),
+    logout: () => {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        window.location.href = '/auth/login';
+      }
+    },
+    setUser: (user: User) => {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+    },
+    setToken: (token: string) => {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', token);
+      }
+    },
+    clearAuth: () => {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      }
+    },
+    refreshTokenAction: async () => false
+  };
+};
 
 // Export useAuth as alias for compatibility
 export const useAuth = useAuthStore;

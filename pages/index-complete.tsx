@@ -267,7 +267,7 @@ export default function Home() {
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
                 <button 
-                  onClick={() => router.push('/cadastro')}
+                  onClick={() => router.push('/cadastro-new')}
                   className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black font-bold px-8 py-4 rounded-xl text-lg transition-all transform hover:scale-105"
                 >
                   {language === 'pt' ? 'Começar Agora' : 'Start Now'}

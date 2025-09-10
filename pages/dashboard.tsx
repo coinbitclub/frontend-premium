@@ -8,7 +8,7 @@ const DashboardRedirect = () => {
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
-      router.replace('/auth/login-integrated');
+      router.replace('/auth/login');
       return;
     }
 
@@ -20,7 +20,8 @@ const DashboardRedirect = () => {
           break;
         case 'AFILIADO':
         case 'AFFILIATE':
-          router.replace('/affiliate/dashboard');
+          // Afiliados vão para área do usuário e podem acessar área do afiliado de lá
+          router.replace('/user/dashboard');
           break;
         case 'GESTOR':
         case 'MANAGER':

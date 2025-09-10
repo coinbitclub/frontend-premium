@@ -488,7 +488,7 @@ const PrivacyPage: NextPage = () => {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link
-                    href="/cadastro"
+                    href="/cadastro-new"
                     className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold px-8 py-3 rounded-xl transition-all"
                   >
                     {content.cta.createAccount}

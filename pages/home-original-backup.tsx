@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
-import RobotDemoLanding from '../../components/RobotDemoLanding';
+import RobotDemoLanding from '../components/RobotDemoLanding';
 
 export default function Home() {
   const [currentLanguage, setCurrentLanguage] = useState<'pt' | 'en'>('pt');
@@ -476,103 +476,115 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Hero Section - Balanced Layout */}
-        <section className="relative pt-20 pb-12 px-4 sm:px-6 lg:px-8 min-h-screen flex items-center">
-          <div className="container mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-stretch min-h-[85vh]">
-              {/* Left Column - Text Content with Perfect Spacing */}
+        {/* SEÇÃO 1: Hero Principal - Layout Elegante */}
+        <section className="relative pt-20 pb-20 px-4 sm:px-6 lg:px-8 min-h-screen flex items-center">
+          <div className="container mx-auto max-w-7xl">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+              
+              {/* Conteúdo Principal - Esquerda */}
               <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8 }}
-                className="relative z-10 order-2 lg:order-1 flex flex-col justify-center py-8 lg:py-12"
+                className="space-y-10"
               >
-                {/* Main Title - Enhanced with Better Spacing */}
-                <motion.h1
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="relative text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black leading-tight mb-6 lg:mb-8"
-                >
-                  <span className="block bg-gradient-to-r from-white via-yellow-200 to-white bg-clip-text text-transparent tracking-wider drop-shadow-2xl">
-                    {t.hero.title}
+                {/* Badge de Status */}
+                <div className="inline-flex items-center space-x-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-500/30 rounded-full px-6 py-3">
+                  <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-green-400 font-bold text-base">
+                    {currentLanguage === 'pt' ? 'Sistema Ativo - Online 24/7' : 'System Active - Online 24/7'}
                   </span>
-                  <span className="block bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500 bg-clip-text text-transparent mt-2 lg:mt-3 text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold leading-relaxed">
-                    {t.hero.subtitle}
-                  </span>
-                  {/* Enhanced Glow Effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/30 via-orange-500/30 to-pink-500/30 blur-3xl -z-10 animate-pulse"></div>
-                  <div className="absolute -inset-4 bg-gradient-to-r from-yellow-400/10 via-orange-500/10 to-pink-500/10 blur-2xl -z-20"></div>
-                </motion.h1>
+                </div>
 
-                {/* Highlight Phrase - Enhanced Spacing */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="relative mb-6 lg:mb-8"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/30 via-emerald-500/30 to-green-500/30 rounded-2xl blur-xl animate-pulse"></div>
-                  <div className="relative bg-gradient-to-r from-green-500/15 to-emerald-500/15 backdrop-blur-sm border-2 border-green-500/50 rounded-2xl p-4 lg:p-6 text-center shadow-2xl">
-                    <p className="text-green-400 font-bold text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed">
+                {/* Título Principal */}
+                <div className="space-y-6">
+                  <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-black leading-tight">
+                    <span className="block bg-gradient-to-r from-white via-yellow-100 to-white bg-clip-text text-transparent">
+                      {t.hero.title}
+                    </span>
+                  </h1>
+                  <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-yellow-400 leading-relaxed">
+                    {t.hero.subtitle}
+                  </p>
+                </div>
+
+                {/* Proposta de Valor */}
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-3xl blur-2xl"></div>
+                  <div className="relative bg-gradient-to-r from-green-500/10 to-emerald-500/10 backdrop-blur-lg border-2 border-green-500/30 rounded-3xl p-8">
+                    <p className="text-xl sm:text-2xl font-bold text-green-400 text-center leading-relaxed">
                       {t.hero.highlightPhrase}
                     </p>
                   </div>
-                </motion.div>
+                </div>
 
-                {/* Binance/Bybit Connection Text */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="relative mb-6 lg:mb-8"
-                >
-                  <p className="text-slate-300 text-center text-sm sm:text-base md:text-lg leading-relaxed font-medium">
+                {/* CTA Principal */}
+                <div className="space-y-6">
+                  <motion.button
+                    whileHover={{ scale: 1.05, y: -10 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      router.push('/cadastro-new');
+                      handleCTAClick('main_cta');
+                    }}
+                    className="relative group overflow-hidden w-full"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-3xl blur-2xl opacity-75 group-hover:opacity-100 transition-all duration-500 animate-pulse"></div>
+                    <div className="relative bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-black text-2xl lg:text-3xl px-16 py-8 rounded-3xl transition-all duration-300 shadow-2xl">
+                      <span className="flex items-center justify-center space-x-4">
+                        <span className="text-3xl">🚀</span>
+                        <span>{t.hero.cta}</span>
+                        <span className="text-3xl">💰</span>
+                      </span>
+                    </div>
+                  </motion.button>
+                  
+                  <p className="text-slate-400 text-center text-lg font-medium">
                     {currentLanguage === 'pt' 
-                      ? 'Conecte sua conta Binance ou Bybit e comece a lucrar em poucos cliques.'
-                      : 'Connect your Binance or Bybit account and start profiting in just a few clicks.'
+                      ? '✨ Grátis • ⚡ Sem compromisso • 🎯 Resultados em 2 minutos'
+                      : '✨ Free • ⚡ No commitment • 🎯 Results in 2 minutes'
                     }
                   </p>
-                </motion.div>
+                </div>
 
-                {/* Feature List - Enhanced Spacing */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7 }}
-                  className="grid grid-cols-2 gap-3 lg:gap-4 mb-8 lg:mb-10"
-                >
-                  {t.hero.features.map((feature, index) => (
+                {/* Benefícios Principais */}
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { icon: '🤖', title: currentLanguage === 'pt' ? 'IA Avançada' : 'Advanced AI', desc: currentLanguage === 'pt' ? 'Análise 24/7' : '24/7 Analysis' },
+                    { icon: '💎', title: currentLanguage === 'pt' ? 'Só Lucra se Você Lucrar' : 'Only Profits If You Profit', desc: currentLanguage === 'pt' ? 'Zero risco' : 'Zero risk' },
+                    { icon: '🔒', title: currentLanguage === 'pt' ? '100% Seguro' : '100% Secure', desc: currentLanguage === 'pt' ? 'Criptografia bancária' : 'Bank-level encryption' },
+                    { icon: '⚡', title: currentLanguage === 'pt' ? 'Resultados Rápidos' : 'Fast Results', desc: currentLanguage === 'pt' ? 'Setup em minutos' : 'Setup in minutes' }
+                  ].map((benefit, index) => (
                     <motion.div
                       key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.8 + index * 0.1 }}
-                      className="flex items-center space-x-2 text-slate-300 p-2 rounded-lg bg-slate-800/30 backdrop-blur-sm border border-slate-700/30 hover:border-slate-600/50 transition-all"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 1 + index * 0.1 }}
+                      className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-4 hover:border-yellow-500/30 transition-all duration-300 group"
                     >
-                      <span className="text-blue-400 text-sm sm:text-base lg:text-lg font-medium">{feature}</span>
+                      <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">{benefit.icon}</div>
+                      <div className="text-white font-bold text-sm mb-1">{benefit.title}</div>
+                      <div className="text-slate-400 text-xs">{benefit.desc}</div>
                     </motion.div>
                   ))}
-                </motion.div>
-
+                </div>
               </motion.div>
 
-              {/* Right Column - Demo Component - Perfectly Aligned */}
+              {/* Demo do Robot - Direita */}
               <motion.div
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="relative order-1 lg:order-2 flex items-center justify-center py-8 lg:py-12 h-full"
+                transition={{ duration: 0.8, delay: 0.3 }}
+                className="relative"
               >
-                <div className="relative w-full max-w-2xl h-full flex items-center justify-center">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-pink-500/30 rounded-2xl blur-2xl animate-pulse"></div>
-                  <div className="relative bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-4 lg:p-6 shadow-2xl w-full h-auto min-h-[600px] lg:min-h-[700px] flex items-center justify-center">
-                    <div className="w-full h-full flex items-center justify-center">
-                      <RobotDemoLanding currentLanguage={currentLanguage} />
-                    </div>
+                <div className="relative max-w-xl mx-auto">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-cyan-500/30 rounded-3xl blur-3xl animate-pulse"></div>
+                  <div className="relative bg-slate-800/70 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
+                    <RobotDemoLanding currentLanguage={currentLanguage} />
                   </div>
                 </div>
               </motion.div>
+              
             </div>
           </div>
         </section>

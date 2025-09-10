@@ -42,6 +42,17 @@ export default function UserLayout({
       icon: FiDollarSign 
     },
     { 
+      name: language === 'pt' ? 'Conta' : 'Account', 
+      href: '/user/account', 
+      icon: FiUser 
+    },
+    { 
+      name: language === 'pt' ? 'Área do Afiliado' : 'Affiliate Area', 
+      href: '/affiliate/dashboard', 
+      icon: FiUsers,
+      isSpecial: true
+    },
+    { 
       name: language === 'pt' ? 'Configurações' : 'Settings', 
       href: '/user/settings', 
       icon: FiSettings 
@@ -93,11 +104,18 @@ export default function UserLayout({
                       className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                         isActive(item.href)
                           ? 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-400 border border-yellow-500/30'
+                          : item.isSpecial
+                          ? 'text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 border border-purple-500/30'
                           : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
                       }`}
                     >
                       <Icon size={16} />
                       <span>{item.name}</span>
+                      {item.isSpecial && (
+                        <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">
+                          {language === 'pt' ? 'Novo' : 'New'}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}

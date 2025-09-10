@@ -10,7 +10,6 @@ export default function Home() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [showHowItWorksModal, setShowHowItWorksModal] = useState(false);
-  const [showFAQModal, setShowFAQModal] = useState(false);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [stats, setStats] = useState({
     users: 0,
@@ -89,12 +88,12 @@ export default function Home() {
   const texts = {
     pt: {
       hero: {
-        title: 'MARKETBOT',
-        subtitle: 'a IA que transforma sinais em LUCRO EM DÓLAR!',
-        highlightPhrase: 'O robô de trade automatizado que SÓ LUCRA SE VOCÊ LUCRAR!',
-        cta: 'Comece Agora',
-        watchDemo: 'Como Funciona',
-        features: ['✅ Leitura do mercado', '✅ Monitoramento TOP100+', '✅ Abertura e acompanhamento', '✅ Trading 24/7', '✅ Comissão apenas sobre operações lucrativas', '✅ Position Safety']
+        title: 'Revolucione Seus Investimentos',
+        subtitle: 'com Trading Automatizado de Criptomoedas',
+        description: 'Nossa IA opera 24/7 nos mercados globais, maximizando seus lucros enquanto você dorme. Junte-se a milhares de investidores que já transformaram suas vidas financeiras.',
+        cta: 'Comece Agora Gratuitamente',
+        watchDemo: 'Ver Demonstração',
+        features: ['✅ Sem taxas mensais', '✅ Comissão apenas sobre lucros', '✅ Suporte 24/7', '✅ Retirada instantânea']
       },
       stats: {
         users: 'Usuários Ativos',
@@ -147,12 +146,12 @@ export default function Home() {
     },
     en: {
       hero: {
-        title: 'MARKETBOT',
-        subtitle: 'the AI that transforms signals into PROFIT IN DOLLARS!',
-        highlightPhrase: 'The 24/7 automated trading robot that ONLY PROFITS IF YOU PROFIT!',
+        title: 'Revolutionize Your Investments',
+        subtitle: 'with Automated Cryptocurrency Trading',
+        description: 'Our AI operates 24/7 in global markets, maximizing your profits while you sleep. Join thousands of investors who have already transformed their financial lives.',
         cta: 'Start Now for Free',
-        watchDemo: 'How It Works',
-        features: ['✅ Market reading', '✅ TOP100+ monitoring', '✅ Opening and tracking', '✅ 24/7 trading', '✅ Commission only on profitable operations', '✅ Position Safety']
+        watchDemo: 'Watch Demo',
+        features: ['✅ No monthly fees', '✅ Commission only on profits', '✅ 24/7 support', '✅ Instant withdrawal']
       },
       stats: {
         users: 'Active Users',
@@ -223,7 +222,7 @@ export default function Home() {
   }
 
   return (
-    <React.Fragment>
+    <>
       <Head>
         <title>
           {currentLanguage === 'pt' 
@@ -327,32 +326,12 @@ export default function Home() {
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => {
-                    setShowVideoModal(true);
-                    handleModalOpen('video');
-                    handleCTAClick('how_it_works_header');
-                  }}
-                  className="relative overflow-hidden text-white hover:text-yellow-400 transition-all duration-300 text-sm font-semibold border-2 border-slate-600 hover:border-yellow-500 px-6 py-2.5 rounded-xl backdrop-blur-sm bg-slate-800/50 hover:bg-slate-700/50 group flex items-center space-x-2"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <span className="relative z-10">{currentLanguage === 'pt' ? 'Como Funciona' : 'How It Works'}</span>
-                  <div className="relative z-10 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                    <svg className="w-2 h-2 text-black" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
                     router.push('/auth/login');
                     handleCTAClick('login_header');
                   }}
-                  className="relative overflow-hidden text-white hover:text-yellow-400 transition-all duration-300 text-sm font-semibold border-2 border-slate-600 hover:border-yellow-500 px-6 py-2.5 rounded-xl backdrop-blur-sm bg-slate-800/50 hover:bg-slate-700/50 group flex items-center space-x-2"
+                  className="relative overflow-hidden text-white hover:text-yellow-400 transition-all duration-300 text-sm font-semibold border-2 border-slate-600 hover:border-yellow-500 px-6 py-2.5 rounded-xl backdrop-blur-sm bg-slate-800/50 hover:bg-slate-700/50 group"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <span className="relative z-10">🔑</span>
                   <span className="relative z-10">{currentLanguage === 'pt' ? 'Login' : 'Login'}</span>
                 </motion.button>
 
@@ -360,14 +339,13 @@ export default function Home() {
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => {
-                    router.push('/cadastro-new');
+                    router.push('/auth/register-new');
                     handleCTAClick('signup_header');
                   }}
-                  className="relative overflow-hidden bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold text-sm px-6 py-2.5 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 group flex items-center space-x-2"
+                  className="relative overflow-hidden bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold text-sm px-6 py-2.5 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 group"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <span className="text-black font-bold">🚀</span>
-                  <span className="relative z-10">{currentLanguage === 'pt' ? 'Comece Agora' : 'Start Now'}</span>
+                  <span className="relative z-10">{currentLanguage === 'pt' ? 'Cadastre-se' : 'Sign Up'}</span>
                 </motion.button>
 
                 {/* Language Selector */}
@@ -431,25 +409,16 @@ export default function Home() {
                       FAQ
                     </button>
                     <button
-                      onClick={() => { setShowVideoModal(true); setShowMobileMenu(false); handleModalOpen('video'); }}
-                      className="block w-full text-left text-slate-300 hover:text-yellow-400 py-2 transition-colors flex items-center space-x-2"
-                    >
-                      <span>📹</span>
-                      <span>{currentLanguage === 'pt' ? 'Como Funciona' : 'How It Works'}</span>
-                    </button>
-                    <button
                       onClick={() => { router.push('/auth/login'); setShowMobileMenu(false); }}
-                      className="block w-full text-left text-slate-300 hover:text-yellow-400 py-2 transition-colors flex items-center space-x-2"
+                      className="block w-full text-left text-slate-300 hover:text-yellow-400 py-2 transition-colors"
                     >
-                      <span>🔑</span>
-                      <span>{currentLanguage === 'pt' ? 'Login' : 'Login'}</span>
+                      Login
                     </button>
                     <button
-                      onClick={() => { router.push('/cadastro-new'); setShowMobileMenu(false); }}
-                      className="block w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold py-3 rounded-lg text-center transition-all flex items-center justify-center space-x-2"
+                      onClick={() => { router.push('/auth/register-new'); setShowMobileMenu(false); }}
+                      className="block w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold py-3 rounded-lg text-center transition-all"
                     >
-                      <span>🚀</span>
-                      <span>{currentLanguage === 'pt' ? 'Comece Agora' : 'Start Now'}</span>
+                      {currentLanguage === 'pt' ? 'Cadastre-se' : 'Sign Up'}
                     </button>
                     <div className="flex justify-center space-x-2 pt-2">
                       <button
@@ -476,100 +445,133 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Hero Section - Balanced Layout */}
-        <section className="relative pt-20 pb-12 px-4 sm:px-6 lg:px-8 min-h-screen flex items-center">
+        {/* Hero Section */}
+        <section className="relative pt-24 pb-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
           <div className="container mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-stretch min-h-[85vh]">
-              {/* Left Column - Text Content with Perfect Spacing */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+              {/* Left Column - Text Content */}
               <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8 }}
-                className="relative z-10 order-2 lg:order-1 flex flex-col justify-center py-8 lg:py-12"
+                className="relative z-10"
               >
-                {/* Main Title - Enhanced with Better Spacing */}
+                {/* Badge */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="inline-flex items-center space-x-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-sm border border-yellow-500/30 rounded-full px-4 py-2 mb-8"
+                >
+                  <span className="w-2 h-2 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-pulse"></span>
+                  <span className="text-yellow-400 text-sm font-semibold">
+                    {currentLanguage === 'pt' ? '🚀 IA Avançada em Ação' : '🚀 Advanced AI in Action'}
+                  </span>
+                </motion.div>
+
+                {/* Main Title with Gradient Effect */}
                 <motion.h1
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="relative text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black leading-tight mb-6 lg:mb-8"
+                  className="relative text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black leading-tight mb-6"
                 >
-                  <span className="block bg-gradient-to-r from-white via-yellow-200 to-white bg-clip-text text-transparent tracking-wider drop-shadow-2xl">
+                  <span className="block bg-gradient-to-r from-white via-yellow-200 to-white bg-clip-text text-transparent">
                     {t.hero.title}
                   </span>
-                  <span className="block bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500 bg-clip-text text-transparent mt-2 lg:mt-3 text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold leading-relaxed">
+                  <span className="block bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500 bg-clip-text text-transparent mt-2">
                     {t.hero.subtitle}
                   </span>
-                  {/* Enhanced Glow Effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/30 via-orange-500/30 to-pink-500/30 blur-3xl -z-10 animate-pulse"></div>
-                  <div className="absolute -inset-4 bg-gradient-to-r from-yellow-400/10 via-orange-500/10 to-pink-500/10 blur-2xl -z-20"></div>
+                  {/* Glow Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-orange-500/20 to-pink-500/20 blur-3xl -z-10"></div>
                 </motion.h1>
 
-                {/* Highlight Phrase - Enhanced Spacing */}
+                {/* Description */}
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-slate-300 text-lg md:text-xl leading-relaxed mb-8 max-w-2xl"
+                >
+                  {t.hero.description}
+                </motion.p>
+
+                {/* Feature List */}
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
-                  className="relative mb-6 lg:mb-8"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/30 via-emerald-500/30 to-green-500/30 rounded-2xl blur-xl animate-pulse"></div>
-                  <div className="relative bg-gradient-to-r from-green-500/15 to-emerald-500/15 backdrop-blur-sm border-2 border-green-500/50 rounded-2xl p-4 lg:p-6 text-center shadow-2xl">
-                    <p className="text-green-400 font-bold text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed">
-                      {t.hero.highlightPhrase}
-                    </p>
-                  </div>
-                </motion.div>
-
-                {/* Binance/Bybit Connection Text */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="relative mb-6 lg:mb-8"
-                >
-                  <p className="text-slate-300 text-center text-sm sm:text-base md:text-lg leading-relaxed font-medium">
-                    {currentLanguage === 'pt' 
-                      ? 'Conecte sua conta Binance ou Bybit e comece a lucrar em poucos cliques.'
-                      : 'Connect your Binance or Bybit account and start profiting in just a few clicks.'
-                    }
-                  </p>
-                </motion.div>
-
-                {/* Feature List - Enhanced Spacing */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7 }}
-                  className="grid grid-cols-2 gap-3 lg:gap-4 mb-8 lg:mb-10"
+                  className="grid grid-cols-2 gap-3 mb-8"
                 >
                   {t.hero.features.map((feature, index) => (
                     <motion.div
                       key={index}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.8 + index * 0.1 }}
-                      className="flex items-center space-x-2 text-slate-300 p-2 rounded-lg bg-slate-800/30 backdrop-blur-sm border border-slate-700/30 hover:border-slate-600/50 transition-all"
+                      transition={{ delay: 0.6 + index * 0.1 }}
+                      className="flex items-center space-x-2 text-slate-300"
                     >
-                      <span className="text-blue-400 text-sm sm:text-base lg:text-lg font-medium">{feature}</span>
+                      <span className="text-green-400 text-sm">{feature}</span>
                     </motion.div>
                   ))}
                 </motion.div>
 
+                {/* CTA Buttons */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                  className="flex flex-col sm:flex-row gap-4"
+                >
+                  <motion.button
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      router.push('/auth/register-new');
+                      handleCTAClick('main_cta');
+                    }}
+                    className="relative group overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl blur-xl opacity-75 group-hover:opacity-100 transition-all duration-300"></div>
+                    <div className="relative bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold text-lg px-8 py-4 rounded-2xl transition-all duration-300 shadow-2xl border-2 border-yellow-400/50">
+                      <span className="flex items-center justify-center space-x-2">
+                        <span>{t.hero.cta}</span>
+                        <span className="text-xl">🚀</span>
+                      </span>
+                    </div>
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setShowVideoModal(true);
+                      handleModalOpen('demo_video');
+                    }}
+                    className="relative group overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-slate-700 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-all duration-300"></div>
+                    <div className="relative bg-slate-800/80 hover:bg-slate-700/80 backdrop-blur-sm border-2 border-slate-600 hover:border-slate-500 text-white font-semibold text-lg px-8 py-4 rounded-2xl transition-all duration-300 shadow-xl">
+                      <span className="flex items-center justify-center space-x-2">
+                        <span>{t.hero.watchDemo}</span>
+                        <span className="text-xl">▶️</span>
+                      </span>
+                    </div>
+                  </motion.button>
+                </motion.div>
               </motion.div>
 
-              {/* Right Column - Demo Component - Perfectly Aligned */}
+              {/* Right Column - Demo Component */}
               <motion.div
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
-                className="relative order-1 lg:order-2 flex items-center justify-center py-8 lg:py-12 h-full"
+                className="relative"
               >
-                <div className="relative w-full max-w-2xl h-full flex items-center justify-center">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-pink-500/30 rounded-2xl blur-2xl animate-pulse"></div>
-                  <div className="relative bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-4 lg:p-6 shadow-2xl w-full h-auto min-h-[600px] lg:min-h-[700px] flex items-center justify-center">
-                    <div className="w-full h-full flex items-center justify-center">
-                      <RobotDemoLanding currentLanguage={currentLanguage} />
-                    </div>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-3xl blur-3xl"></div>
+                  <div className="relative bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-3xl p-1">
+                    <RobotDemoLanding currentLanguage={currentLanguage} />
                   </div>
                 </div>
               </motion.div>
@@ -577,76 +579,37 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Statistics Section - Horizontal Layout */}
-        <section className="relative py-8 sm:py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-slate-800/50 via-slate-900/30 to-slate-800/50 border-y border-slate-700/30">
-          <div className="container mx-auto max-w-6xl">
-            {/* Section Title */}
+        {/* Statistics Section */}
+        <section className="relative py-16 px-4 sm:px-6 lg:px-8">
+          <div className="container mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.8 }}
               viewport={{ once: true }}
-              className="text-center mb-8 lg:mb-12"
-            >
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-4">
-                {currentLanguage === 'pt' ? 'Nossos Resultados em Números' : 'Our Results in Numbers'}
-              </h2>
-              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                {currentLanguage === 'pt' 
-                  ? 'Dados reais que comprovam a eficiência e confiabilidade da nossa plataforma de trading'
-                  : 'Real data proving the efficiency and reliability of our trading platform'
-                }
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              viewport={{ once: true }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-8"
+              className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8"
             >
               {[
-                { 
-                  value: '8473', 
-                  label: currentLanguage === 'pt' ? 'Operações' : 'Operations', 
-                  color: 'from-yellow-400 to-orange-500',
-                  icon: '⚡'
-                },
-                { 
-                  value: '84.7%', 
-                  label: currentLanguage === 'pt' ? 'Taxa de Sucesso' : 'Success Rate', 
-                  color: 'from-green-400 to-emerald-500',
-                  icon: '📈'
-                },
-                { 
-                  value: '$1.8M', 
-                  label: currentLanguage === 'pt' ? 'Lucro Total' : 'Total Profit', 
-                  color: 'from-blue-400 to-cyan-500',
-                  icon: '💰'
-                },
-                { 
-                  value: '5247', 
-                  label: currentLanguage === 'pt' ? 'Usuários Ativos' : 'Active Users', 
-                  color: 'from-purple-400 to-pink-500',
-                  icon: '👥'
-                }
+                { value: stats.users.toLocaleString(), label: t.stats.users, icon: '👥', color: 'from-blue-400 to-cyan-500' },
+                { value: `${stats.profit.toFixed(1)}%`, label: t.stats.profit, icon: '📈', color: 'from-green-400 to-emerald-500' },
+                { value: stats.trades.toLocaleString(), label: t.stats.trades, icon: '⚡', color: 'from-yellow-400 to-orange-500' },
+                { value: `${stats.uptime.toFixed(1)}%`, label: t.stats.uptime, icon: '🔥', color: 'from-pink-400 to-purple-500' }
               ].map((stat, index) => (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  viewport={{ once: true }}
+                  whileHover={{ scale: 1.05, y: -5 }}
                   className="relative group"
                 >
-                  <div className={`absolute inset-0 bg-gradient-to-r ${stat.color} rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition-all duration-300`}></div>
-                  <div className="relative bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 text-center hover:border-slate-600/70 transition-all duration-300">
+                  <div className={`absolute inset-0 bg-gradient-to-r ${stat.color} rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-all duration-300`}></div>
+                  <div className="relative bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 text-center hover:border-slate-600/70 transition-all duration-300">
                     <div className="text-3xl mb-3">{stat.icon}</div>
-                    <div className={`text-2xl sm:text-3xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-2`}>
+                    <div className={`text-2xl md:text-3xl font-black bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-2`}>
                       {stat.value}
                     </div>
-                    <div className="text-gray-400 text-sm font-medium">
+                    <div className="text-slate-400 text-sm font-medium">
                       {stat.label}
                     </div>
                   </div>
@@ -656,81 +619,63 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Affiliate Program Section */}
-        <section className="relative py-8 sm:py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-purple-900/20 via-blue-900/20 to-purple-900/20">
+        {/* FAQ Section */}
+        <section className="relative py-20 px-4 sm:px-6 lg:px-8">
           <div className="container mx-auto max-w-4xl">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
-              className="text-center mb-8"
+              className="text-center mb-16"
             >
-              <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 backdrop-blur-sm border border-purple-500/30 rounded-full px-4 py-2 mb-4">
-                <span className="w-2 h-2 bg-gradient-to-r from-purple-400 to-blue-500 rounded-full animate-pulse"></span>
-                <span className="text-purple-400 text-sm font-semibold">
-                  {currentLanguage === 'pt' ? '💰 Programa de Afiliados' : '💰 Affiliate Program'}
-                </span>
-              </div>
-              
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mb-4">
-                <span className="bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                  {currentLanguage === 'pt' ? 'Ganhe Indicando Nosso Robô' : 'Earn by Referring Our Robot'}
-                </span>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-black mb-6">
+                <span className="bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">FAQ</span>
               </h2>
-              
-              <p className="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto mb-6">
-                {currentLanguage === 'pt' 
-                  ? 'Transforme sua rede em uma fonte de renda recorrente. Ganhe comissões de 1,5% a cada usuário que você indicar!'
-                  : 'Transform your network into a recurring income source. Earn 1.5% commissions for every user you refer!'
-                }
+              <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+                {currentLanguage === 'pt' ? 'Respostas para as perguntas mais frequentes' : 'Answers to the most frequently asked questions'}
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              {[
-                {
-                  icon: '🎯',
-                  title: currentLanguage === 'pt' ? 'Comissão de 1,5%' : '1.5% Commission',
-                  description: currentLanguage === 'pt' ? 'Receba 1,5% de todas as comissões geradas pelos seus indicados' : 'Receive 1.5% of all commissions generated by your referrals',
-                  color: 'from-green-400 to-emerald-500'
-                },
-                {
-                  icon: '💰',
-                  title: currentLanguage === 'pt' ? 'Saque ou Conversão +10%' : 'Withdrawal or Conversion +10%',
-                  description: currentLanguage === 'pt' ? 'Saque suas comissões ou converta em carga para o robô com +10% bônus' : 'Withdraw your commissions or convert to robot balance with +10% bonus',
-                  color: 'from-blue-400 to-cyan-500'
-                },
-                {
-                  icon: '📊',
-                  title: currentLanguage === 'pt' ? 'Dashboard Completo' : 'Complete Dashboard',
-                  description: currentLanguage === 'pt' ? 'Acompanhe seus ganhos e indicações em tempo real' : 'Track your earnings and referrals in real time',
-                  color: 'from-purple-400 to-pink-500'
-                }
-              ].map((feature, index) => (
+            <div className="relative space-y-4">
+              {t.faq.map((faq, index) => (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, y: 30 }}
+                  initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.2 }}
-                  whileHover={{ scale: 1.05, y: -5 }}
-                  className="relative group"
+                  transition={{ delay: index * 0.1 }}
+                  className="border border-slate-700/50 rounded-2xl overflow-hidden backdrop-blur-sm"
                 >
-                  <div className={`absolute inset-0 bg-gradient-to-r ${feature.color} rounded-xl blur-lg opacity-30 group-hover:opacity-50 transition-all duration-300`}></div>
-                  <div className="relative bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6 text-center hover:border-slate-600/70 transition-all duration-300">
-                    <div className="text-3xl mb-4">{feature.icon}</div>
-                    <h3 className={`text-lg font-bold mb-3 bg-gradient-to-r ${feature.color} bg-clip-text text-transparent`}>
-                      {feature.title}
-                    </h3>
-                    <p className="text-slate-300 text-sm leading-relaxed">
-                      {feature.description}
-                    </p>
-                  </div>
+                  <motion.button
+                    whileHover={{ backgroundColor: 'rgba(51, 65, 85, 0.6)' }}
+                    onClick={() => setOpenFAQ(openFAQ === index ? null : index)}
+                    className="w-full text-left p-6 bg-slate-700/30 hover:bg-slate-700/50 transition-all duration-300 flex justify-between items-center group"
+                  >
+                    <span className="font-semibold text-white pr-4 group-hover:text-yellow-400 transition-colors">{faq.q}</span>
+                    <motion.span
+                      animate={{ rotate: openFAQ === index ? 180 : 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="text-yellow-400 text-xl flex-shrink-0"
+                    >
+                      ▼
+                    </motion.span>
+                  </motion.button>
+                  <AnimatePresence>
+                    {openFAQ === index && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="bg-slate-800/60 backdrop-blur-sm"
+                      >
+                        <p className="p-6 text-slate-200 leading-relaxed border-t border-slate-700/50">{faq.a}</p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               ))}
             </div>
-
-
           </div>
         </section>
 
@@ -755,7 +700,7 @@ export default function Home() {
                 
                 <div className="relative flex justify-between items-center mb-8">
                   <h3 className="text-3xl font-black text-transparent bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text">
-                    {currentLanguage === 'pt' ? 'Como Funciona' : 'How It Works'}
+                    {currentLanguage === 'pt' ? 'Demonstração do Sistema' : 'System Demo'}
                   </h3>
                   <motion.button
                     whileHover={{ scale: 1.1, rotate: 90 }}
@@ -769,17 +714,26 @@ export default function Home() {
                   </motion.button>
                 </div>
                 
-                <div className="relative aspect-video bg-slate-900/80 rounded-2xl overflow-hidden border border-slate-700/50">
-                  <iframe
-                    width="100%"
-                    height="100%"
-                    src="https://www.youtube.com/embed/u8Ylcs4LXg0"
-                    title={currentLanguage === 'pt' ? 'Como Funciona o MARKETBOT' : 'How MARKETBOT Works'}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    className="w-full h-full"
-                  ></iframe>
+                <div className="relative aspect-video bg-slate-900/80 rounded-2xl flex items-center justify-center border border-slate-700/50 backdrop-blur-sm">
+                  <div className="text-center">
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      className="relative w-20 h-20 mx-auto mb-6"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 to-cyan-500/30 rounded-full blur-lg"></div>
+                      <div className="relative w-20 h-20 bg-gradient-to-r from-blue-500/40 to-cyan-500/40 rounded-full flex items-center justify-center backdrop-blur-sm border border-blue-500/50">
+                        <svg className="w-10 h-10 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      </div>
+                    </motion.div>
+                    <p className="text-slate-300 text-lg">
+                      {currentLanguage === 'pt' 
+                        ? 'Vídeo demonstrativo em breve...' 
+                        : 'Demo video coming soon...'
+                      }
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>
@@ -829,211 +783,22 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {/* FAQ Modal */}
-        <AnimatePresence>
-          {showFAQModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-              onClick={() => setShowFAQModal(false)}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 50 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 50 }}
-                className="bg-slate-800/95 backdrop-blur-lg rounded-3xl p-6 sm:p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-slate-700/50"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h3 className="text-2xl sm:text-3xl md:text-4xl font-black mb-2">
-                      <span className="bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">FAQ</span>
-                    </h3>
-                    <p className="text-slate-400 text-sm sm:text-base">
-                      {currentLanguage === 'pt' ? 'Respostas para as perguntas mais frequentes' : 'Answers to the most frequently asked questions'}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowFAQModal(false)}
-                    className="text-slate-400 hover:text-white transition-colors p-2"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-
-                <div className="space-y-3 sm:space-y-4">
-                  {t.faq.map((faq, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="border border-slate-700/50 rounded-xl overflow-hidden backdrop-blur-sm"
-                    >
-                      <motion.button
-                        whileHover={{ backgroundColor: 'rgba(51, 65, 85, 0.6)' }}
-                        onClick={() => setOpenFAQ(openFAQ === index ? null : index)}
-                        className="w-full text-left p-4 sm:p-5 bg-slate-700/30 hover:bg-slate-700/50 transition-all duration-300 flex justify-between items-center group"
-                      >
-                        <span className="font-semibold text-white pr-4 group-hover:text-yellow-400 transition-colors text-sm sm:text-base">{faq.q}</span>
-                        <motion.span
-                          animate={{ rotate: openFAQ === index ? 180 : 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="text-yellow-400 text-lg sm:text-xl flex-shrink-0"
-                        >
-                          ▼
-                        </motion.span>
-                      </motion.button>
-                      <AnimatePresence>
-                        {openFAQ === index && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="bg-slate-800/60 backdrop-blur-sm"
-                          >
-                            <p className="p-4 sm:p-5 text-slate-200 leading-relaxed border-t border-slate-700/50 text-sm sm:text-base">{faq.a}</p>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Final CTA & Footer - Unified Section */}
-        <section className="relative py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-t border-gradient-to-r from-slate-700/50 via-slate-600/30 to-slate-700/50 overflow-hidden">
-          {/* Background Effects */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute top-2/3 right-1/3 w-80 h-80 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-            <div className="absolute bottom-1/4 left-1/3 w-64 h-64 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
-          </div>
-          
-          <div className="container mx-auto max-w-6xl relative z-10">
-            {/* Top Section - Security & Community */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
-              {/* Security Message */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-                viewport={{ once: true }}
-                className="text-center"
-              >
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-cyan-500/20 to-blue-500/20 rounded-2xl blur-xl"></div>
-                  <div className="relative bg-gradient-to-r from-blue-500/10 to-cyan-500/10 backdrop-blur-sm border-2 border-blue-500/30 rounded-2xl p-6 lg:p-8 shadow-2xl h-full">
-                    <div className="flex items-center justify-center space-x-3 mb-4">
-                      <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-2xl">🔒</span>
-                      </div>
-                      <h3 className="text-blue-400 font-black text-xl md:text-2xl">
-                        {currentLanguage === 'pt' ? 'SEGURANÇA TOTAL' : 'TOTAL SECURITY'}
-                      </h3>
-                    </div>
-                    <p className="text-blue-300 font-bold text-lg md:text-xl leading-relaxed">
-                      {currentLanguage === 'pt' 
-                        ? 'Seu dinheiro sempre seguro na Binance/Bybit – nós apenas executamos as ordens.'
-                        : 'Your money is always safe on Binance/Bybit – we only execute the orders.'
-                      }
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Community Message */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                viewport={{ once: true }}
-                className="text-center"
-              >
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-purple-500/20 rounded-2xl blur-xl"></div>
-                  <div className="relative bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-6 lg:p-8 shadow-xl h-full">
-                    <div className="flex items-center justify-center space-x-3 mb-4">
-                      <span className="text-3xl">👥</span>
-                      <h3 className="text-purple-400 font-black text-xl md:text-2xl">
-                        {currentLanguage === 'pt' ? 'COMUNIDADE ATIVA' : 'ACTIVE COMMUNITY'}
-                      </h3>
-                    </div>
-                    <p className="text-purple-300 font-bold text-lg md:text-xl leading-relaxed">
-                      {currentLanguage === 'pt' 
-                        ? 'Junte-se à comunidade de investidores que operam 24/7 sem perder oportunidades.'
-                        : 'Join the community of investors who trade 24/7 without missing opportunities.'
-                      }
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Central CTA */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <motion.button
-                whileHover={{ scale: 1.05, y: -5 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  router.push('/cadastro-new');
-                  handleCTAClick('final_cta');
-                }}
-                className="relative group overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-3xl blur-2xl opacity-75 group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
-                <div className="relative bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-black text-xl lg:text-2xl px-12 lg:px-16 py-6 lg:py-8 rounded-3xl transition-all duration-300 shadow-2xl border-4 border-yellow-400/60 group-hover:border-yellow-300">
-                  <span className="flex items-center justify-center space-x-4">
-                    <span className="text-3xl lg:text-4xl animate-bounce">🚀</span>
-                    <span>{currentLanguage === 'pt' ? 'Comece Agora' : 'Start Now'}</span>
-                    <span className="text-3xl lg:text-4xl animate-bounce delay-75">💰</span>
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl"></div>
-                </div>
-              </motion.button>
-              
-              <p className="text-slate-400 text-sm mt-4 font-medium">
-                {currentLanguage === 'pt' 
-                  ? 'Cadastro gratuito • Sem compromisso • Comece em 2 minutos'
-                  : 'Free registration • No commitment • Start in 2 minutes'
-                }
-              </p>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Footer - Unified Section */}
-        <footer className="relative bg-slate-900/90 border-t border-gradient-to-r from-slate-700/50 via-slate-600/30 to-slate-700/50 py-12 md:py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        {/* Footer */}
+        <footer className="relative bg-slate-900/90 border-t border-gradient-to-r from-slate-700/50 via-slate-600/30 to-slate-700/50 py-16 md:py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
           <div className="absolute inset-0">
             <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-yellow-500/5 to-orange-500/5 rounded-full blur-3xl"></div>
             <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-gradient-to-r from-blue-500/5 to-cyan-500/5 rounded-full blur-3xl"></div>
           </div>
           
           <div className="container mx-auto relative z-10">
-            {/* Company Info & Footer */}
-            <div className="text-center mx-auto max-w-4xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16">
               {/* Company Info */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="mb-10"
               >
-                <div className="flex items-center justify-center space-x-4 mb-6">
+                <div className="flex items-center space-x-4 mb-8">
                   <div className="relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full blur-lg opacity-50"></div>
                     <div className="relative w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-2xl">
@@ -1048,15 +813,15 @@ export default function Home() {
                   </div>
                 </div>
                 
-                <div className="relative mb-6">
+                <div className="relative">
                   <div className="absolute inset-0 bg-slate-800/50 rounded-2xl blur-xl"></div>
-                  <p className="relative text-slate-200 leading-relaxed max-w-md mx-auto p-6 bg-slate-800/30 backdrop-blur-sm rounded-2xl border border-slate-700/50">
+                  <p className="relative text-slate-200 leading-relaxed mb-8 max-w-md p-6 bg-slate-800/30 backdrop-blur-sm rounded-2xl border border-slate-700/50">
                     {t.footer.description}
                   </p>
                 </div>
                 
                 {/* Certifications */}
-                <div className="flex flex-wrap justify-center gap-4 mb-8">
+                <div className="flex flex-wrap gap-4">
                   {t.certifications.map((cert, index) => (
                     <motion.div
                       key={index}
@@ -1072,62 +837,140 @@ export default function Home() {
                 </div>
               </motion.div>
 
-              {/* Instagram & Social */}
+              {/* Contact Info */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="mb-8"
               >
-                <p className="text-slate-200 text-lg mb-6 font-medium">
-                  {currentLanguage === 'pt' ? 'Siga-nos no Instagram para dicas e atualizações!' : 'Follow us on Instagram for tips and updates!'}
-                </p>
-                <motion.a
-                  href="https://instagram.com/coinbitclub"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="relative inline-flex items-center space-x-3 group overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-500 rounded-2xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity"></div>
-                  <div className="relative bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all shadow-2xl border-2 border-pink-400/50">
-                    <span className="flex items-center space-x-3">
-                      <span className="text-2xl">📷</span>
-                      <span>@coinbitclub</span>
-                    </span>
-                  </div>
-                </motion.a>
-              </motion.div>
-
-              {/* Copyright & Risk Warning - Combined */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="space-y-6"
-              >
-                <div className="relative">
-                  <div className="absolute inset-0 bg-slate-800/50 rounded-xl blur-lg"></div>
-                  <p className="relative text-slate-300 text-sm p-4 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
-                    © 2024 {t.footer.company}. {t.footer.rights}
-                  </p>
+                <h4 className="text-white font-bold text-2xl mb-8">{t.footer.contact}</h4>
+                <div className="space-y-6">
+                  {[
+                    { 
+                      icon: '💬', 
+                      label: 'WhatsApp', 
+                      value: '+55 21 99959-6652',
+                      href: 'https://wa.me/5521999596652',
+                      color: 'green'
+                    },
+                    { 
+                      icon: '📧', 
+                      label: 'Email', 
+                      value: 'contato@coinbitclub.com',
+                      href: 'mailto:contato@coinbitclub.com',
+                      color: 'blue'
+                    },
+                    { 
+                      icon: '📱', 
+                      label: 'Telegram', 
+                      value: '@coinbitclub',
+                      href: 'https://t.me/coinbitclub',
+                      color: 'cyan'
+                    },
+                    { 
+                      icon: '📷', 
+                      label: 'Instagram', 
+                      value: '@coinbitclub',
+                      color: 'pink'
+                    }
+                  ].map((contact, index) => (
+                    <motion.div
+                      key={index}
+                      whileHover={{ scale: 1.02, x: 5 }}
+                      className={`flex items-center space-x-4 p-4 bg-slate-800/40 backdrop-blur-sm rounded-xl border border-${contact.color}-500/30 hover:border-${contact.color}-500/60 transition-all`}
+                    >
+                      <div className={`w-12 h-12 bg-${contact.color}-500/20 rounded-full flex items-center justify-center`}>
+                        <span className={`text-${contact.color}-400 text-lg`}>{contact.icon}</span>
+                      </div>
+                      <div>
+                        <p className="text-slate-300 text-sm font-medium">{contact.label}</p>
+                        {contact.href ? (
+                          <a
+                            href={contact.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`text-${contact.color}-400 hover:text-${contact.color}-300 transition-colors font-semibold`}
+                          >
+                            {contact.value}
+                          </a>
+                        ) : (
+                          <p className={`text-${contact.color}-400 font-semibold`}>{contact.value}</p>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
+              </motion.div>
+            </div>
 
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 via-orange-500/10 to-yellow-500/10 rounded-2xl blur-xl"></div>
-                  <div className="relative p-6 bg-slate-800/60 backdrop-blur-lg rounded-2xl border border-orange-500/30">
-                    <p className="text-slate-300 text-sm leading-relaxed text-center">
-                      <span className="text-orange-400 text-lg mr-2">⚠️</span>
-                      <span className="font-semibold text-orange-400">
-                        {t.footer.risk}:
+            {/* Bottom Section */}
+            <div className="border-t border-gradient-to-r from-slate-700/50 via-slate-600/30 to-slate-700/50 mt-16 pt-12">
+              <div className="flex flex-col items-center space-y-8">
+                {/* Instagram Link */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-center"
+                >
+                  <p className="text-slate-200 text-lg mb-6 font-medium">
+                    {currentLanguage === 'pt' ? 'Siga-nos no Instagram para dicas e atualizações!' : 'Follow us on Instagram for tips and updates!'}
+                  </p>
+                  <motion.a
+                    href="https://instagram.com/coinbitclub"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="relative inline-flex items-center space-x-3 group overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-500 rounded-2xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="relative bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all shadow-2xl border-2 border-pink-400/50">
+                      <span className="flex items-center space-x-3">
+                        <span className="text-2xl">📷</span>
+                        <span>@coinbitclub</span>
                       </span>
-                      {' '}
-                      {t.footer.riskText}
+                    </div>
+                  </motion.a>
+                </motion.div>
+
+                {/* Copyright */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-center"
+                >
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-slate-800/50 rounded-xl blur-lg"></div>
+                    <p className="relative text-slate-300 text-sm p-4 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+                      © 2024 {t.footer.company}. {t.footer.rights}
                     </p>
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
+
+                {/* Risk Warning */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-12"
+                >
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 via-orange-500/10 to-yellow-500/10 rounded-2xl blur-xl"></div>
+                    <div className="relative p-6 bg-slate-800/60 backdrop-blur-lg rounded-2xl border border-orange-500/30">
+                      <p className="text-slate-300 text-sm leading-relaxed text-center">
+                        <span className="text-orange-400 text-lg mr-2">⚠️</span>
+                        <span className="font-semibold text-orange-400">
+                          {t.footer.risk}:
+                        </span>
+                        {' '}
+                        {t.footer.riskText}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
             </div>
           </div>
         </footer>
@@ -1137,7 +980,7 @@ export default function Home() {
           <motion.button
             whileHover={{ scale: 1.1, rotate: 5 }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => setShowFAQModal(true)}
+            onClick={() => setShowHowItWorksModal(true)}
             className="relative group"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full blur-lg opacity-75 group-hover:opacity-100 transition-opacity"></div>
@@ -1161,6 +1004,6 @@ export default function Home() {
           </motion.a>
         </div>
       </div>
-    </React.Fragment>
+    </>
   );
 }

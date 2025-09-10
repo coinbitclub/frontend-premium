@@ -365,7 +365,7 @@ export default function HomePage() {
                 className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8"
               >
                 <button 
-                  onClick={() => router.push('/cadastro')}
+                  onClick={() => router.push('/cadastro-new')}
                   className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black font-bold px-8 py-4 rounded-xl text-lg transition-all transform hover:scale-105 shadow-2xl"
                 >
                   🚀 {language === 'pt' ? 'Teste Grátis 7 Dias' : 'Free 7-Day Trial'}
@@ -537,7 +537,7 @@ export default function HomePage() {
                   </ul>
 
                   <button 
-                    onClick={() => router.push('/cadastro')}
+                    onClick={() => router.push('/cadastro-new')}
                     className={`w-full py-3 rounded-xl font-semibold transition-all ${
                       plan.highlighted
                         ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-black hover:opacity-90'
@@ -661,7 +661,7 @@ export default function HomePage() {
                       </div>
                     </div>
                     <button
-                      onClick={() => router.push('/cadastro')}
+                      onClick={() => router.push('/cadastro-new')}
                       className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-xl text-lg hover:opacity-90 transition-opacity"
                     >
                       → {language === 'pt' ? 'Começar Agora' : 'Start Now'}

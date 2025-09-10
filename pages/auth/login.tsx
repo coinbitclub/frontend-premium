@@ -97,15 +97,45 @@ const LoginPage: NextPage = () => {
       // Simular autenticação
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Mock de autenticação bem-sucedida
-      localStorage.setItem('user', JSON.stringify({
-        email: formData.email,
-        name: 'Usuário Demo',
-        type: 'user'
-      }));
+      // Simular diferentes tipos de usuário baseado no email para demonstração
+      let userType = 'USER';
+      let userName = 'Usuário Demo';
       
-      // Redirecionar para dashboard
-      router.push('/dashboard');
+      // Lógica de demonstração para diferentes perfis
+      if (formData.email.includes('admin')) {
+        userType = 'ADMIN';
+        userName = 'Administrador';
+      } else if (formData.email.includes('affiliate') || formData.email.includes('afiliado')) {
+        userType = 'AFFILIATE';
+        userName = 'Afiliado';
+      }
+      
+      // Salvar dados do usuário
+      const userData = {
+        email: formData.email,
+        name: userName,
+        role: userType,
+        id: Math.random().toString(36).substr(2, 9),
+        isActive: true
+      };
+      
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('token', 'demo-token-' + Date.now());
+      
+      // Redirecionar baseado no tipo de usuário
+      switch (userType) {
+        case 'ADMIN':
+          router.push('/admin/dashboard');
+          break;
+        case 'AFFILIATE':
+          // Afiliados vão para área do usuário e podem migrar para área do afiliado
+          router.push('/user/dashboard');
+          break;
+        case 'USER':
+        default:
+          router.push('/user/dashboard');
+          break;
+      }
     } catch (error) {
       setErrors({ general: language === 'pt' ? 'Credenciais inválidas. Tente novamente.' : 'Invalid credentials. Please try again.' });
     } finally {
@@ -310,7 +340,7 @@ const LoginPage: NextPage = () => {
                 <p className="text-gray-400">
                   {language === 'pt' ? 'Não tem uma conta?' : "Don't have an account?"}{' '}
                   <Link
-                    href="/cadastro"
+                    href="/cadastro-new"
                     className="text-orange-400 hover:text-orange-300 font-semibold transition-colors"
                   >
                     {language === 'pt' ? 'Cadastre-se agora' : 'Sign up now'}

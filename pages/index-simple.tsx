@@ -67,11 +67,11 @@ export default function Home() {
 
   const handleCTAClick = (action: string) => {
     if (action === 'register') {
-      router.push('/auth/register');
+      router.push('/auth/register-new');
     } else if (action === 'login') {
       router.push('/auth/login');
     } else if (action === 'plans') {
-      router.push('/planos');
+      router.push('/planos-new');
     }
   };
 

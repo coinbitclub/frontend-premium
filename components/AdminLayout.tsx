@@ -46,14 +46,24 @@ export default function AdminLayout({
       icon: FiHome 
     },
     { 
+      name: language === 'pt' ? 'Usuários' : 'Users', 
+      href: '/admin/users', 
+      icon: FiUsers 
+    },
+    { 
+      name: language === 'pt' ? 'Afiliados' : 'Affiliates', 
+      href: '/admin/affiliates', 
+      icon: FiUserPlus 
+    },
+    { 
       name: language === 'pt' ? 'Analytics' : 'Analytics', 
       href: '/admin/analytics', 
       icon: FiBarChart 
     },
     { 
-      name: language === 'pt' ? 'Cupons' : 'Coupons', 
-      href: '/admin/coupons', 
-      icon: FiGift 
+      name: language === 'pt' ? 'Relatórios' : 'Reports', 
+      href: '/admin/reports', 
+      icon: FiFileText 
     },
     { 
       name: language === 'pt' ? 'Financeiro' : 'Financial', 
@@ -61,9 +71,14 @@ export default function AdminLayout({
       icon: FiDollarSign 
     },
     { 
-      name: language === 'pt' ? 'Logs' : 'Logs', 
-      href: '/admin/logs', 
-      icon: FiFileText 
+      name: language === 'pt' ? 'Transações' : 'Transactions', 
+      href: '/admin/transactions', 
+      icon: FiActivity 
+    },
+    { 
+      name: language === 'pt' ? 'Cupons' : 'Coupons', 
+      href: '/admin/coupons', 
+      icon: FiGift 
     },
     { 
       name: language === 'pt' ? 'Tempo Real' : 'Realtime', 
@@ -76,19 +91,14 @@ export default function AdminLayout({
       icon: FiMonitor 
     },
     { 
-      name: language === 'pt' ? 'Transações' : 'Transactions', 
-      href: '/admin/transactions', 
-      icon: FiDollarSign 
+      name: language === 'pt' ? 'Logs' : 'Logs', 
+      href: '/admin/logs', 
+      icon: FiFileText 
     },
     { 
-      name: language === 'pt' ? 'Usuários' : 'Users', 
-      href: '/admin/users', 
-      icon: FiUsers 
-    },
-    { 
-      name: language === 'pt' ? 'Afiliados' : 'Affiliates', 
-      href: '/admin/affiliates', 
-      icon: FiUserPlus 
+      name: language === 'pt' ? 'Configurações' : 'Settings', 
+      href: '/admin/settings', 
+      icon: FiSettings 
     },
   ];
 

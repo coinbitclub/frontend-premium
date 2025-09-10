@@ -49,14 +49,30 @@ export default function AffiliateLayout({
       icon: FiUserPlus 
     },
     { 
+      name: language === 'pt' ? 'Performance' : 'Performance', 
+      href: '/affiliate/performance', 
+      icon: FiTrendingUp 
+    },
+    { 
       name: language === 'pt' ? 'Comissões' : 'Commissions', 
       href: '/affiliate/commissions', 
       icon: FiPercent 
     },
     { 
+      name: language === 'pt' ? 'Links' : 'Links', 
+      href: '/affiliate/links', 
+      icon: FiShare2 
+    },
+    { 
       name: language === 'pt' ? 'Relatórios' : 'Reports', 
       href: '/affiliate/reports', 
       icon: FiFileText 
+    },
+    { 
+      name: language === 'pt' ? 'Área do Usuário' : 'User Area', 
+      href: '/user/dashboard', 
+      icon: FiUserCheck,
+      isSpecial: true
     },
   ];
 
@@ -105,11 +121,18 @@ export default function AffiliateLayout({
                       className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                         isActive(item.href)
                           ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-400 border border-green-500/30'
+                          : item.isSpecial
+                          ? 'text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 border border-blue-500/30'
                           : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
                       }`}
                     >
                       <Icon size={16} />
                       <span>{item.name}</span>
+                      {item.isSpecial && (
+                        <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">
+                          {language === 'pt' ? 'Trading' : 'Trading'}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
