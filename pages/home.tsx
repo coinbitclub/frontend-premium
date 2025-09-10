@@ -12,10 +12,10 @@ export default function Home() {
   const [showFAQModal, setShowFAQModal] = useState(false);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [stats, setStats] = useState({
-    users: 0,
-    profit: 0,
-    trades: 0,
-    uptime: 0
+    users: 2501,
+    profit: 0.3,
+    trades: 757,
+    uptime: 84.7
   });
   const router = useRouter();
   useEffect(() => {
@@ -39,13 +39,13 @@ export default function Home() {
     // Animated counter for stats
     const interval = setInterval(() => {
       setStats(prev => ({
-        users: Math.min(prev.users + Math.floor(Math.random() * 10) + 5, 5182),
-        profit: Math.min(prev.profit + Math.floor(Math.random() * 0.3) + 0.1, 1.8),
-        trades: Math.min(prev.trades + Math.floor(Math.random() * 15) + 5, 757),
-        uptime: Math.min(prev.uptime + 0.01, 99.9)
+        users: Math.min(prev.users + Math.floor(Math.random() * 12) + 8, 5182),
+        profit: Math.min(prev.profit + Math.floor(Math.random() * 0.05) + 0.02, 1.8),
+        trades: Math.min(prev.trades + Math.floor(Math.random() * 25) + 15, 3123),
+        uptime: Math.min(prev.uptime + Math.floor(Math.random() * 0.3) + 0.1, 92.3)
       }));
     }, 150);
-    const timeout = setTimeout(() => clearInterval(interval), 3000);
+    const timeout = setTimeout(() => clearInterval(interval), 4500);
     return () => {
       clearInterval(interval);
       clearTimeout(timeout);
@@ -628,7 +628,7 @@ export default function Home() {
                   icon: '⚡'
                 },
                 { 
-                  value: '84.7%', 
+                  value: `${stats.uptime.toFixed(1)}%`, 
                   label: currentLanguage === 'pt' ? 'Taxa de Sucesso' : 'Success Rate', 
                   color: 'from-green-400 to-emerald-500',
                   icon: '📈'
