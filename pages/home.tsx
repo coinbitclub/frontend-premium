@@ -204,18 +204,10 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>
-          {currentLanguage === 'pt' 
-            ? 'CoinBitClub MarketBot - Trading Automatizado de Criptomoedas com IA' 
-            : 'CoinBitClub MarketBot - AI-Powered Automated Cryptocurrency Trading'
-          }
-        </title>
+        <title>CoinBitClub MarketBot - Trading Automatizado de Criptomoedas com IA</title>
         <meta 
           name="description" 
-          content={currentLanguage === 'pt' 
-            ? "Plataforma de trading automatizado de criptomoedas com IA. Ganhe dinheiro no piloto automático 24/7. Comissão apenas sobre lucros reais." 
-            : "AI-powered automated cryptocurrency trading platform. Make money on autopilot 24/7. Commission only on real profits."
-          } 
+          content="Plataforma de trading automatizado de criptomoedas com IA. Ganhe dinheiro no piloto automático 24/7. Comissão apenas sobre lucros reais." 
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="robots" content="index, follow" />

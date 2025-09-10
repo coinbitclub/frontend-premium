@@ -8,11 +8,6 @@ import { ToastProvider } from '../components/Toast';
 export default function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
-      {/* Script anti-extensão ANTES de tudo */}
-      <Script 
-        src="/anti-extensao.js" 
-        strategy="beforeInteractive"
-      />
       <LanguageProvider>
         <AuthProvider>
           <ToastProvider>
