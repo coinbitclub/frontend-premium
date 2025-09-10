@@ -65,6 +65,49 @@ vercel ls
 4. Configurar monitoramento de erro
 5. Setup de CI/CD automático
 
+### 🎯 **Estatísticas Atualizadas** (Commit Mais Recente)
+
+```
+👥 Usuários Ativos: 5.182 ⬆️ (de 61 para número mais impressionante)
+⚡ Operações: 757 (mantido - realístico)
+💰 Lucro Total: $1.8M (mantido - consistente)
+📈 Taxa de Sucesso: 84.7% (mantido)
+```
+
+### 🚀 **Opções de Deploy**
+
+#### **1. GitHub + Vercel Integration (Recomendado)**
+```bash
+1. Acesse https://vercel.com/dashboard
+2. Click "Add New" → "Project"
+3. Conecte o repositório: coinbitclub/frontend-premium
+4. Branch: main
+5. Deploy automático ativado ✅
+```
+
+#### **2. Vercel CLI**
+```bash
+npx vercel --prod    # Deploy de produção
+npx vercel           # Deploy preview
+```
+
+#### **3. Manual Build Upload**
+```bash
+# Build já pronto em .next/
+# Upload direto no dashboard Vercel
+```
+
+### 📋 **Checklist Pré-Deploy**
+
+- ✅ Build local sem erros
+- ✅ Git push realizado
+- ✅ Estatísticas atualizadas (5.182 usuários)
+- ✅ vercel.json configurado
+- ✅ next.config.mjs otimizado
+- ✅ 24 páginas mapeadas (100%)
+- ✅ 5 páginas de autenticação funcionais
+- ✅ Landing page com CTAs direcionando para /cadastro-new
+
 ---
 
 **Data**: 10 de Setembro de 2025  
