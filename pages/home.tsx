@@ -322,7 +322,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="text-center space-y-12"
+              className="text-center space-y-12 max-w-7xl mx-auto px-4"
             >
               {/* Badge de Status */}
               <div className="inline-flex items-center space-x-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-500/30 rounded-full px-6 py-3">
@@ -332,13 +332,13 @@ export default function Home() {
                 </span>
               </div>
               {/* Título Principal */}
-              <div className="space-y-6">
-                <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-black leading-tight">
+              <div className="space-y-8 text-center">
+                <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-black leading-tight mx-auto max-w-6xl">
                   <span className="block bg-gradient-to-r from-white via-yellow-100 to-white bg-clip-text text-transparent">
                     {t.hero.title}
                   </span>
                 </h1>
-                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-yellow-400 leading-relaxed">
+                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-yellow-400 leading-relaxed mx-auto max-w-4xl">
                   {t.hero.subtitle}
                 </p>
               </div>
