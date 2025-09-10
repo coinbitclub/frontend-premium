@@ -39,9 +39,9 @@ export default function Home() {
     // Animated counter for stats
     const interval = setInterval(() => {
       setStats(prev => ({
-        users: Math.min(prev.users + Math.floor(Math.random() * 5) + 1, 12847),
+        users: Math.min(prev.users + Math.floor(Math.random() * 10) + 5, 5182),
         profit: Math.min(prev.profit + Math.floor(Math.random() * 0.3) + 0.1, 1.8),
-        trades: Math.min(prev.trades + Math.floor(Math.random() * 50) + 10, 2847562),
+        trades: Math.min(prev.trades + Math.floor(Math.random() * 15) + 5, 757),
         uptime: Math.min(prev.uptime + 0.01, 99.9)
       }));
     }, 150);
