@@ -1,0 +1,242 @@
+Domain,Method,Path,Description,File,Auth Required,Parameters,Response Type,Database Tables,Status,Priority
+Core,GET,/,Root API endpoint - Lista todas as APIs disponíveis,enterprise-unified.js,No,,JSON,none,Active,High
+Core,GET,/health,Health check endpoint,enterprise-unified.js,No,,JSON,none,Active,High
+Core,GET,/status,System status,multiple files,No,,JSON,none,Active,High
+Core,GET,/api/status,API status,enterprise-unified.js,No,,JSON,none,Active,Medium
+Core,GET,/api/routes,List all available routes,enterprise-unified.js,No,,JSON,none,Active,Medium
+Core,GET,/metrics,Prometheus metrics,enterprise-unified.js,No,,JSON,none,Active,Medium
+
+Trading,POST,/api/enterprise/trading/signal,Process trading signal,enterprise-unified.js,Yes,signal data,JSON,signals,Active,High
+Trading,POST,/api/enterprise/trading/execute,Execute manual order,enterprise-unified.js,Yes,order data,JSON,orders,Active,High
+Trading,GET,/api/enterprise/trading/positions,Get active positions,enterprise-unified.js,Yes,userId,JSON,positions,Active,High
+Trading,DELETE,/api/enterprise/trading/positions/:id,Close position,enterprise-unified.js,Yes,position id,JSON,positions,Active,High
+Trading,GET,/api/enterprise/trading/analysis,Get market analysis,enterprise-unified.js,Yes,,JSON,market_data,Active,High
+Trading,GET,/api/enterprise/trading/config,Get trading config,enterprise-unified.js,Yes,userId,JSON,user_configs,Active,Medium
+Trading,PUT,/api/enterprise/trading/config,Update trading config,enterprise-unified.js,Yes,config data,JSON,user_configs,Active,Medium
+Trading,POST,/api/enterprise/trading/process-complete,Process complete trading flow,enterprise-unified.js,Yes,trading data,JSON,multiple,Active,High
+Trading,GET,/api/enterprise/trading/system-status,Get trading system status,enterprise-unified.js,Yes,,JSON,none,Active,Medium
+Trading,GET,/api/enterprise/trading/status,Trading status,enterprise-unified.js,Yes,,JSON,positions,Active,Medium
+Trading,POST,/api/enterprise/trading/validate-cooldown,Validate trading cooldown,enterprise-unified.js,Yes,user data,JSON,users,Active,Medium
+Trading,POST,/api/enterprise/trading/validate-positions,Validate positions,enterprise-unified.js,Yes,position data,JSON,positions,Active,Medium
+
+Financial,GET,/api/enterprise/financial/balance,Get user balance,enterprise-unified.js,Yes,userId,JSON,user_balances,Active,High
+Financial,GET,/api/enterprise/financial/transactions,Get transactions,enterprise-unified.js,Yes,userId,JSON,transactions,Active,High
+Financial,POST,/api/enterprise/financial/deposit,Process deposit,enterprise-unified.js,Yes,deposit data,JSON,transactions,Active,High
+Financial,POST,/api/enterprise/financial/withdraw,Process withdrawal,enterprise-unified.js,Yes,withdrawal data,JSON,transactions,Active,High
+Financial,GET,/api/enterprise/financial/usd-to-brl/:amount,Convert USD to BRL,enterprise-unified.js,No,amount,JSON,none,Active,Low
+Financial,GET,/api/financial/info,Financial system info,financial-apis.js,No,,JSON,none,Active,Medium
+Financial,GET,/api/financial/summary,Financial summary,multiple files,Yes,,JSON,transactions,Active,Medium
+Financial,POST,/api/admin/create-credit,Create admin credit,financial-apis.js,Yes,credit data,JSON,admin_credits,Active,Medium
+Financial,POST,/api/user/apply-credit,Apply user credit,financial-apis.js,Yes,credit code,JSON,user_credits,Active,Medium
+Financial,GET,/api/admin/credits/:adminId,Get admin credits,financial-apis.js,Yes,adminId,JSON,admin_credits,Active,Medium
+Financial,GET,/api/admin/financial-dashboard,Admin financial dashboard,financial-apis.js,Yes,,JSON,multiple,Active,High
+Financial,GET,/api/admin/financial-summary,Admin financial summary,app.js,Yes,,JSON,multiple,Active,High
+
+Affiliate,GET,/api/enterprise/affiliate/stats,Get affiliate stats,enterprise-unified.js,Yes,userId,JSON,affiliates,Active,Medium
+Affiliate,GET,/api/enterprise/affiliate/commissions,Get commissions,enterprise-unified.js,Yes,userId,JSON,commissions,Active,High
+Affiliate,POST,/api/enterprise/affiliate/register,Register affiliate,enterprise-unified.js,Yes,affiliate data,JSON,affiliates,Active,Medium
+Affiliate,POST,/api/affiliate/request,Request affiliate status,api-endpoints.js,Yes,user data,JSON,affiliate_requests,Active,Medium
+Affiliate,GET,/api/admin/affiliate/requests,List affiliate requests,api-endpoints.js,Yes,status filter,JSON,affiliate_requests,Active,Medium
+Affiliate,PUT,/api/admin/affiliate/request/:id/approve,Approve affiliate request,api-endpoints.js,Yes,request id,JSON,affiliate_requests,Active,Medium
+Affiliate,PUT,/api/admin/affiliate/request/:id/reject,Reject affiliate request,api-endpoints.js,Yes,request id,JSON,affiliate_requests,Active,Medium
+Affiliate,POST,/api/affiliate/convert-commissions,Convert commissions,api-endpoints.js,Yes,conversion data,JSON,commissions,Active,High
+Affiliate,GET,/api/affiliate/:userId/conversions,Get user conversions,api-endpoints.js,Yes,userId,JSON,conversions,Active,Medium
+Affiliate,GET,/api/affiliate/:userId/dashboard,Affiliate dashboard,api-endpoints.js,Yes,userId,JSON,multiple,Active,High
+Affiliate,PUT,/api/affiliate/:userId/preferences,Update preferences,api-endpoints.js,Yes,preferences,JSON,affiliate_preferences,Active,Low
+Affiliate,GET,/api/admin/affiliate/performance,Affiliate performance,api-endpoints.js,Yes,,JSON,multiple,Active,Medium
+Affiliate,GET,/api/affiliate/:affiliateCode/links,Get affiliate links,financial-apis.js,Yes,affiliate code,JSON,affiliate_links,Active,Medium
+Affiliate,POST,/api/affiliate/create,Create affiliate,financial-apis.js,Yes,affiliate data,JSON,affiliates,Active,Medium
+Affiliate,POST,/api/affiliate/convert-commission,Convert commission,app.js,Yes,commission data,JSON,commissions,Active,High
+
+Auth,POST,/api/auth/login,User login,multiple files,No,credentials,JSON,users,Active,High
+Auth,POST,/api/auth/refresh,Refresh token,multiple files,Yes,refresh token,JSON,users,Active,High
+Auth,POST,/api/auth/logout,User logout,multiple files,Yes,,JSON,none,Active,Medium
+Auth,GET,/api/auth/profile,Get user profile,multiple files,Yes,,JSON,users,Active,High
+Auth,POST,/api/enterprise/auth/2fa/setup,Setup 2FA,enterprise-unified.js,Yes,2fa data,JSON,users,Active,Medium
+Auth,POST,/api/enterprise/auth/2fa/backup-codes,Generate backup codes,enterprise-unified.js,Yes,,JSON,users,Active,Medium
+Auth,POST,/api/enterprise/auth/2fa/sms,Send SMS 2FA,enterprise-unified.js,Yes,phone number,JSON,none,Active,Medium
+
+Users,GET,/api/users,List users,multiple files,Yes,pagination,JSON,users,Active,High
+Users,POST,/api/users,Create user,multiple files,Yes,user data,JSON,users,Active,High
+Users,GET,/api/users/:id,Get user by ID,multiple files,Yes,user id,JSON,users,Active,High
+Users,PUT,/api/users/:id,Update user,multiple files,Yes,user data,JSON,users,Active,High
+Users,DELETE,/api/users/:id,Deactivate user,multiple files,Yes,user id,JSON,users,Active,Medium
+Users,POST,/api/users/:id/promote,Promote user,multiple files,Yes,user id,JSON,users,Active,Medium
+Users,GET,/api/user/:userId/balances,Get user balances,app.js,Yes,userId,JSON,user_balances,Active,High
+
+Dashboard,GET,/dashboard,Main dashboard page,multiple files,Yes,,HTML,multiple,Active,High
+Dashboard,GET,/api/dashboard/realtime,Realtime dashboard data,multiple files,Yes,,JSON,multiple,Active,High
+Dashboard,GET,/api/dashboard/signals,Dashboard signals,multiple files,Yes,,JSON,signals,Active,High
+Dashboard,GET,/api/dashboard/market,Market analysis dashboard,multiple files,Yes,,JSON,market_data,Active,High
+Dashboard,GET,/api/dashboard/ai-decisions,AI decisions dashboard,multiple files,Yes,,JSON,ai_decisions,Active,High
+Dashboard,GET,/api/dashboard/orders,Orders dashboard,multiple files,Yes,,JSON,orders,Active,High
+Dashboard,GET,/api/dashboard/users,Users performance dashboard,multiple files,Yes,,JSON,users,Active,High
+Dashboard,GET,/api/dashboard/balances,Balances dashboard,multiple files,Yes,,JSON,user_balances,Active,High
+Dashboard,GET,/api/dashboard/metrics,Operational metrics,multiple files,Yes,,JSON,multiple,Active,High
+Dashboard,GET,/api/dashboard/system,System status dashboard,multiple files,Yes,,JSON,multiple,Active,High
+Dashboard,GET,/api/dashboard/admin-logs,Admin logs dashboard,multiple files,Yes,,JSON,admin_logs,Active,Medium
+Dashboard,GET,/api/dashboard/search,Search dashboard data,multiple files,Yes,query,JSON,multiple,Active,Medium
+Dashboard,GET,/api/dashboard/performance-metrics,Performance metrics,multiple files,Yes,,JSON,multiple,Active,Medium
+Dashboard,GET,/api/dashboard/aguia-news,Aguia News dashboard,multiple files,Yes,,JSON,aguia_news,Active,Medium
+Dashboard,GET,/api/dashboard/stream,Stream dashboard data,multiple files,Yes,,JSON,multiple,Active,Medium
+Dashboard,GET,/api/dashboard/summary,Dashboard summary,multiple files,Yes,,JSON,multiple,Active,High
+
+Aguia News,GET,/api/aguia/latest,Latest Aguia News,multiple files,Yes,,JSON,aguia_news,Active,Medium
+Aguia News,GET,/api/aguia/stats,Aguia News stats,multiple files,Yes,,JSON,aguia_news,Active,Medium
+Aguia News,GET,/api/aguia/radars,Aguia News radars,multiple files,Yes,,JSON,aguia_news,Active,Medium
+Aguia News,POST,/api/aguia/generate,Generate Aguia News,multiple files,Yes,,JSON,aguia_news,Active,Medium
+
+AI,GET,/api/ia/analyses,AI analyses,dashboard-final-corrigido.js,Yes,,JSON,ai_analyses,Active,Medium
+AI,GET,/api/ia/alerts,AI alerts,dashboard-final-corrigido.js,Yes,,JSON,ai_alerts,Active,Medium
+AI,GET,/api/ia/supervisor,AI supervisor,dashboard-final-corrigido.js,Yes,,JSON,ai_supervisor,Active,Medium
+AI,GET,/api/enterprise/ai/rate-limiter/stats,AI rate limiter stats,enterprise-unified.js,Yes,,JSON,none,Active,Low
+AI,POST,/api/enterprise/ai/analyze,AI analysis,enterprise-unified.js,Yes,analysis data,JSON,ai_analyses,Active,Medium
+
+Market,GET,/api/enterprise/market/data,Market data,enterprise-unified.js,No,,JSON,market_data,Active,High
+Market,GET,/api/market/data,Simulated market data,multiple files,No,,JSON,none,Active,Medium
+Market,GET,/api/dominance,BTC dominance,multiple files,No,,JSON,none,Active,Low
+
+Signals,GET,/api/enterprise/signals,List signals,enterprise-unified.js,Yes,pagination,JSON,signals,Active,High
+Signals,POST,/api/enterprise/signals,Create signal,enterprise-unified.js,Yes,signal data,JSON,signals,Active,High
+Signals,GET,/api/signals,List signals (legacy),multiple files,Yes,,JSON,signals,Active,Medium
+Signals,POST,/api/signal,Process signal (legacy),multiple files,Yes,signal data,JSON,signals,Active,Medium
+
+Notifications,GET,/api/enterprise/notifications,Get notifications,enterprise-unified.js,Yes,userId,JSON,notifications,Active,Medium
+Notifications,POST,/api/enterprise/notifications/read,Mark as read,enterprise-unified.js,Yes,notification ids,JSON,notifications,Active,Medium
+Notifications,PUT,/api/enterprise/notifications/settings,Update settings,enterprise-unified.js,Yes,settings,JSON,notification_settings,Active,Low
+
+Scalability,GET,/api/enterprise/scalability/status,Scalability status,enterprise-unified.js,Yes,,JSON,none,Active,Low
+Scalability,GET,/api/enterprise/scalability/analyze,Analyze scalability,enterprise-unified.js,Yes,,JSON,multiple,Active,Low
+Scalability,GET,/api/enterprise/scalability/metrics,Scalability metrics,enterprise-unified.js,Yes,,JSON,multiple,Active,Low
+
+Payments,POST,/api/payments/create-intent,Create payment intent,multiple files,Yes,payment data,JSON,payments,Active,High
+Payments,POST,/api/stripe/recharge,Stripe recharge,app.js,Yes,recharge data,JSON,transactions,Active,High
+Payments,POST,/api/subscription/brazil/create-link,Create Brazil subscription,checkout-links-manager.js,Yes,subscription data,JSON,subscriptions,Active,High
+Payments,POST,/api/subscription/foreign/create-link,Create foreign subscription,checkout-links-manager.js,Yes,subscription data,JSON,subscriptions,Active,High
+Payments,POST,/api/recharge/create-link,Create recharge link,checkout-links-manager.js,Yes,recharge data,JSON,recharges,Active,High
+Payments,GET,/api/plans/info,Plans information,checkout-links-manager.js,No,,JSON,plans,Active,Medium
+
+Withdrawals,GET,/api/withdrawal-fees/config,Withdrawal config,withdrawal-fees-api.js,Yes,,JSON,withdrawal_configs,Active,Medium
+Withdrawals,POST,/api/withdrawal-fees/calculate,Calculate fees,withdrawal-fees-api.js,Yes,withdrawal data,JSON,none,Active,High
+Withdrawals,POST,/api/withdrawal-fees/validate,Validate withdrawal,withdrawal-fees-api.js,Yes,withdrawal data,JSON,withdrawals,Active,High
+Withdrawals,GET,/api/withdrawal-fees/user/:id,User withdrawal info,withdrawal-fees-api.js,Yes,user id,JSON,withdrawals,Active,Medium
+Withdrawals,POST,/api/withdrawal-fees/process,Process withdrawal,withdrawal-fees-api.js,Yes,withdrawal data,JSON,withdrawals,Active,High
+Withdrawals,GET,/api/withdrawal-fees/admin/dashboard,Admin withdrawal dashboard,withdrawal-fees-api.js,Yes,,JSON,multiple,Active,Medium
+Withdrawals,GET,/api/withdrawal-fees/admin/revenue,Admin revenue,withdrawal-fees-api.js,Yes,,JSON,revenues,Active,Medium
+Withdrawals,PUT,/api/withdrawal-fees/admin/config,Update admin config,withdrawal-fees-api.js,Yes,config data,JSON,withdrawal_configs,Active,Medium
+Withdrawals,GET,/api/withdrawal-fees/health,Withdrawal system health,withdrawal-fees-api.js,No,,JSON,none,Active,Low
+Withdrawals,POST,/api/user/request-withdrawal,Request withdrawal,app.js,Yes,withdrawal data,JSON,withdrawals,Active,High
+
+Coupons,POST,/api/admin/create-coupon,Create coupon,app.js,Yes,coupon data,JSON,coupons,Active,Medium
+Coupons,POST,/api/user/use-coupon,Use coupon,app.js,Yes,coupon code,JSON,coupons,Active,Medium
+Coupons,GET,/api/admin/generate-coupon-code,Generate coupon code,app.js,Yes,,JSON,none,Active,Low
+
+Exchanges,GET,/api/exchanges/status,Exchange status,app.js,Yes,,JSON,exchange_connections,Active,High
+Exchanges,POST,/api/exchanges/connect-user,Connect user to exchange,app.js,Yes,connection data,JSON,exchange_connections,Active,High
+Exchanges,GET,/api/exchanges/health,Exchange health,app.js,Yes,,JSON,exchange_connections,Active,Medium
+Exchanges,GET,/api/exchanges/balances,Exchange balances,app.js,Yes,,JSON,exchange_balances,Active,High
+
+Validation,GET,/api/validation/status,Validation status,app.js,No,,JSON,none,Active,Medium
+Validation,POST,/api/validation/run,Run validation,app.js,Yes,,JSON,validations,Active,Medium
+Validation,GET,/api/validation/connections,Validation connections,app.js,Yes,,JSON,connections,Active,Medium
+Validation,POST,/api/validation/revalidate,Revalidate,app.js,Yes,,JSON,validations,Active,Medium
+
+Monitoring,GET,/api/monitor/status,Monitor status,app.js,Yes,,JSON,none,Active,Medium
+Monitoring,POST,/api/monitor/check,Monitor check,app.js,Yes,,JSON,monitor_results,Active,Medium
+Monitoring,GET,/api/systems/status,Systems status,app.js,Yes,,JSON,multiple,Active,Medium
+
+Trade,GET,/api/trade/status,Trade status,app.js,Yes,,JSON,trades,Active,High
+Trade,GET,/api/trade/balances,Trade balances,app.js,Yes,,JSON,trade_balances,Active,High
+Trade,POST,/api/trade/execute,Execute trade,app.js,Yes,trade data,JSON,trades,Active,High
+Trade,POST,/api/trade/execute-all,Execute all trades,app.js,Yes,,JSON,trades,Active,High
+Trade,POST,/api/trade/validate,Validate trade,app.js,Yes,trade data,JSON,none,Active,Medium
+Trade,GET,/api/trade/connections,Trade connections,app.js,Yes,,JSON,connections,Active,Medium
+Trade,GET,/api/trade/connection/:userId/:exchange/:environment,Specific connection,app.js,Yes,connection params,JSON,connections,Active,Medium
+
+Executors,GET,/api/executors/status,Executors status,app.js,Yes,,JSON,none,Active,Medium
+Executors,POST,/api/executors/trade,Execute trade via executor,app.js,Yes,trade data,JSON,trades,Active,High
+
+Positions,GET,/api/positions,List positions,app.js,Yes,,JSON,positions,Active,High
+
+Admin,GET,/api/admin/dashboard,Admin dashboard,enterprise-unified.js,Yes,,JSON,multiple,Active,High
+Admin,GET,/api/admin/credit-types,Credit types,enterprise-unified.js,Yes,,JSON,credit_types,Active,Low
+
+Enterprise,GET,/api/enterprise/status,Enterprise status,multiple files,Yes,,JSON,none,Active,High
+Enterprise,GET,/api/enterprise/modules,Enterprise modules,app-enterprise-test.js,Yes,,JSON,none,Active,Medium
+Enterprise,GET,/api/enterprise/cache/stats,Cache stats,enterprise-unified.js,Yes,,JSON,none,Active,Low
+Enterprise,GET,/api/enterprise/database/stats,Database stats,enterprise-unified.js,Yes,,JSON,none,Active,Low
+Enterprise,GET,/api/enterprise/logs/stats,Logs stats,enterprise-unified.js,Yes,,JSON,none,Active,Low
+Enterprise,GET,/api/enterprise/alerts/stats,Alerts stats,enterprise-unified.js,Yes,,JSON,none,Active,Low
+Enterprise,GET,/api/enterprise/backup/stats,Backup stats,enterprise-unified.js,Yes,,JSON,none,Active,Low
+Enterprise,GET,/api/enterprise/loadbalancer/stats,Load balancer stats,enterprise-unified.js,Yes,,JSON,none,Active,Low
+
+Webhooks,POST,/webhook,Generic webhook,multiple files,No,webhook data,JSON,webhooks,Active,High
+Webhooks,POST,/api/webhooks/signal,Signal webhook,multiple files,No,signal data,JSON,signals,Active,High
+Webhooks,POST,/api/webhooks/trading,Trading webhook,multiple files,No,trading data,JSON,trades,Active,High
+Webhooks,GET,/api/webhooks/signal,Get signal webhooks,multiple files,Yes,,JSON,webhooks,Active,Medium
+Webhooks,GET,/api/webhooks/trading,Get trading webhooks,multiple files,Yes,,JSON,webhooks,Active,Medium
+
+Demo,GET,/api/demo/saldos,Demo balances,multiple files,No,,JSON,none,Active,Low
+Demo,POST,/api/saldos/coletar,Collect balances,multiple files,Yes,,JSON,balances,Active,Medium
+Demo,POST,/api/saldos/coletar-real,Collect real balances,app.js,Yes,,JSON,balances,Active,Medium
+
+Misc,POST,/api/register,User registration,multiple files,No,user data,JSON,users,Active,High
+Misc,POST,/api/login,User login (legacy),multiple files,No,credentials,JSON,users,Active,High
+Misc,GET,/api/balance,Get balance (legacy),multiple files,Yes,,JSON,balances,Active,Medium
+Misc,GET,/api/ip-diagnostic,IP diagnostic,app.js,No,,JSON,none,Active,Low
+Misc,GET,/api/production-mode,Production mode status,app.js,No,,JSON,none,Active,Low
+Misc,GET,/api/current-mode,Current mode,app.js,No,,JSON,none,Active,Low
+Misc,GET,/api/system/status,System status,multiple files,No,,JSON,none,Active,Medium
+Misc,GET,/api/metrics,System metrics,multiple files,Yes,,JSON,multiple,Active,Medium
+Misc,POST,/validate-position,Validate position,app.js,Yes,position data,JSON,none,Active,Medium
+Misc,POST,/calculate-commission,Calculate commission,app.js,Yes,commission data,JSON,none,Active,Medium
+Misc,GET,/commission-plans,Commission plans,app.js,Yes,,JSON,commission_plans,Active,Medium
+Misc,GET,/quick-links,Quick links page,checkout-links-manager.js,No,,HTML,none,Active,Low
+Misc,GET,/login,Login page,enterprise-unified.js,No,,HTML,none,Active,Medium
+Misc,GET,/checkout,Checkout page,enterprise-unified.js,No,,HTML,none,Active,Medium
+
+Flow,GET,/api/flow/step1,Flow step 1 data,multiple files,Yes,,JSON,multiple,Active,Medium
+Flow,GET,/api/flow/step2,Flow step 2 data,multiple files,Yes,,JSON,multiple,Active,Medium
+Flow,GET,/api/flow/step3,Flow step 3 data,multiple files,Yes,,JSON,multiple,Active,Medium
+Flow,GET,/api/flow/step4,Flow step 4 data,multiple files,Yes,,JSON,multiple,Active,Medium
+Flow,GET,/api/flow/step5,Flow step 5 data,multiple files,Yes,,JSON,multiple,Active,Medium
+
+Detailed,GET,/api/detailed/performance,Detailed performance,multiple files,Yes,,JSON,multiple,Active,Medium
+Detailed,GET,/api/detailed/users,Detailed users,multiple files,Yes,,JSON,users,Active,Medium
+Detailed,GET,/api/detailed/positions,Detailed positions,multiple files,Yes,,JSON,positions,Active,Medium
+Detailed,GET,/api/detailed/logs,Detailed logs,multiple files,Yes,,JSON,logs,Active,Medium
+
+Painel,GET,/painel,Main panel,app.js,Yes,,HTML,multiple,Active,Medium
+Painel,GET,/painel/executivo,Executive panel,app.js,Yes,,HTML,multiple,Active,Medium
+Painel,GET,/painel/fluxo,Flow panel,app.js,Yes,,HTML,multiple,Active,Medium
+Painel,GET,/painel/decisoes,Decisions panel,app.js,Yes,,HTML,multiple,Active,Medium
+Painel,GET,/painel/usuarios,Users panel,app.js,Yes,,HTML,users,Active,Medium
+Painel,GET,/painel/alertas,Alerts panel,app.js,Yes,,HTML,alerts,Active,Medium
+Painel,GET,/painel/diagnosticos,Diagnostics panel,app.js,Yes,,HTML,multiple,Active,Medium
+Painel,GET,/api/painel/executivo,Executive panel API,app.js,Yes,,JSON,multiple,Active,Medium
+Painel,GET,/api/painel/fluxo,Flow panel API,app.js,Yes,,JSON,multiple,Active,Medium
+Painel,GET,/api/painel/decisoes,Decisions panel API,app.js,Yes,,JSON,multiple,Active,Medium
+Painel,GET,/api/painel/usuarios,Users panel API,app.js,Yes,,JSON,users,Active,Medium
+Painel,GET,/api/painel/alertas,Alerts panel API,app.js,Yes,,JSON,alerts,Active,Medium
+Painel,GET,/api/painel/diagnosticos,Diagnostics panel API,app.js,Yes,,JSON,multiple,Active,Medium
+Painel,GET,/api/painel/realtime,Realtime panel API,app.js,Yes,,JSON,multiple,Active,Medium
+Painel,GET,/api/painel/dados,Panel data API,app.js,Yes,,JSON,multiple,Active,Medium
+
+Keys,GET,/api/keys/status,Keys status,multiple files,Yes,,JSON,api_keys,Active,High
+Keys,GET,/api/balances/summary,Balances summary,multiple files,Yes,,JSON,balances,Active,High
+
+Debt,POST,/api/debt/process-commission,Process commission with debt,saldo-devedor-api.js,Yes,commission data,JSON,debts,Active,Medium
+Debt,POST,/api/debt/compensate-debt,Compensate debt,saldo-devedor-api.js,Yes,debt data,JSON,debts,Active,Medium
+Debt,GET,/api/debt/check-minimum-balance/:userId,Check minimum balance,saldo-devedor-api.js,Yes,userId,JSON,balances,Active,Medium
+Debt,GET,/api/debt/debt-status/:userId,Get debt status,saldo-devedor-api.js,Yes,userId,JSON,debts,Active,Medium
+Debt,GET,/api/debt/admin/debt-dashboard,Admin debt dashboard,saldo-devedor-api.js,Yes,,JSON,multiple,Active,Medium
+Debt,POST,/api/debt/admin/forgive-debt,Forgive debt,saldo-devedor-api.js,Yes,debt data,JSON,debts,Active,Medium
+Debt,POST,/api/debt/admin/set-minimum-balance,Set minimum balance,saldo-devedor-api.js,Yes,balance data,JSON,balances,Active,Medium
+Debt,GET,/api/debt/admin/compensation-report,Compensation report,saldo-devedor-api.js,Yes,,JSON,compensations,Active,Medium
+Debt,GET,/api/debt/health,Debt system health,saldo-devedor-api.js,No,,JSON,none,Active,Low
+
+Test,GET,/api/test-connection,Test connection,multiple files,No,,JSON,none,Active,Low
+Test,POST,/api/test/constraint-error,Test constraint error,app.js,Yes,,JSON,none,Active,Low
+Test,POST,/api/test/api-key-error,Test API key error,app.js,Yes,,JSON,none,Active,Low
+Test,GET,/api/error-handling/status,Error handling status,app.js,Yes,,JSON,none,Active,Low
+Test,GET,/api/test-all,Test all endpoints,dashboard-final-simples.js,Yes,,JSON,none,Active,Low
