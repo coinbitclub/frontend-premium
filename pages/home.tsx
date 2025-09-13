@@ -69,6 +69,8 @@ export default function Home() {
         event_label: action
       });
     }
+    // Navegar para a página de cadastro
+    router.push('/cadastro-new');
   };
   const handleModalOpen = (modal: string) => {
     if (typeof gtag !== 'undefined') {

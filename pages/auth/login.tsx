@@ -159,25 +159,25 @@ const LoginPage: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black overflow-x-hidden">
+      <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-800 to-black overflow-x-hidden">
         {/* Background Effects */}
-        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-yellow-500/10"></div>
-        <div className="absolute left-1/4 top-1/4 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute right-1/4 bottom-1/4 w-96 h-96 bg-yellow-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-yellow-500/10 overflow-hidden"></div>
+        <div className="absolute left-1/4 top-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-orange-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute right-1/4 bottom-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-yellow-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
 
         <div className="relative flex min-h-screen items-center justify-center px-4 py-8 sm:p-8">
           {/* Back to Home Button */}
           <Link
             href="/home"
-            className="absolute top-8 left-8 flex items-center gap-2 text-gray-400 hover:text-orange-400 transition-colors"
+            className="absolute top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2 text-gray-400 hover:text-orange-400 transition-colors text-sm sm:text-base"
           >
             <FaArrowLeft />
             {language === 'pt' ? 'Voltar ao Início' : 'Back to Home'}
           </Link>
 
           {/* Language Selector */}
-          <div className="absolute top-8 right-8 flex items-center gap-2">
-            <FaGlobe className="text-gray-400" />
+          <div className="absolute top-4 right-4 sm:top-8 sm:right-8 flex items-center gap-2">
+            <FaGlobe className="text-gray-400 text-sm sm:text-base" />
             <div className="flex bg-gray-700/50 rounded-lg p-1">
               <button
                 onClick={() => handleLanguageChange('pt')}
