@@ -311,8 +311,101 @@ export default function Home() {
                   {t.hero.cta}
                 </motion.button>
               </nav>
+              
+              {/* Mobile menu button */}
+              <div className="md:hidden">
+                <button
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className="text-white hover:text-yellow-400 focus:outline-none focus:text-yellow-400 transition-colors"
+                  aria-label="Toggle menu"
+                >
+                  <svg className="h-6 w-6 fill-current" viewBox="0 0 24 24">
+                    {showMobileMenu ? (
+                      <path d="M18.278 16.864a1 1 0 0 1-1.414 1.414l-4.829-4.828-4.828 4.828a1 1 0 0 1-1.414-1.414l4.828-4.829-4.828-4.828a1 1 0 0 1 1.414-1.414l4.829 4.828 4.828-4.828a1 1 0 1 1 1.414 1.414l-4.828 4.829 4.828 4.828z"/>
+                    ) : (
+                      <path d="M4 5h16a1 1 0 0 1 0 2H4a1 1 0 1 1 0-2zm0 6h16a1 1 0 0 1 0 2H4a1 1 0 0 1 0-2zm0 6h16a1 1 0 0 1 0 2H4a1 1 0 0 1 0-2z"/>
+                    )}
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
+          
+          {/* Mobile Navigation Menu */}
+          {showMobileMenu && (
+            <div className="md:hidden absolute top-16 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/30 z-40">
+              <div className="px-4 py-6 space-y-4">
+                <button
+                  onClick={() => { handleNavigation('/planos-new'); setShowMobileMenu(false); }}
+                  className="block w-full text-left text-slate-300 hover:text-yellow-400 transition-all duration-300 text-base font-medium py-2"
+                >
+                  {currentLanguage === 'pt' ? 'Planos' : 'Plans'}
+                </button>
+                <button
+                  onClick={() => { setShowFAQModal(true); setShowMobileMenu(false); }}
+                  className="block w-full text-left text-slate-300 hover:text-yellow-400 transition-all duration-300 text-base font-medium py-2"
+                >
+                  FAQ
+                </button>
+                <button
+                  onClick={() => { handleNavigation('/auth/login'); setShowMobileMenu(false); }}
+                  className="block w-full text-left bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-white font-semibold text-base px-4 py-3 rounded-lg transition-all duration-300 shadow-lg"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => { handleNavigation('/termos'); setShowMobileMenu(false); }}
+                  className="block w-full text-left text-slate-300 hover:text-yellow-400 transition-all duration-300 text-base font-medium py-2"
+                >
+                  {currentLanguage === 'pt' ? 'Termos' : 'Terms'}
+                </button>
+                <button
+                  onClick={() => { setShowVideoModal(true); setShowMobileMenu(false); }}
+                  className="block w-full text-left text-slate-300 hover:text-yellow-400 transition-all duration-300 text-base font-medium py-2"
+                >
+                  {t.hero.watchDemo}
+                </button>
+                
+                {/* Language Selector Mobile */}
+                <div className="pt-4 border-t border-slate-700/50">
+                  <div className="flex items-center justify-center space-x-2 bg-slate-800/50 backdrop-blur-sm rounded-lg p-2 border border-slate-700/50">
+                    <button
+                      onClick={() => handleLanguageChange('pt')}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                        currentLanguage === 'pt'
+                          ? 'bg-yellow-500 text-black'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      PT
+                    </button>
+                    <button
+                      onClick={() => handleLanguageChange('en')}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                        currentLanguage === 'en'
+                          ? 'bg-yellow-500 text-black'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      EN
+                    </button>
+                  </div>
+                </div>
+                
+                {/* CTA Button Mobile */}
+                <div className="pt-4">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => { handleCTAClick('mobile_header_cta'); setShowMobileMenu(false); }}
+                    className="w-full relative group overflow-hidden bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-black text-lg px-8 py-4 rounded-xl transition-all duration-300 shadow-2xl"
+                  >
+                    {t.hero.cta}
+                  </motion.button>
+                </div>
+              </div>
+            </div>
+          )}
         </header>
         {/* SEÇÃO 1: Hero Principal */}
         <section className="relative pt-24 pb-20 px-4 sm:px-6 lg:px-8">
