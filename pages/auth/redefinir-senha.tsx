@@ -123,7 +123,7 @@ const ResetPasswordPage: NextPage = () => {
         <div className="absolute left-1/4 top-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute right-1/4 bottom-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
 
-        <div className="relative flex min-h-screen items-center justify-center p-8">
+        <div className="relative flex min-h-screen items-center justify-center px-4 py-8 sm:p-8">
           {/* Card Principal */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -131,7 +131,7 @@ const ResetPasswordPage: NextPage = () => {
             transition={{ duration: 0.6 }}
             className="w-full max-w-md relative z-10"
           >
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/30">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-gray-700/30">
               {success ? (
                 /* Success State */
                 <motion.div

@@ -262,7 +262,7 @@ const EsqueciSenhaPage: NextPage = () => {
         <div className="absolute left-1/4 top-1/4 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute right-1/4 bottom-1/4 w-96 h-96 bg-yellow-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
 
-        <div className="relative flex min-h-screen items-center justify-center p-8">
+        <div className="relative flex min-h-screen items-center justify-center px-4 py-8 sm:p-8">
           {/* Back to Login Button */}
           <Link
             href="/auth/login"
@@ -279,7 +279,7 @@ const EsqueciSenhaPage: NextPage = () => {
             transition={{ duration: 0.6 }}
             className="w-full max-w-md relative z-10"
           >
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/30">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-gray-700/30">
               {/* Header */}
               <div className="text-center mb-8">
                 <div className="flex items-center justify-center gap-3 mb-6">

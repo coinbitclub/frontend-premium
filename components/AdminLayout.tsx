@@ -118,7 +118,7 @@ export default function AdminLayout({
         <link rel="icon" href="/favicon.ico" />
       </Head>
       
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-x-hidden">
         {/* Header seguindo padrão da landing page */}
         <header className="fixed top-0 w-full bg-slate-900/95 backdrop-blur-md z-50 border-b border-slate-700/30">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">

@@ -165,7 +165,7 @@ const LoginPage: NextPage = () => {
         <div className="absolute left-1/4 top-1/4 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute right-1/4 bottom-1/4 w-96 h-96 bg-yellow-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
 
-        <div className="relative flex min-h-screen items-center justify-center p-8">
+        <div className="relative flex min-h-screen items-center justify-center px-4 py-8 sm:p-8">
           {/* Back to Home Button */}
           <Link
             href="/home"
@@ -209,16 +209,16 @@ const LoginPage: NextPage = () => {
             transition={{ duration: 0.6 }}
             className="w-full max-w-md relative z-10"
           >
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/30">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-gray-700/30">
               {/* Header */}
               <div className="text-center mb-8">
                 <div className="flex items-center justify-center gap-3 mb-6">
                   <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center">
                     <span className="text-black font-bold text-xl">C</span>
                   </div>
-                  <span className="text-2xl font-bold text-white">CoinBitClub</span>
+                  <span className="text-xl sm:text-2xl font-bold text-white">CoinBitClub</span>
                 </div>
-                <h1 className="text-3xl font-bold text-white mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
                   {language === 'pt' ? 'Bem-vindo de volta!' : 'Welcome back!'}
                 </h1>
                 <p className="text-gray-400">
