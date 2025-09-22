@@ -33,6 +33,11 @@ const UserLayout: React.FC<UserLayoutProps> = ({ children, title = 'Dashboard' }
     { name: 'Perfil', href: '/user/profile', icon: FiUser },
     { name: 'Planos', href: '/user/plans', icon: FiCreditCard },
     { name: 'Configurações', href: '/user/settings', icon: FiSettings },
+    { name: 'Configurações Avançadas', href: '/user/settings-enhanced', icon: FiSettings },
+    { name: 'Teste API', href: '/test-user-settings', icon: FiSettings },
+    { name: 'Teste Completo', href: '/test-integration-complete', icon: FiSettings },
+    { name: 'Teste Auth', href: '/test-auth-integration', icon: FiSettings },
+    { name: 'Teste Trading', href: '/test-trading-integration', icon: FiSettings },
   ];
 
   const handleLogout = () => {
@@ -150,6 +155,16 @@ const UserLayout: React.FC<UserLayoutProps> = ({ children, title = 'Dashboard' }
     </div>
   );
 };
+
+export default UserLayout;
+
+
+
+
+export default UserLayout;
+
+
+
 
 export default UserLayout;
 

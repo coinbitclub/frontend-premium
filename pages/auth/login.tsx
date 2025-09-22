@@ -4,25 +4,34 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
-import { FaUser, FaLock, FaEye, FaEyeSlash, FaArrowLeft, FaGlobe } from 'react-icons/fa';
+import { FaUser, FaLock, FaEye, FaEyeSlash, FaArrowLeft, FaGlobe, FaShieldAlt } from 'react-icons/fa';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useAuth } from '../../src/contexts/AuthContext';
 
 const LoginPage: NextPage = () => {
   const router = useRouter();
   const { language, setLanguage } = useLanguage();
+  const { login, isAuthenticated, isLoading } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    twoFactorCode: '',
     rememberMe: false
   });
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Redirect if already authenticated
+    if (isAuthenticated) {
+      router.push('/user/dashboard');
+    }
+  }, [isAuthenticated, router]);
 
   const handleLanguageChange = (lang: 'pt' | 'en') => {
     console.log('Login page - Button clicked for language:', lang);
@@ -92,52 +101,23 @@ const LoginPage: NextPage = () => {
     if (!validateForm()) return;
 
     setLoading(true);
+    setErrors({});
     
     try {
-      // Simular autenticação
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await login(formData.email, formData.password, formData.twoFactorCode);
       
-      // Simular diferentes tipos de usuário baseado no email para demonstração
-      let userType = 'USER';
-      let userName = 'Usuário Demo';
+      // Login successful, redirect based on user type
+      router.push('/user/dashboard');
       
-      // Lógica de demonstração para diferentes perfis
-      if (formData.email.includes('admin')) {
-        userType = 'ADMIN';
-        userName = 'Administrador';
-      } else if (formData.email.includes('affiliate') || formData.email.includes('afiliado')) {
-        userType = 'AFFILIATE';
-        userName = 'Afiliado';
+    } catch (error: any) {
+      if (error.message === '2FA_REQUIRED') {
+        setShowTwoFactor(true);
+        setErrors({ twoFactor: language === 'pt' ? 'Código 2FA necessário' : '2FA code required' });
+      } else {
+        setErrors({ 
+          general: error.message || (language === 'pt' ? 'Credenciais inválidas. Tente novamente.' : 'Invalid credentials. Please try again.') 
+        });
       }
-      
-      // Salvar dados do usuário
-      const userData = {
-        email: formData.email,
-        name: userName,
-        role: userType,
-        id: Math.random().toString(36).substr(2, 9),
-        isActive: true
-      };
-      
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('token', 'demo-token-' + Date.now());
-      
-      // Redirecionar baseado no tipo de usuário
-      switch (userType) {
-        case 'ADMIN':
-          router.push('/admin/dashboard');
-          break;
-        case 'AFFILIATE':
-          // Afiliados vão para área do usuário e podem migrar para área do afiliado
-          router.push('/user/dashboard');
-          break;
-        case 'USER':
-        default:
-          router.push('/user/dashboard');
-          break;
-      }
-    } catch (error) {
-      setErrors({ general: language === 'pt' ? 'Credenciais inválidas. Tente novamente.' : 'Invalid credentials. Please try again.' });
     } finally {
       setLoading(false);
     }
@@ -292,6 +272,40 @@ const LoginPage: NextPage = () => {
                     <p className="mt-1 text-sm text-red-400">{errors.password}</p>
                   )}
                 </div>
+
+                {/* 2FA Code Field */}
+                {showTwoFactor && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <label htmlFor="twoFactorCode" className="block text-sm font-medium text-gray-300 mb-2">
+                      {language === 'pt' ? 'Código 2FA' : '2FA Code'}
+                    </label>
+                    <div className="relative">
+                      <FaShieldAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <input
+                        id="twoFactorCode"
+                        name="twoFactorCode"
+                        type="text"
+                        value={formData.twoFactorCode}
+                        onChange={handleInputChange}
+                        className={`w-full pl-10 pr-4 py-3 bg-gray-700/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                          errors.twoFactor 
+                            ? 'border-red-500 focus:ring-red-500/50' 
+                            : 'border-gray-600 focus:border-orange-500 focus:ring-orange-500/50'
+                        }`}
+                        placeholder={language === 'pt' ? 'Digite o código 2FA' : 'Enter 2FA code'}
+                        disabled={loading}
+                        maxLength={6}
+                      />
+                    </div>
+                    {errors.twoFactor && (
+                      <p className="mt-1 text-sm text-red-400">{errors.twoFactor}</p>
+                    )}
+                  </motion.div>
+                )}
 
                 <div className="flex items-center justify-between">
                   <label className="flex items-center">
