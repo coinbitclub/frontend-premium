@@ -1,27 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FiActivity, 
   FiTrendingUp, 
   FiTrendingDown, 
-  FiPlay, 
-  FiEye, 
-  FiSquare, 
-  FiDollarSign,
-  FiPercent,
-  FiZap
+  FiDollarSign, 
+  FiTarget, 
+  FiActivity,
+  FiCheckCircle,
+  FiXCircle,
+  FiClock
 } from 'react-icons/fi';
-
-interface OperationStep {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ElementType;
-  status: 'pending' | 'active' | 'completed' | 'success' | 'error';
-  color: string;
-  glowColor: string;
-  duration?: number;
-}
 
 interface RobotOperationTimelineProps {
   isActive?: boolean;
@@ -29,302 +17,120 @@ interface RobotOperationTimelineProps {
   compact?: boolean;
 }
 
-// Gerar dados realistas aleatórios
-const generateRealisticData = () => {
-  const cryptos = ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'MATIC', 'DOT', 'LINK'];
-  const directions = ['LONG', 'SHORT'];
-  const profits = [8.45, 12.30, 15.45, 9.87, 18.22, 6.75, 11.56, 14.89, 7.23, 16.44];
-  
-  const crypto = cryptos[Math.floor(Math.random() * cryptos.length)];
-  const direction = directions[Math.floor(Math.random() * directions.length)];
-  const profit = profits[Math.floor(Math.random() * profits.length)];
-  const entryPrice = (Math.random() * 50000 + 20000).toFixed(2);
-  const exitPrice = direction === 'LONG' 
-    ? (parseFloat(entryPrice) * (1 + profit/100)).toFixed(2)
-    : (parseFloat(entryPrice) * (1 - profit/100)).toFixed(2);
-  
-  return { crypto, direction, profit, entryPrice, exitPrice };
-};
+interface Operation {
+  id: string;
+  type: 'buy' | 'sell';
+  symbol: string;
+  amount: number;
+  price: number;
+  profit: number;
+  timestamp: Date;
+  status: 'pending' | 'completed' | 'failed';
+}
 
-const OPERATION_STEPS: OperationStep[] = [
-  {
-    id: 'market-reading',
-    title: 'LEITURA DE MERCADO',
-    description: 'Analisando RSI: 28 (Oversold) | MACD: Bullish Cross | Volume: +45%',
-    icon: FiActivity,
-    status: 'pending',
-    color: '#3B82F6',
-    glowColor: 'rgba(59, 130, 246, 0.4)',
-    duration: 3000
-  },
-  {
-    id: 'signal-generation',
-    title: 'SINAL DE COMPRA/VENDA',
-    description: 'Sinal LONG detectado! Comprar BTC/USDT com alta probabilidade',
-    icon: FiZap,
-    status: 'pending',
-    color: '#F59E0B',
-    glowColor: 'rgba(245, 158, 11, 0.4)',
-    duration: 2000
-  },
-  {
-    id: 'position-opening',
-    title: 'ABERTURA DE POSIÇÃO',
-    description: 'Ordem executada: Compra BTC $42,350.00 | Stop: $40,500.00',
-    icon: FiPlay,
-    status: 'pending',
-    color: '#10B981',
-    glowColor: 'rgba(16, 185, 129, 0.4)',
-    duration: 1500
-  },
-  {
-    id: 'real-time-monitoring',
-    title: 'MONITORAMENTO EM TEMPO REAL',
-    description: 'Preço atual: $48,892.50 | P&L: +$6,542.50 | ROI: +15.45%',
-    icon: FiEye,
-    status: 'pending',
-    color: '#8B5CF6',
-    glowColor: 'rgba(139, 92, 246, 0.4)',
-    duration: 8000
-  },
-  {
-    id: 'position-closing',
-    title: 'FECHAMENTO DE POSIÇÃO',
-    description: 'Take Profit atingido! Vendendo BTC $48,892.50',
-    icon: FiSquare,
-    status: 'pending',
-    color: '#10B981',
-    glowColor: 'rgba(16, 185, 129, 0.4)',
-    duration: 1500
-  },
-  {
-    id: 'result-calculation',
-    title: 'RESULTADO (Lucro/Prejuízo)',
-    description: '✅ LUCRO: +15.45% | Valor: +$6,542.50 | Tempo: 3h 25min',
-    icon: FiDollarSign,
-    status: 'pending',
-    color: '#10B981',
-    glowColor: 'rgba(16, 185, 129, 0.4)',
-    duration: 2000
-  },
-  {
-    id: 'commission-generation',
-    title: 'COMISSIONAMENTO GERADO',
-    description: '💰 Comissão (1.5%): $98.14 creditada na sua conta',
-    icon: FiPercent,
-    status: 'pending',
-    color: '#FFD700',
-    glowColor: 'rgba(255, 215, 0, 0.4)',
-    duration: 2000
-  }
-];
-
-export const RobotOperationTimeline: React.FC<RobotOperationTimelineProps> = ({
-  isActive = true,
+const RobotOperationTimeline: React.FC<RobotOperationTimelineProps> = ({ 
+  isActive = true, 
   speed = 'normal',
-  compact = false
+  compact = false 
 }) => {
-  const [steps, setSteps] = useState<OperationStep[]>(OPERATION_STEPS);
-  const [currentStepIndex, setCurrentStepIndex] = useState(-1);
-  const [isRunning, setIsRunning] = useState(false);
-  const [cycleCount, setCycleCount] = useState(0);
+  const [operations, setOperations] = useState<Operation[]>([]);
+  const [currentOperation, setCurrentOperation] = useState<Operation | null>(null);
 
-  const speedMultiplier = {
-    slow: 1.5,
-    normal: 1,
-    fast: 0.5
-  }[speed];
-
-  // Função para resetar e iniciar novo ciclo
-  const startNewCycle = () => {
-    // Gerar novos dados realistas para o próximo ciclo
-    const data = generateRealisticData();
-    
-    const updatedSteps = OPERATION_STEPS.map((step, index) => {
-      let newDescription = step.description;
-      
-      switch(step.id) {
-        case 'market-reading':
-          const rsi = Math.floor(Math.random() * 40) + 20; // 20-60
-          const volume = Math.floor(Math.random() * 60) + 20; // 20-80%
-          newDescription = `Analisando RSI: ${rsi} (${rsi < 30 ? 'Oversold' : rsi > 70 ? 'Overbought' : 'Neutral'}) | MACD: ${data.direction === 'LONG' ? 'Bullish' : 'Bearish'} Cross | Volume: +${volume}%`;
-          break;
-        case 'signal-generation':
-          newDescription = `Sinal ${data.direction} detectado! ${data.direction === 'LONG' ? 'Comprar' : 'Vender'} ${data.crypto}/USDT com alta probabilidade`;
-          break;
-        case 'position-opening':
-          newDescription = `Ordem executada: ${data.direction === 'LONG' ? 'Compra' : 'Venda'} ${data.crypto} $${data.entryPrice} | Stop: $${(parseFloat(data.entryPrice) * 0.95).toFixed(2)}`;
-          break;
-        case 'real-time-monitoring':
-          newDescription = `Preço atual: $${data.exitPrice} | P&L: +$${(parseFloat(data.exitPrice) - parseFloat(data.entryPrice)).toFixed(2)} | ROI: +${data.profit}%`;
-          break;
-        case 'position-closing':
-          newDescription = `Take Profit atingido! ${data.direction === 'LONG' ? 'Vendendo' : 'Comprando'} ${data.crypto} $${data.exitPrice}`;
-          break;
-        case 'result-calculation':
-          const profitValue = (parseFloat(data.exitPrice) - parseFloat(data.entryPrice)).toFixed(2);
-          const timeInPosition = Math.floor(Math.random() * 8) + 1; // 1-8 horas
-          const minutes = Math.floor(Math.random() * 60);
-          newDescription = `✅ LUCRO: +${data.profit}% | Valor: +$${profitValue} | Tempo: ${timeInPosition}h ${minutes}min`;
-          break;
-        case 'commission-generation':
-          const commission = (parseFloat(data.exitPrice) - parseFloat(data.entryPrice)) * 0.015;
-          newDescription = `💰 Comissão (1.5%): $${commission.toFixed(2)} creditada na sua conta`;
-          break;
-      }
-      
-      return {
-        ...step,
-        description: newDescription,
-        status: (index === 0 ? 'active' : 'pending') as OperationStep['status']
-      };
-    });
-    
-    setSteps(updatedSteps);
-    setCurrentStepIndex(0);
-    setIsRunning(true);
+  const speedMap = {
+    slow: 5000,
+    normal: 3000,
+    fast: 1500
   };
 
-  // Função para avançar para próximo step
-  const advanceToNextStep = () => {
-    setCurrentStepIndex(prev => {
-      const nextIndex = prev + 1;
-      
-      if (nextIndex >= steps.length) {
-        // Ciclo completo - agendar novo ciclo
-        setIsRunning(false);
-        setTimeout(() => {
-          setCycleCount(count => count + 1);
-          startNewCycle();
-        }, 3000 * speedMultiplier);
-        return prev;
-      }
-      
-      // Atualizar status dos steps
-      setSteps(prevSteps => prevSteps.map((step, index) => {
-        if (index < nextIndex) {
-          return { ...step, status: 'completed' as OperationStep['status'] };
-        } else if (index === nextIndex) {
-          return { ...step, status: 'active' as OperationStep['status'] };
-        }
-        return { ...step, status: 'pending' as OperationStep['status'] };
-      }));
-      
-      return nextIndex;
-    });
+  const generateOperation = (): Operation => {
+    const symbols = ['BTC/USDT', 'ETH/USDT', 'ADA/USDT', 'SOL/USDT', 'DOT/USDT'];
+    const types: ('buy' | 'sell')[] = ['buy', 'sell'];
+    const statuses: ('pending' | 'completed' | 'failed')[] = ['pending', 'completed', 'failed'];
+    
+    const type = types[Math.floor(Math.random() * types.length)];
+    const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+    const amount = Math.random() * 1000 + 100;
+    const price = Math.random() * 50000 + 1000;
+    const profit = (Math.random() - 0.3) * 1000; // 70% chance of profit
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+
+    return {
+      id: Math.random().toString(36).substr(2, 9),
+      type,
+      symbol,
+      amount,
+      price,
+      profit,
+      timestamp: new Date(),
+      status
+    };
   };
 
-  // Efeito para controlar o progresso automático
   useEffect(() => {
-    if (!isActive || !isRunning || currentStepIndex < 0) return;
-    
-    const currentStep = steps[currentStepIndex];
-    if (!currentStep) return;
-    
-    const timeout = setTimeout(() => {
-      // Marcar step atual como completo e avançar
-      setSteps(prev => prev.map((step, index) => 
-        index === currentStepIndex 
-          ? { ...step, status: (Math.random() > 0.2 ? 'success' : 'completed') as OperationStep['status'] }
-          : step
-      ));
-      
-      setTimeout(advanceToNextStep, 500);
-    }, (currentStep.duration || 2000) * speedMultiplier);
-    
-    return () => clearTimeout(timeout);
-  }, [currentStepIndex, isRunning, isActive, speedMultiplier]);
+    if (!isActive) return;
 
-  // Iniciar automaticamente quando ativo
-  useEffect(() => {
-    if (isActive && !isRunning) {
-      const timeout = setTimeout(() => {
-        startNewCycle();
+    const interval = setInterval(() => {
+      const newOperation = generateOperation();
+      setCurrentOperation(newOperation);
+      
+      setTimeout(() => {
+        setOperations(prev => [newOperation, ...prev.slice(0, 9)]);
+        setCurrentOperation(null);
       }, 1000);
-      return () => clearTimeout(timeout);
-    }
-  }, [isActive, isRunning]);
+    }, speedMap[speed]);
 
-  const getStepIcon = (step: OperationStep, index: number) => {
-    const IconComponent = step.icon;
-    const isActive = index === currentStepIndex;
-    const isCompleted = step.status === 'completed' || step.status === 'success';
-    
+    return () => clearInterval(interval);
+  }, [isActive, speed]);
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <FiCheckCircle className="w-4 h-4 text-green-400" />;
+      case 'failed':
+        return <FiXCircle className="w-4 h-4 text-red-400" />;
+      default:
+        return <FiClock className="w-4 h-4 text-yellow-400" />;
+    }
+  };
+
+  const getTypeIcon = (type: string) => {
+    return type === 'buy' 
+      ? <FiTrendingUp className="w-4 h-4 text-green-400" />
+      : <FiTrendingDown className="w-4 h-4 text-red-400" />;
+  };
+
+  const formatProfit = (profit: number) => {
+    const isPositive = profit >= 0;
     return (
-      <motion.div
-        className="relative flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2"
-        style={{
-          borderColor: isActive || isCompleted ? step.color : '#374151',
-          backgroundColor: isActive || isCompleted ? `${step.color}20` : 'transparent'
-        }}
-        animate={{
-          boxShadow: isActive 
-            ? `0 0 20px ${step.glowColor}, 0 0 40px ${step.glowColor}` 
-            : 'none',
-          scale: isActive ? 1.1 : 1
-        }}
-        transition={{ duration: 0.3 }}
-      >
-        <motion.div
-          animate={{
-            rotate: isActive ? 360 : 0,
-            color: isActive || isCompleted ? step.color : '#9CA3AF'
-          }}
-          transition={{
-            rotate: { duration: 2, repeat: isActive ? Infinity : 0, ease: "linear" },
-            color: { duration: 0.3 }
-          }}
-        >
-          <IconComponent size={20} className="sm:w-6 sm:h-6" />
-        </motion.div>
-        
-        {/* Pulse animation para step ativo */}
-        {isActive && (
-          <motion.div
-            className="absolute inset-0 rounded-full border-2"
-            style={{ borderColor: step.color }}
-            animate={{
-              scale: [1, 1.5, 1],
-              opacity: [0.7, 0, 0.7]
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-        )}
-      </motion.div>
+      <span className={`font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+        {isPositive ? '+' : ''}${profit.toFixed(2)}
+      </span>
     );
   };
 
   if (compact) {
     return (
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-3 sm:p-4 border border-gray-700">
+      <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700/50 p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs sm:text-sm font-bold text-white">🤖 Robô Operando</h3>
-          <div className="text-xs text-gray-400">Ciclo #{cycleCount + 1}</div>
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+            <FiActivity className="w-4 h-4 text-orange-400" />
+            Robot Activity
+          </h3>
+          <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400 animate-pulse' : 'bg-gray-500'}`} />
         </div>
         
-        <div className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto pb-2">
-          {steps.map((step, index) => (
-            <motion.div
-              key={step.id}
-              className="flex flex-col items-center min-w-0 flex-shrink-0"
-              animate={{
-                opacity: index <= currentStepIndex ? 1 : 0.5
-              }}
-            >
-              {getStepIcon(step, index)}
-              {index < steps.length - 1 && (
-                <motion.div
-                  className="w-4 sm:w-8 h-0.5 bg-gray-600 mt-2"
-                  animate={{
-                    backgroundColor: index < currentStepIndex ? step.color : '#374151'
-                  }}
-                />
-              )}
-            </motion.div>
+        <div className="space-y-2">
+          {operations.slice(0, 3).map((op) => (
+            <div key={op.id} className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                {getTypeIcon(op.type)}
+                <span className="text-gray-300">{op.symbol}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {getStatusIcon(op.status)}
+                {formatProfit(op.profit)}
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -332,150 +138,99 @@ export const RobotOperationTimeline: React.FC<RobotOperationTimelineProps> = ({
   }
 
   return (
-    <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700 shadow-2xl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 space-y-2 sm:space-y-0">
-        <div>
-          <h2 className="text-lg sm:text-xl font-bold text-white mb-1">
-            🤖 Operação do Robô em Tempo Real
-          </h2>
-          <p className="text-gray-400 text-xs sm:text-sm">
-            Acompanhe cada etapa do processo automatizado
-          </p>
-        </div>
-        <div className="text-left sm:text-right">
-          <div className="text-xs sm:text-sm text-gray-400">Ciclo Atual</div>
-          <div className="text-xl sm:text-2xl font-bold text-yellow-400">#{cycleCount + 1}</div>
+    <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold text-white flex items-center gap-3">
+          <FiActivity className="w-6 h-6 text-orange-400" />
+          Robot Trading Timeline
+        </h2>
+        <div className="flex items-center gap-3">
+          <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-green-400 animate-pulse' : 'bg-gray-500'}`} />
+          <span className="text-sm text-gray-400">
+            {isActive ? 'Active' : 'Inactive'}
+          </span>
         </div>
       </div>
 
-      {/* Timeline */}
-      <div className="space-y-3 sm:space-y-4">
-        {steps.map((step, index) => (
+      <div className="space-y-3">
+        {/* Current Operation */}
+        <AnimatePresence>
+          {currentOperation && (
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {getTypeIcon(currentOperation.type)}
+                  <div>
+                    <div className="font-semibold text-white">
+                      {currentOperation.type.toUpperCase()} {currentOperation.symbol}
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      ${currentOperation.amount.toFixed(2)} @ ${currentOperation.price.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <FiClock className="w-4 h-4 text-yellow-400 animate-spin" />
+                  <span className="text-sm text-yellow-400">Processing...</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Recent Operations */}
+        {operations.map((operation, index) => (
           <motion.div
-            key={step.id}
-            className="flex items-start space-x-3 sm:space-x-4"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            key={operation.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
+            className="bg-gray-700/30 rounded-lg p-4 border border-gray-600/30"
           >
-            {/* Icon */}
-            <div className="flex-shrink-0">
-              {getStepIcon(step, index)}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {getTypeIcon(operation.type)}
+                <div>
+                  <div className="font-semibold text-white">
+                    {operation.type.toUpperCase()} {operation.symbol}
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    ${operation.amount.toFixed(2)} @ ${operation.price.toFixed(2)}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {operation.timestamp.toLocaleTimeString()}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {getStatusIcon(operation.status)}
+                <div className="text-right">
+                  <div className="font-semibold">
+                    {formatProfit(operation.profit)}
+                  </div>
+                  <div className="text-xs text-gray-400 capitalize">
+                    {operation.status}
+                  </div>
+                </div>
+              </div>
             </div>
-
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-              <motion.div
-                className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-3 mb-1"
-                animate={{
-                  opacity: index <= currentStepIndex ? 1 : 0.6
-                }}
-              >
-                <h3 
-                  className="font-bold text-xs sm:text-sm"
-                  style={{
-                    color: index <= currentStepIndex ? step.color : '#9CA3AF'
-                  }}
-                >
-                  {step.title}
-                </h3>
-                
-                {index === currentStepIndex && (
-                  <motion.div
-                    className="px-2 py-1 rounded-full text-xs font-bold self-start sm:self-auto"
-                    style={{
-                      backgroundColor: `${step.color}20`,
-                      color: step.color,
-                      border: `1px solid ${step.color}`
-                    }}
-                    animate={{
-                      scale: [1, 1.05, 1],
-                    }}
-                    transition={{
-                      duration: 1,
-                      repeat: Infinity
-                    }}
-                  >
-                    EM EXECUÇÃO
-                  </motion.div>
-                )}
-                
-                {step.status === 'success' && (
-                  <motion.div
-                    className="px-2 py-1 rounded-full text-xs font-bold bg-green-500/20 text-green-400 border border-green-500 self-start sm:self-auto"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                  >
-                    ✓ CONCLUÍDO
-                  </motion.div>
-                )}
-              </motion.div>
-              
-              <p 
-                className="text-xs sm:text-sm leading-relaxed"
-                style={{
-                  color: index <= currentStepIndex ? '#E5E7EB' : '#6B7280'
-                }}
-              >
-                {step.description}
-              </p>
-
-              {/* Progress bar para step ativo */}
-              {index === currentStepIndex && (
-                <motion.div
-                  className="mt-2 h-1 bg-gray-700 rounded-full overflow-hidden"
-                >
-                  <motion.div
-                    className="h-full rounded-full"
-                    style={{ backgroundColor: step.color }}
-                    initial={{ width: '0%' }}
-                    animate={{ width: '100%' }}
-                    transition={{
-                      duration: (step.duration || 2000) * speedMultiplier / 1000,
-                      ease: "linear"
-                    }}
-                  />
-                </motion.div>
-              )}
-            </div>
-
-            {/* Connection line */}
-            {index < steps.length - 1 && (
-              <motion.div
-                className="absolute left-5 sm:left-6 mt-10 sm:mt-12 w-0.5 h-6 sm:h-8 bg-gray-600"
-                style={{ marginLeft: '1.25rem' }}
-                animate={{
-                  backgroundColor: index < currentStepIndex ? step.color : '#374151'
-                }}
-              />
-            )}
           </motion.div>
         ))}
-      </div>
 
-      {/* Status Footer */}
-      <div className="mt-4 sm:mt-6 pt-4 border-t border-gray-700">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0 text-xs sm:text-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-green-400 font-medium">Sistema Ativo</span>
-            </div>
-            <div className="text-gray-400">
-              Velocidade: {speed.toUpperCase()}
-            </div>
+        {operations.length === 0 && !currentOperation && (
+          <div className="text-center py-8 text-gray-400">
+            <FiActivity className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>Waiting for robot activity...</p>
           </div>
-          
-          <div className="text-gray-400 text-center sm:text-right">
-            Próximo ciclo inicia automaticamente
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default RobotOperationTimeline;
-
-

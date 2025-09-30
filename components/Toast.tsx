@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 interface ToastContextType {
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -19,17 +19,18 @@ interface Toast {
 export function ToastProvider({ children }: ToastProviderProps) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  // CRITICAL: Memoize showToast to prevent infinite loops in components that depend on it
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Date.now();
     const newToast = { id, message, type };
-    
+
     setToasts(prev => [...prev, newToast]);
-    
+
     // Auto remove after 3 seconds
     setTimeout(() => {
       setToasts(prev => prev.filter(toast => toast.id !== id));
     }, 3000);
-  };
+  }, []); // No dependencies - function never changes
 
   const removeToast = (id: number) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));

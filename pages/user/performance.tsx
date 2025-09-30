@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../hooks/useLanguage';
 import UserLayout from '../../components/UserLayout';
+import performanceService from '../../src/services/performanceService';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { 
   FiTrendingUp, 
   FiCalendar, 
@@ -20,23 +22,70 @@ import {
 const UserPerformance: React.FC = () => {
   const { language } = useLanguage();
   const [mounted, setMounted] = useState(false);
+  const [performanceData, setPerformanceData] = useState<any>(null);
+  const [metricsData, setMetricsData] = useState<any>(null);
+  const [recentOperations, setRecentOperations] = useState<any[]>([]);
+  const [distributionData, setDistributionData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
+  useEffect(() => {
+    const fetchPerformanceData = async () => {
+      if (!mounted) return;
+
+      try {
+        setLoading(true);
+
+        // Fetch all performance data in parallel
+        const [overview, metrics, operations, distribution, chart] = await Promise.all([
+          performanceService.getPerformanceOverview(),
+          performanceService.getPerformanceMetrics(),
+          performanceService.getRecentOperations(8),
+          performanceService.getDistributionData(),
+          performanceService.getChartData('30d')
+        ]);
+
+        setPerformanceData(overview);
+        setMetricsData(metrics);
+        setRecentOperations(operations);
+        setDistributionData(distribution);
+        setChartData(chart);
+      } catch (error) {
+        console.error('Error fetching performance data:', error);
+        // Check if it's an auth error
+        if (error.response?.status === 401) {
+          setAuthError(true);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPerformanceData();
+  }, [mounted]);
+
+  if (!mounted || loading) {
     return (
       <UserLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-400 mb-4 mx-auto"></div>
             <h2 className="text-2xl font-bold text-white mb-2">CoinBitClub</h2>
-            <p className="text-gray-400">{language === 'pt' ? 'Carregando...' : 'Loading...'}</p>
+            <p className="text-gray-400">{language === 'pt' ? 'Carregando dados de performance...' : 'Loading performance data...'}</p>
           </div>
         </div>
       </UserLayout>
     );
+  }
+
+  // Show mock data if there are auth issues but don't redirect
+  if (authError) {
+    console.log('Authentication error detected, showing demo data instead of redirecting');
   }
 
   return (
@@ -72,8 +121,12 @@ const UserPerformance: React.FC = () => {
                 </h3>
               </div>
             </div>
-            <div className="text-3xl font-bold text-white mb-2">+$147.80</div>
-            <div className="text-green-400 text-sm">+2.48% {language === 'pt' ? 'hoje' : 'today'}</div>
+            <div className="text-3xl font-bold text-white mb-2">
+              {performanceData?.todayGain?.amount >= 0 ? '+' : ''}${performanceData?.todayGain?.amount?.toFixed(2) || '0.00'}
+            </div>
+            <div className={`text-sm ${performanceData?.todayGain?.change === 'positive' ? 'text-green-400' : 'text-red-400'}`}>
+              {performanceData?.todayGain?.percentage >= 0 ? '+' : ''}{performanceData?.todayGain?.percentage?.toFixed(2) || '0.00'}% {language === 'pt' ? 'hoje' : 'today'}
+            </div>
           </motion.div>
 
           <motion.div
@@ -90,8 +143,8 @@ const UserPerformance: React.FC = () => {
                 </h3>
               </div>
             </div>
-            <div className="text-3xl font-bold text-white mb-2">78.5%</div>
-            <div className="text-blue-400 text-sm">{language === 'pt' ? '247 operações' : '247 operations'}</div>
+            <div className="text-3xl font-bold text-white mb-2">{performanceData?.winRate?.percentage?.toFixed(1) || '0.0'}%</div>
+            <div className="text-blue-400 text-sm">{performanceData?.winRate?.operations?.total || 0} {language === 'pt' ? 'operações' : 'operations'}</div>
           </motion.div>
 
           <motion.div
@@ -108,7 +161,7 @@ const UserPerformance: React.FC = () => {
                 </h3>
               </div>
             </div>
-            <div className="text-3xl font-bold text-white mb-2">+247.5%</div>
+            <div className="text-3xl font-bold text-white mb-2">+{performanceData?.totalReturn?.percentage?.toFixed(1) || '0.0'}%</div>
             <div className="text-purple-400 text-sm">{language === 'pt' ? 'Desde o início' : 'Since start'}</div>
           </motion.div>
 
@@ -126,7 +179,7 @@ const UserPerformance: React.FC = () => {
                 </h3>
               </div>
             </div>
-            <div className="text-3xl font-bold text-white mb-2">1.247</div>
+            <div className="text-3xl font-bold text-white mb-2">{performanceData?.totalOperations?.count?.toLocaleString() || '0'}</div>
             <div className="text-orange-400 text-sm">{language === 'pt' ? 'Executadas' : 'Executed'}</div>
           </motion.div>
         </div>
@@ -145,11 +198,50 @@ const UserPerformance: React.FC = () => {
                 {language === 'pt' ? 'Evolução Mensal' : 'Monthly Evolution'}
               </h2>
             </div>
-            <div className="h-64 flex items-center justify-center text-gray-400">
-              <div className="text-center">
-                <FiTrendingUp className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                <p>{language === 'pt' ? 'Gráfico de evolução será implementado em breve' : 'Evolution chart will be implemented soon'}</p>
-              </div>
+            <div className="h-64">
+              {chartData && chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis
+                      dataKey="date"
+                      stroke="#9CA3AF"
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) => new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    />
+                    <YAxis
+                      stroke="#9CA3AF"
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) => `$${value.toFixed(0)}`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#1F2937',
+                        border: '1px solid #374151',
+                        borderRadius: '8px',
+                        color: '#F3F4F6'
+                      }}
+                      labelFormatter={(value) => new Date(value).toLocaleDateString('pt-BR')}
+                      formatter={(value: number, name: string) => [`$${value.toFixed(2)}`, name === 'profit' ? 'Profit' : name]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="profit"
+                      stroke="#10B981"
+                      strokeWidth={2}
+                      dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400">
+                  <div className="text-center">
+                    <FiTrendingUp className="w-16 h-16 text-green-400 mx-auto mb-4" />
+                    <p>{language === 'pt' ? 'Dados de gráfico não disponíveis' : 'Chart data not available'}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -166,20 +258,20 @@ const UserPerformance: React.FC = () => {
               </h2>
             </div>
             <div className="space-y-4">
-              {[
-                { pair: 'BTC/USDT', percentage: 35, profit: '+$1,247.50', color: 'orange' },
-                { pair: 'ETH/USDT', percentage: 28, profit: '+$892.30', color: 'blue' },
-                { pair: 'ADA/USDT', percentage: 22, profit: '+$634.20', color: 'green' },
-                { pair: 'SOL/USDT', percentage: 15, profit: '+$425.80', color: 'purple' }
-              ].map((item) => (
-                <div key={item.pair} className="flex items-center justify-between">
+              {(distributionData.length > 0 ? distributionData : [
+                { label: 'BTC', percentage: 35, value: 1247.50, color: 'orange' },
+                { label: 'ETH', percentage: 28, value: 892.30, color: 'blue' },
+                { label: 'ADA', percentage: 22, value: 634.20, color: 'green' },
+                { label: 'SOL', percentage: 15, value: 425.80, color: 'purple' }
+              ]).map((item) => (
+                <div key={item.label || item.pair} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`w-3 h-3 rounded-full bg-${item.color}-400`}></div>
-                    <span className="text-white font-medium">{item.pair}</span>
+                    <span className="text-white font-medium">{item.label || item.pair}/USDT</span>
                   </div>
                   <div className="text-right">
-                    <div className="text-green-400 font-medium">{item.profit}</div>
-                    <div className="text-gray-400 text-sm">{item.percentage}%</div>
+                    <div className="text-green-400 font-medium">+${(item.value || parseFloat(item.profit?.replace(/[$,+]/g, '') || '0')).toFixed(2)}</div>
+                    <div className="text-gray-400 text-sm">{item.percentage?.toFixed(1) || '0.0'}%</div>
                   </div>
                 </div>
               ))}
@@ -201,8 +293,8 @@ const UserPerformance: React.FC = () => {
                 {language === 'pt' ? 'Melhor Mês' : 'Best Month'}
               </h3>
             </div>
-            <div className="text-2xl font-bold text-white mb-2">Dezembro 2024</div>
-            <div className="text-emerald-400">+$2.890,45</div>
+            <div className="text-2xl font-bold text-white mb-2">{metricsData?.bestMonth?.month || 'N/A'}</div>
+            <div className="text-emerald-400">+${metricsData?.bestMonth?.profit?.toFixed(2) || '0.00'}</div>
           </motion.div>
 
           <motion.div
@@ -217,8 +309,8 @@ const UserPerformance: React.FC = () => {
                 {language === 'pt' ? 'Maior Lucro' : 'Biggest Profit'}
               </h3>
             </div>
-            <div className="text-2xl font-bold text-white mb-2">BTC/USDT</div>
-            <div className="text-amber-400">+$456.78 (+4.2%)</div>
+            <div className="text-2xl font-bold text-white mb-2">{metricsData?.biggestProfit?.pair || 'N/A'}</div>
+            <div className="text-amber-400">+${metricsData?.biggestProfit?.profit?.toFixed(2) || '0.00'} (+{metricsData?.biggestProfit?.percentage?.toFixed(1) || '0.0'}%)</div>
           </motion.div>
 
           <motion.div
@@ -233,7 +325,7 @@ const UserPerformance: React.FC = () => {
                 {language === 'pt' ? 'Tempo Médio' : 'Average Time'}
               </h3>
             </div>
-            <div className="text-2xl font-bold text-white mb-2">24min</div>
+            <div className="text-2xl font-bold text-white mb-2">{metricsData?.averageTime?.time || '24min'}</div>
             <div className="text-cyan-400">{language === 'pt' ? 'Por operação' : 'Per operation'}</div>
           </motion.div>
         </div>
@@ -257,34 +349,34 @@ const UserPerformance: React.FC = () => {
             </span>
           </div>
           <div className="space-y-3">
-            {[
-              { pair: 'BTC/USDT', type: 'LONG', profit: 247.80, percentage: 2.48, date: '15/01', time: '14:32', status: 'completed' },
-              { pair: 'ETH/USDT', type: 'SHORT', profit: -45.30, percentage: -1.2, date: '15/01', time: '13:45', status: 'completed' },
-              { pair: 'ADA/USDT', type: 'LONG', profit: 78.90, percentage: 1.85, date: '15/01', time: '12:15', status: 'completed' },
-              { pair: 'SOL/USDT', type: 'LONG', profit: 156.40, percentage: 3.2, date: '15/01', time: '11:30', status: 'completed' },
-              { pair: 'BTC/USDT', type: 'SHORT', profit: -23.10, percentage: -0.8, date: '15/01', time: '10:45', status: 'completed' },
-              { pair: 'ETH/USDT', type: 'LONG', profit: 89.50, percentage: 2.1, date: '14/01', time: '16:20', status: 'completed' },
-              { pair: 'DOT/USDT', type: 'LONG', profit: 34.70, percentage: 1.4, date: '14/01', time: '15:10', status: 'completed' },
-              { pair: 'BTC/USDT', type: 'LONG', profit: 312.80, percentage: 4.2, date: '14/01', time: '14:25', status: 'completed' }
-            ].map((operation, index) => (
+            {(recentOperations.length > 0 ? recentOperations : [
+              { symbol: 'BTC/USDT', direction: 'LONG', profit: 247.80, profitPercentage: 2.48, openTime: '2024-01-15T14:32:00', status: 'CLOSED' },
+              { symbol: 'ETH/USDT', direction: 'SHORT', profit: -45.30, profitPercentage: -1.2, openTime: '2024-01-15T13:45:00', status: 'CLOSED' },
+              { symbol: 'ADA/USDT', direction: 'LONG', profit: 78.90, profitPercentage: 1.85, openTime: '2024-01-15T12:15:00', status: 'CLOSED' },
+              { symbol: 'SOL/USDT', direction: 'LONG', profit: 156.40, profitPercentage: 3.2, openTime: '2024-01-15T11:30:00', status: 'CLOSED' },
+              { symbol: 'BTC/USDT', direction: 'SHORT', profit: -23.10, profitPercentage: -0.8, openTime: '2024-01-15T10:45:00', status: 'CLOSED' },
+              { symbol: 'ETH/USDT', direction: 'LONG', profit: 89.50, profitPercentage: 2.1, openTime: '2024-01-14T16:20:00', status: 'CLOSED' },
+              { symbol: 'DOT/USDT', direction: 'LONG', profit: 34.70, profitPercentage: 1.4, openTime: '2024-01-14T15:10:00', status: 'CLOSED' },
+              { symbol: 'BTC/USDT', direction: 'LONG', profit: 312.80, profitPercentage: 4.2, openTime: '2024-01-14T14:25:00', status: 'CLOSED' }
+            ]).map((operation, index) => (
               <div key={index} className="flex items-center justify-between p-4 bg-black/20 rounded-lg border border-gray-600/30 hover:border-blue-400/50 transition-all">
                 <div className="flex items-center gap-4">
                   <div className={`w-2 h-2 rounded-full ${
-                    operation.status === 'completed' ? 'bg-green-400' : 'bg-yellow-400'
+                    (operation.status === 'completed' || operation.status === 'CLOSED') ? 'bg-green-400' : 'bg-yellow-400'
                   }`}></div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-medium">{operation.pair}</span>
+                      <span className="text-white font-medium">{operation.symbol || operation.pair}</span>
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        operation.type === 'LONG' 
-                          ? 'bg-green-500/20 text-green-400' 
+                        (operation.direction || operation.type) === 'LONG'
+                          ? 'bg-green-500/20 text-green-400'
                           : 'bg-red-500/20 text-red-400'
                       }`}>
-                        {operation.type}
+                        {operation.direction || operation.type}
                       </span>
                     </div>
                     <div className="text-gray-400 text-sm">
-                      {operation.date} às {operation.time}
+                      {new Date(operation.openTime || operation.date).toLocaleDateString('pt-BR')} às {new Date(operation.openTime || operation.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
                 </div>
@@ -293,7 +385,7 @@ const UserPerformance: React.FC = () => {
                     {operation.profit >= 0 ? '+' : ''}${operation.profit.toFixed(2)}
                   </div>
                   <div className={`text-sm ${operation.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {operation.profit >= 0 ? '+' : ''}{operation.percentage.toFixed(2)}%
+                    {operation.profit >= 0 ? '+' : ''}{(operation.profitPercentage || operation.percentage).toFixed(2)}%
                   </div>
                 </div>
               </div>

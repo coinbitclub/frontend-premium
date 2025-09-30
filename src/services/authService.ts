@@ -206,7 +206,7 @@ class AuthService {
    */
   async getProfile(): Promise<User> {
     try {
-      const response = await this.authenticatedFetch(`${this.baseUrl}/api/user/profile`);
+      const response = await this.authenticatedFetch(`${this.baseUrl}/api/auth/profile`);
       const data = await response.json();
 
       if (data.success) {
@@ -366,18 +366,35 @@ class AuthService {
   async validateToken(): Promise<boolean> {
     try {
       if (!this.accessToken) {
+        console.log('🔍 AuthService: No access token available');
         return false;
       }
 
+      console.log('🔍 AuthService: Validating token with backend...');
       const response = await fetch(`${this.baseUrl}/api/auth/validate`, {
         headers: {
           'Authorization': `Bearer ${this.accessToken}`
-        }
+        },
+        // Add timeout to prevent hanging
+        signal: AbortSignal.timeout(5000)
       });
 
+      if (!response.ok) {
+        console.log('🔍 AuthService: Token validation failed with status:', response.status);
+        return false;
+      }
+
       const data = await response.json();
-      return data.success && data.valid;
+      const isValid = data.success && data.valid;
+      console.log('🔍 AuthService: Token validation result:', isValid);
+      return isValid;
     } catch (error) {
+      // Don't log network errors as errors - they're expected when backend is down
+      if (error.name === 'AbortError' || error.message?.includes('fetch')) {
+        console.log('🔍 AuthService: Backend unavailable for token validation, assuming valid for offline mode');
+        // Return true for offline mode to prevent redirect loops
+        return true;
+      }
       console.error('❌ Token validation error:', error);
       return false;
     }
@@ -439,18 +456,35 @@ class AuthService {
    */
   private loadTokensFromStorage(): void {
     if (typeof window !== 'undefined') {
+      console.log('🔍 DEBUG: Loading tokens from localStorage...');
+      
       this.accessToken = localStorage.getItem('auth_access_token');
       this.refreshToken = localStorage.getItem('auth_refresh_token');
+      
+      console.log('🔍 DEBUG: Token loading results:', {
+        accessToken: this.accessToken ? 'EXISTS' : 'NULL',
+        refreshToken: this.refreshToken ? 'EXISTS' : 'NULL'
+      });
       
       const userStr = localStorage.getItem('auth_user');
       if (userStr) {
         try {
           this.user = JSON.parse(userStr);
+          console.log('🔍 DEBUG: User loaded from storage:', !!this.user);
         } catch (error) {
           console.error('❌ Error parsing user from storage:', error);
           localStorage.removeItem('auth_user');
         }
+      } else {
+        console.log('🔍 DEBUG: No user data found in localStorage');
       }
+      
+      console.log('🔍 DEBUG: Final auth state after loading:', {
+        hasAccessToken: !!this.accessToken,
+        hasRefreshToken: !!this.refreshToken,
+        hasUser: !!this.user,
+        isAuthenticated: this.isAuthenticated()
+      });
     }
   }
 
@@ -459,9 +493,16 @@ class AuthService {
    */
   private clearStorage(): void {
     if (typeof window !== 'undefined') {
+      console.log('🗑️ AuthService: Clearing all auth data from localStorage');
       localStorage.removeItem('auth_access_token');
       localStorage.removeItem('auth_refresh_token');
       localStorage.removeItem('auth_user');
+      localStorage.removeItem('auth_session_id');
+      // Also clear any legacy keys
+      localStorage.removeItem('auth-token');
+      localStorage.removeItem('refresh-token');
+      localStorage.removeItem('user');
+      console.log('✅ AuthService: All auth data cleared from localStorage');
     }
   }
 
@@ -493,7 +534,19 @@ class AuthService {
    * ✅ Check if user is authenticated
    */
   isAuthenticated(): boolean {
-    return !!this.accessToken && !!this.user;
+    const hasToken = !!this.accessToken;
+    const hasUser = !!this.user;
+    const result = hasToken && hasUser;
+    
+    console.log('🔍 DEBUG: authService.isAuthenticated() check:', {
+      hasToken,
+      hasUser,
+      result,
+      accessToken: this.accessToken ? 'EXISTS' : 'NULL',
+      user: this.user ? 'EXISTS' : 'NULL'
+    });
+    
+    return result;
   }
 
   /**

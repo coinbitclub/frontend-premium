@@ -1,5 +1,5 @@
 import React from 'react';
-import { RobotOperationTimeline } from '../src/components/trading/RobotOperationTimeline';
+import RobotOperationTimeline from '../src/components/trading/RobotOperationTimeline';
 
 interface RobotDemoLandingProps {
   currentLanguage?: 'pt' | 'en';

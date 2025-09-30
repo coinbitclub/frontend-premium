@@ -3,9 +3,10 @@ import { motion } from 'framer-motion';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useToast } from '../../components/Toast';
 import UserLayout from '../../components/UserLayout';
-import { 
-  FiSettings, 
-  FiBell, 
+import { apiService } from '../../src/services/apiService';
+import {
+  FiSettings,
+  FiBell,
   FiGlobe,
   FiCreditCard,
   FiUser,
@@ -30,13 +31,15 @@ const UserSettings: React.FC = () => {
   const { showToast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState('trading');
-  
-  // Trading Settings - Padrão do sistema (risco médio)
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Trading Settings - Default values
   const [tradingSettings, setTradingSettings] = useState({
-    maxLeverage: 5,        // Alavancagem 5x (padrão)
-    takeProfit: 15,        // 3x a alavancagem (3 * 5 = 15%)
-    stopLoss: 10,          // 2x a alavancagem (2 * 5 = 10%)
-    orderValue: 30,        // 30% do saldo na exchange por operação
+    maxLeverage: 5,
+    takeProfit: 15,
+    stopLoss: 10,
+    orderValue: 30,
     riskLevel: 'medium',
     autoTrade: true,
     dailyLossLimit: 10
@@ -44,22 +47,22 @@ const UserSettings: React.FC = () => {
 
   // Personal Data
   const [personalData, setPersonalData] = useState({
-    fullName: 'João Silva',
-    email: 'joao.silva@email.com',
-    phone: '+55 11 98765-4321',
-    cpf: '123.456.789-10',
-    birthDate: '1990-05-15',
+    fullName: '',
+    email: '',
+    phone: '',
+    cpf: '',
+    birthDate: '',
     country: 'BR'
   });
 
   // Banking Data
   const [bankingData, setBankingData] = useState({
-    pixKey: 'joao.silva@email.com',
+    pixKey: '',
     pixType: 'email',
     bankAccount: {
       bank: '001 - Banco do Brasil',
-      agency: '1234-5',
-      account: '12345-6',
+      agency: '',
+      account: '',
       accountType: 'corrente'
     }
   });
@@ -88,55 +91,183 @@ const UserSettings: React.FC = () => {
     trades: true
   });
 
+  // Load data from backend when component mounts
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    const loadSettings = async () => {
+      if (!mounted) {
+        setMounted(true);
+        setLoading(true);
+        try {
+          // Load all settings from backend
+          const allSettings = await apiService.getAllUserSettings() as any;
+
+          if (allSettings.success) {
+            const { settings } = allSettings;
+
+            // Update trading settings if available
+            if (settings.trading) {
+              setTradingSettings(prev => ({
+                ...prev,
+                maxLeverage: settings.trading.max_leverage || prev.maxLeverage,
+                takeProfit: settings.trading.take_profit_percentage || prev.takeProfit,
+                stopLoss: settings.trading.stop_loss_percentage || prev.stopLoss,
+                orderValue: settings.trading.position_size_percentage || prev.orderValue,
+                riskLevel: settings.trading.risk_level || prev.riskLevel,
+                autoTrade: settings.trading.auto_trade_enabled !== undefined ? settings.trading.auto_trade_enabled : prev.autoTrade,
+                dailyLossLimit: settings.trading.daily_loss_limit_percentage || prev.dailyLossLimit
+              }));
+            }
+
+            // Update personal data if available
+            if (settings.personal) {
+              setPersonalData(prev => ({
+                ...prev,
+                fullName: settings.personal.full_name || prev.fullName,
+                email: settings.personal.email || prev.email,
+                phone: settings.personal.phone || prev.phone,
+                cpf: settings.personal.bank_document || prev.cpf,
+                country: settings.personal.country || prev.country,
+                // birthDate: settings.personal.birth_date || prev.birthDate, // Field not available in user table
+              }));
+            }
+
+            // Update banking data if available - now from personal data too
+            if (settings.personal || settings.banking) {
+              setBankingData(prev => ({
+                ...prev,
+                pixKey: (settings.personal && settings.personal.pix_key) || (settings.banking && settings.banking.pix_key) || prev.pixKey,
+                pixType: settings.banking ? settings.banking.pix_type || prev.pixType : prev.pixType,
+                bankAccount: {
+                  ...prev.bankAccount,
+                  bank: (settings.personal && settings.personal.bank_name) || (settings.banking && settings.banking.bank_name) || prev.bankAccount.bank,
+                  agency: (settings.personal && settings.personal.bank_agency) || (settings.banking && settings.banking.bank_agency) || prev.bankAccount.agency,
+                  account: (settings.personal && settings.personal.bank_account) || (settings.banking && settings.banking.bank_account) || prev.bankAccount.account,
+                  accountType: prev.bankAccount.accountType // Backend doesn't provide this field
+                }
+              }));
+            }
+
+            // Update API keys if available
+            if (settings.api_keys) {
+              setApiKeys(prev => ({
+                ...prev,
+                binance: {
+                  ...prev.binance,
+                  apiKey: settings.api_keys.binance_api_key || prev.binance.apiKey,
+                  secretKey: settings.api_keys.binance_secret_key || prev.binance.secretKey,
+                  connected: settings.api_keys.binance_connected || prev.binance.connected
+                },
+                bybit: {
+                  ...prev.bybit,
+                  apiKey: settings.api_keys.bybit_api_key || prev.bybit.apiKey,
+                  secretKey: settings.api_keys.bybit_secret_key || prev.bybit.secretKey,
+                  connected: settings.api_keys.bybit_connected || prev.bybit.connected
+                }
+              }));
+            }
+
+            // Update notifications if available
+            if (settings.notifications) {
+              setNotifications(prev => ({
+                ...prev,
+                email: settings.notifications.email_notifications !== undefined ? settings.notifications.email_notifications : prev.email,
+                sms: settings.notifications.sms_notifications !== undefined ? settings.notifications.sms_notifications : prev.sms,
+                push: settings.notifications.push_notifications !== undefined ? settings.notifications.push_notifications : prev.push,
+                trades: settings.notifications.trade_alerts !== undefined ? settings.notifications.trade_alerts : prev.trades
+              }));
+            }
+          }
+        } catch (error) {
+          console.error('Error loading settings:', error);
+          showToast(
+            language === 'pt'
+              ? 'Erro ao carregar configurações'
+              : 'Error loading settings',
+            'error'
+          );
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadSettings();
+  }, [mounted, language, showToast]);
 
   const handleTradingChange = (field: string, value: any) => {
     setTradingSettings(prev => {
       const newSettings = { ...prev, [field]: value };
-      
-      // Aplicar regras de negócio quando alavancagem mudar
+
+      // Apply business rules when leverage changes
       if (field === 'maxLeverage') {
         const leverage = value;
-        
-        // Ajustar Take Profit para estar dentro do limite (até 5x a alavancagem)
+
+        // Adjust Take Profit to be within limit (up to 5x leverage)
         const maxTakeProfit = leverage * 5;
         if (newSettings.takeProfit > maxTakeProfit) {
-          newSettings.takeProfit = leverage * 3; // Padrão: 3x a alavancagem
+          newSettings.takeProfit = leverage * 3; // Default: 3x leverage
         }
-        
-        // Ajustar Stop Loss para estar dentro do limite (2x até 4x a alavancagem)
+
+        // Adjust Stop Loss to be within limit (2x to 4x leverage)
         const minStopLoss = leverage * 2;
         const maxStopLoss = leverage * 4;
         if (newSettings.stopLoss < minStopLoss || newSettings.stopLoss > maxStopLoss) {
-          newSettings.stopLoss = leverage * 2; // Padrão: 2x a alavancagem
+          newSettings.stopLoss = leverage * 2; // Default: 2x leverage
         }
       }
-      
+
       return newSettings;
     });
   };
 
   const handleApiKeySubmit = async (exchange: 'binance' | 'bybit') => {
-    // Simulate API key validation
     const keys = apiKeys[exchange];
     if (keys.apiKey && keys.secretKey) {
-      setApiKeys(prev => ({
-        ...prev,
-        [exchange]: {
-          ...prev[exchange],
-          connected: true,
-          lastConnection: new Date().toISOString()
+      setSaving(true);
+      try {
+        const response: any = await apiService.addApiKey({
+          exchange,
+          api_key: keys.apiKey,
+          api_secret: keys.secretKey,
+          passphrase: "", // Empty string for exchanges that don't use passphrase (like Binance)
+          environment: "testnet"
+        });
+
+        if (response.success) {
+          setApiKeys(prev => ({
+            ...prev,
+            [exchange]: {
+              ...prev[exchange],
+              connected: true,
+              lastConnection: new Date().toISOString()
+            }
+          }));
+          setShowApiForm(prev => ({ ...prev, [exchange]: false }));
+          showToast(
+            language === 'pt'
+              ? `API Key ${exchange} conectada com sucesso!`
+              : `${exchange} API Key connected successfully!`,
+            'success'
+          );
+        } else {
+          showToast(
+            language === 'pt'
+              ? `Erro ao conectar API ${exchange}`
+              : `Error connecting ${exchange} API`,
+            'error'
+          );
         }
-      }));
-      setShowApiForm(prev => ({ ...prev, [exchange]: false }));
-      showToast(
-        language === 'pt' 
-          ? `API Key ${exchange} conectada com sucesso!` 
-          : `${exchange} API Key connected successfully!`,
-        'success'
-      );
+      } catch (error) {
+        console.error('Error saving API key:', error);
+        showToast(
+          language === 'pt'
+            ? `Erro ao conectar API ${exchange}`
+            : `Error connecting ${exchange} API`,
+          'error'
+        );
+      } finally {
+        setSaving(false);
+      }
     }
   };
 
@@ -151,11 +282,130 @@ const UserSettings: React.FC = () => {
       }
     }));
     showToast(
-      language === 'pt' 
-        ? `API Key ${exchange} desconectada` 
+      language === 'pt'
+        ? `API Key ${exchange} desconectada`
         : `${exchange} API Key disconnected`,
       'info'
     );
+  };
+
+  const handleSaveSettings = async () => {
+    setSaving(true);
+    try {
+      // Save based on active tab
+      let response;
+
+      switch (activeTab) {
+        case 'trading':
+          response = await apiService.updateTradingSettings({
+            max_leverage: tradingSettings.maxLeverage,
+            take_profit_percentage: tradingSettings.takeProfit,
+            stop_loss_percentage: tradingSettings.stopLoss,
+            position_size_percentage: tradingSettings.orderValue,
+            risk_level: tradingSettings.riskLevel,
+            auto_trade_enabled: tradingSettings.autoTrade,
+            daily_loss_limit_percentage: tradingSettings.dailyLossLimit
+          });
+          break;
+
+        case 'personal':
+          response = await apiService.updatePersonalSettings({
+            full_name: personalData.fullName,
+            email: personalData.email,
+            phone: personalData.phone,
+            cpf: personalData.cpf,
+            // birth_date: personalData.birthDate, // Not supported by backend
+            country: personalData.country
+          });
+          break;
+
+        case 'banking':
+          response = await apiService.updateBankingSettings({
+            pix_key: bankingData.pixKey,
+            pix_type: bankingData.pixType,
+            bank_name: bankingData.bankAccount.bank,
+            bank_agency: bankingData.bankAccount.agency,
+            bank_account: bankingData.bankAccount.account,
+            account_type: bankingData.bankAccount.accountType
+          });
+          break;
+
+        case 'notifications':
+          response = await apiService.updateNotificationSettings({
+            email_notifications: notifications.email,
+            sms_notifications: notifications.sms,
+            push_notifications: notifications.push,
+            trade_alerts: notifications.trades
+          });
+          break;
+
+        default:
+          // Save all settings
+          response = await apiService.updateAllUserSettings({
+            trading: {
+              max_leverage: tradingSettings.maxLeverage,
+              take_profit_percentage: tradingSettings.takeProfit,
+              stop_loss_percentage: tradingSettings.stopLoss,
+              position_size_percentage: tradingSettings.orderValue,
+              risk_level: tradingSettings.riskLevel,
+              auto_trade_enabled: tradingSettings.autoTrade,
+              daily_loss_limit_percentage: tradingSettings.dailyLossLimit
+            },
+            personal: {
+              full_name: personalData.fullName,
+              email: personalData.email,
+              phone: personalData.phone,
+              bank_document: personalData.cpf,
+              country: personalData.country,
+              // Add additional banking fields from banking data
+              bank_name: bankingData.bankAccount.bank,
+              bank_account: bankingData.bankAccount.account,
+              bank_agency: bankingData.bankAccount.agency,
+              pix_key: bankingData.pixKey
+            },
+            banking: {
+              pix_key: bankingData.pixKey,
+              pix_type: bankingData.pixType,
+              bank_name: bankingData.bankAccount.bank,
+              bank_agency: bankingData.bankAccount.agency,
+              bank_account: bankingData.bankAccount.account,
+              account_type: bankingData.bankAccount.accountType
+            },
+            notifications: {
+              email_notifications: notifications.email,
+              sms_notifications: notifications.sms,
+              push_notifications: notifications.push,
+              trade_alerts: notifications.trades
+            }
+          });
+      }
+
+      if (response && response.success) {
+        showToast(
+          language === 'pt'
+            ? 'Configurações salvas com sucesso!'
+            : 'Settings saved successfully!',
+          'success'
+        );
+      } else {
+        showToast(
+          language === 'pt'
+            ? 'Erro ao salvar configurações'
+            : 'Error saving settings',
+          'error'
+        );
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      showToast(
+        language === 'pt'
+          ? 'Erro ao salvar configurações'
+          : 'Error saving settings',
+        'error'
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   const tabs = [
@@ -166,14 +416,14 @@ const UserSettings: React.FC = () => {
     { id: 'notifications', label: language === 'pt' ? 'Notificações' : 'Notifications', icon: FiBell }
   ];
 
-  if (!mounted) {
+  if (!mounted || loading) {
     return (
       <UserLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-400 mb-4 mx-auto"></div>
             <h2 className="text-2xl font-bold text-white mb-2">CoinBitClub</h2>
-            <p className="text-gray-400">{language === 'pt' ? 'Carregando...' : 'Loading...'}</p>
+            <p className="text-gray-400">{language === 'pt' ? 'Carregando configurações...' : 'Loading settings...'}</p>
           </div>
         </div>
       </UserLayout>
@@ -347,7 +597,7 @@ const UserSettings: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Alavancagem */}
+                    {/* Leverage */}
                     <div className="p-4 bg-black/20 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-gray-300 text-sm">
@@ -391,7 +641,7 @@ const UserSettings: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Tamanho da Posição */}
+                    {/* Position Size */}
                     <div className="p-4 bg-black/20 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-gray-300 text-sm">
@@ -407,7 +657,7 @@ const UserSettings: React.FC = () => {
                   <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
                     <p className="text-blue-300 text-sm">
                       <strong>{language === 'pt' ? 'Nota:' : 'Note:'}</strong> {' '}
-                      {language === 'pt' 
+                      {language === 'pt'
                         ? 'Configurações dentro dos limites permitidos pelo sistema.'
                         : 'Settings within system allowed limits.'
                       }
@@ -417,6 +667,7 @@ const UserSettings: React.FC = () => {
               </div>
             </motion.div>
           )}
+
           {/* Personal Data Tab */}
           {activeTab === 'personal' && (
             <motion.div
@@ -439,8 +690,7 @@ const UserSettings: React.FC = () => {
                   <input
                     type="text"
                     value={personalData.fullName}
-                    onChange={(e) => setPersonalData(prev => ({ ...prev, fullName: e.target.value }))
-                    }
+                    onChange={(e) => setPersonalData(prev => ({ ...prev, fullName: e.target.value }))}
                     className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-400 focus:outline-none"
                   />
                 </div>
@@ -450,8 +700,7 @@ const UserSettings: React.FC = () => {
                   <input
                     type="email"
                     value={personalData.email}
-                    onChange={(e) => setPersonalData(prev => ({ ...prev, email: e.target.value }))
-                    }
+                    onChange={(e) => setPersonalData(prev => ({ ...prev, email: e.target.value }))}
                     className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-400 focus:outline-none"
                   />
                 </div>
@@ -463,8 +712,7 @@ const UserSettings: React.FC = () => {
                   <input
                     type="tel"
                     value={personalData.phone}
-                    onChange={(e) => setPersonalData(prev => ({ ...prev, phone: e.target.value }))
-                    }
+                    onChange={(e) => setPersonalData(prev => ({ ...prev, phone: e.target.value }))}
                     className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-400 focus:outline-none"
                   />
                 </div>
@@ -474,8 +722,7 @@ const UserSettings: React.FC = () => {
                   <input
                     type="text"
                     value={personalData.cpf}
-                    onChange={(e) => setPersonalData(prev => ({ ...prev, cpf: e.target.value }))
-                    }
+                    onChange={(e) => setPersonalData(prev => ({ ...prev, cpf: e.target.value }))}
                     className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-400 focus:outline-none"
                     placeholder="000.000.000-00"
                   />
@@ -488,8 +735,7 @@ const UserSettings: React.FC = () => {
                   <input
                     type="date"
                     value={personalData.birthDate}
-                    onChange={(e) => setPersonalData(prev => ({ ...prev, birthDate: e.target.value }))
-                    }
+                    onChange={(e) => setPersonalData(prev => ({ ...prev, birthDate: e.target.value }))}
                     className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-400 focus:outline-none"
                   />
                 </div>
@@ -498,10 +744,9 @@ const UserSettings: React.FC = () => {
                   <label className="block text-gray-300 text-sm mb-2">
                     {language === 'pt' ? 'País' : 'Country'}
                   </label>
-                  <select 
+                  <select
                     value={personalData.country}
-                    onChange={(e) => setPersonalData(prev => ({ ...prev, country: e.target.value }))
-                    }
+                    onChange={(e) => setPersonalData(prev => ({ ...prev, country: e.target.value }))}
                     className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-400 focus:outline-none"
                   >
                     <option value="BR">Brasil</option>
@@ -534,10 +779,9 @@ const UserSettings: React.FC = () => {
                     <label className="block text-gray-300 text-sm mb-2">
                       {language === 'pt' ? 'Tipo de Chave PIX' : 'PIX Key Type'}
                     </label>
-                    <select 
+                    <select
                       value={bankingData.pixType}
-                      onChange={(e) => setBankingData(prev => ({ ...prev, pixType: e.target.value }))
-                      }
+                      onChange={(e) => setBankingData(prev => ({ ...prev, pixType: e.target.value }))}
                       className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-green-400 focus:outline-none"
                     >
                       <option value="email">Email</option>
@@ -554,8 +798,7 @@ const UserSettings: React.FC = () => {
                     <input
                       type="text"
                       value={bankingData.pixKey}
-                      onChange={(e) => setBankingData(prev => ({ ...prev, pixKey: e.target.value }))
-                      }
+                      onChange={(e) => setBankingData(prev => ({ ...prev, pixKey: e.target.value }))}
                       className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-green-400 focus:outline-none"
                       placeholder={
                         bankingData.pixType === 'email' ? 'email@exemplo.com' :
@@ -582,13 +825,12 @@ const UserSettings: React.FC = () => {
                     <label className="block text-gray-300 text-sm mb-2">
                       {language === 'pt' ? 'Banco' : 'Bank'}
                     </label>
-                    <select 
+                    <select
                       value={bankingData.bankAccount.bank}
-                      onChange={(e) => setBankingData(prev => ({ 
-                        ...prev, 
+                      onChange={(e) => setBankingData(prev => ({
+                        ...prev,
                         bankAccount: { ...prev.bankAccount, bank: e.target.value }
-                      }))
-                      }
+                      }))}
                       className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-purple-400 focus:outline-none"
                     >
                       <option value="001 - Banco do Brasil">001 - Banco do Brasil</option>
@@ -607,11 +849,10 @@ const UserSettings: React.FC = () => {
                     <input
                       type="text"
                       value={bankingData.bankAccount.agency}
-                      onChange={(e) => setBankingData(prev => ({ 
-                        ...prev, 
+                      onChange={(e) => setBankingData(prev => ({
+                        ...prev,
                         bankAccount: { ...prev.bankAccount, agency: e.target.value }
-                      }))
-                      }
+                      }))}
                       className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-purple-400 focus:outline-none"
                       placeholder="0000-0"
                     />
@@ -624,11 +865,10 @@ const UserSettings: React.FC = () => {
                     <input
                       type="text"
                       value={bankingData.bankAccount.account}
-                      onChange={(e) => setBankingData(prev => ({ 
-                        ...prev, 
+                      onChange={(e) => setBankingData(prev => ({
+                        ...prev,
                         bankAccount: { ...prev.bankAccount, account: e.target.value }
-                      }))
-                      }
+                      }))}
                       className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-purple-400 focus:outline-none"
                       placeholder="00000-0"
                     />
@@ -638,13 +878,12 @@ const UserSettings: React.FC = () => {
                     <label className="block text-gray-300 text-sm mb-2">
                       {language === 'pt' ? 'Tipo de Conta' : 'Account Type'}
                     </label>
-                    <select 
+                    <select
                       value={bankingData.bankAccount.accountType}
-                      onChange={(e) => setBankingData(prev => ({ 
-                        ...prev, 
+                      onChange={(e) => setBankingData(prev => ({
+                        ...prev,
                         bankAccount: { ...prev.bankAccount, accountType: e.target.value }
-                      }))
-                      }
+                      }))}
                       className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-purple-400 focus:outline-none"
                     >
                       <option value="corrente">{language === 'pt' ? 'Conta Corrente' : 'Checking Account'}</option>
@@ -687,8 +926,7 @@ const UserSettings: React.FC = () => {
                       </>
                     ) : (
                       <button
-                        onClick={() => setShowApiForm(prev => ({ ...prev, binance: true }))
-                        }
+                        onClick={() => setShowApiForm(prev => ({ ...prev, binance: true }))}
                         className="bg-yellow-500/20 text-yellow-400 px-4 py-2 rounded-lg hover:bg-yellow-500/30 transition-colors flex items-center gap-2"
                       >
                         <FiPlus className="w-4 h-4" />
@@ -723,8 +961,7 @@ const UserSettings: React.FC = () => {
                         onChange={(e) => setApiKeys(prev => ({
                           ...prev,
                           binance: { ...prev.binance, apiKey: e.target.value }
-                        }))
-                        }
+                        }))}
                         className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-400 focus:outline-none font-mono"
                         placeholder="Enter your Binance API Key"
                       />
@@ -737,8 +974,7 @@ const UserSettings: React.FC = () => {
                         onChange={(e) => setApiKeys(prev => ({
                           ...prev,
                           binance: { ...prev.binance, secretKey: e.target.value }
-                        }))
-                        }
+                        }))}
                         className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-400 focus:outline-none font-mono"
                         placeholder="Enter your Binance Secret Key"
                       />
@@ -746,14 +982,14 @@ const UserSettings: React.FC = () => {
                     <div className="flex gap-3">
                       <button
                         onClick={() => handleApiKeySubmit('binance')}
-                        className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                        disabled={saving}
+                        className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
                       >
-                        <FiCheck className="w-4 h-4" />
-                        {language === 'pt' ? 'Conectar' : 'Connect'}
+                        {saving ? <FiRefreshCw className="w-4 h-4 animate-spin" /> : <FiCheck className="w-4 h-4" />}
+                        {saving ? (language === 'pt' ? 'Conectando...' : 'Connecting...') : (language === 'pt' ? 'Conectar' : 'Connect')}
                       </button>
                       <button
-                        onClick={() => setShowApiForm(prev => ({ ...prev, binance: false }))
-                        }
+                        onClick={() => setShowApiForm(prev => ({ ...prev, binance: false }))}
                         className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
                       >
                         <FiX className="w-4 h-4" />
@@ -793,8 +1029,7 @@ const UserSettings: React.FC = () => {
                       </>
                     ) : (
                       <button
-                        onClick={() => setShowApiForm(prev => ({ ...prev, bybit: true }))
-                        }
+                        onClick={() => setShowApiForm(prev => ({ ...prev, bybit: true }))}
                         className="bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg hover:bg-blue-500/30 transition-colors flex items-center gap-2"
                       >
                         <FiPlus className="w-4 h-4" />
@@ -829,8 +1064,7 @@ const UserSettings: React.FC = () => {
                         onChange={(e) => setApiKeys(prev => ({
                           ...prev,
                           bybit: { ...prev.bybit, apiKey: e.target.value }
-                        }))
-                        }
+                        }))}
                         className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-400 focus:outline-none font-mono"
                         placeholder="Enter your Bybit API Key"
                       />
@@ -843,8 +1077,7 @@ const UserSettings: React.FC = () => {
                         onChange={(e) => setApiKeys(prev => ({
                           ...prev,
                           bybit: { ...prev.bybit, secretKey: e.target.value }
-                        }))
-                        }
+                        }))}
                         className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-400 focus:outline-none font-mono"
                         placeholder="Enter your Bybit Secret Key"
                       />
@@ -852,14 +1085,14 @@ const UserSettings: React.FC = () => {
                     <div className="flex gap-3">
                       <button
                         onClick={() => handleApiKeySubmit('bybit')}
-                        className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                        disabled={saving}
+                        className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
                       >
-                        <FiCheck className="w-4 h-4" />
-                        {language === 'pt' ? 'Conectar' : 'Connect'}
+                        {saving ? <FiRefreshCw className="w-4 h-4 animate-spin" /> : <FiCheck className="w-4 h-4" />}
+                        {saving ? (language === 'pt' ? 'Conectando...' : 'Connecting...') : (language === 'pt' ? 'Conectar' : 'Connect')}
                       </button>
                       <button
-                        onClick={() => setShowApiForm(prev => ({ ...prev, bybit: false }))
-                        }
+                        onClick={() => setShowApiForm(prev => ({ ...prev, bybit: false }))}
                         className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
                       >
                         <FiX className="w-4 h-4" />
@@ -900,7 +1133,7 @@ const UserSettings: React.FC = () => {
                         <div className="text-white font-medium">
                           {key === 'email' ? 'Email' :
                            key === 'sms' ? 'SMS/WhatsApp' :
-                           key === 'push' ? 'Push Notifications' : 
+                           key === 'push' ? 'Push Notifications' :
                            language === 'pt' ? 'Alertas de Operações' : 'Trade Alerts'}
                         </div>
                         <div className="text-gray-400 text-sm">
@@ -912,8 +1145,7 @@ const UserSettings: React.FC = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => setNotifications(prev => ({ ...prev, [key]: !value }))
-                      }
+                      onClick={() => setNotifications(prev => ({ ...prev, [key]: !value }))}
                       className={`w-12 h-6 rounded-full relative transition-all duration-300 ${
                         value ? 'bg-indigo-500' : 'bg-gray-600'
                       }`}
@@ -970,15 +1202,16 @@ const UserSettings: React.FC = () => {
           <button className="px-8 py-3 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded-xl transition-colors">
             {language === 'pt' ? 'Cancelar' : 'Cancel'}
           </button>
-          <button 
-            onClick={() => showToast(
-              language === 'pt' ? 'Configurações salvas com sucesso!' : 'Settings saved successfully!',
-              'success'
-            )}
-            className="px-8 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-black font-bold rounded-xl transition-all flex items-center gap-2"
+          <button
+            onClick={handleSaveSettings}
+            disabled={saving}
+            className="px-8 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 disabled:from-orange-500/50 disabled:to-yellow-500/50 text-black font-bold rounded-xl transition-all flex items-center gap-2"
           >
-            <FiSave className="w-5 h-5" />
-            {language === 'pt' ? 'Salvar Configurações' : 'Save Settings'}
+            {saving ? <FiRefreshCw className="w-5 h-5 animate-spin" /> : <FiSave className="w-5 h-5" />}
+            {saving
+              ? (language === 'pt' ? 'Salvando...' : 'Saving...')
+              : (language === 'pt' ? 'Salvar Configurações' : 'Save Settings')
+            }
           </button>
         </motion.div>
       </div>

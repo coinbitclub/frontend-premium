@@ -53,33 +53,55 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const initializingRef = React.useRef(false);
+  const initializedRef = React.useRef(false);
 
-  // Initialize authentication state
+  // Initialize authentication state - ONLY ONCE with protection against multiple calls
   useEffect(() => {
-    initializeAuth();
+    // Prevent multiple simultaneous initializations
+    if (initializingRef.current || initializedRef.current) {
+      return;
+    }
+
+    initializingRef.current = true;
+    initializeAuth().finally(() => {
+      initializingRef.current = false;
+      initializedRef.current = true;
+    });
   }, []);
 
   const initializeAuth = async () => {
     try {
       setIsLoading(true);
+
+      // Check if user is already authenticated locally
+      const hasTokens = authService.isAuthenticated();
       
-      // Check if user is already authenticated
-      if (authService.isAuthenticated()) {
+      if (hasTokens) {
         const currentUser = authService.getCurrentUser();
+        
         if (currentUser) {
+          // Set authenticated state immediately
           setUser(currentUser);
           setIsAuthenticated(true);
           
-          // Validate token with server
-          const isValid = await authService.validateToken();
-          if (!isValid) {
-            await logout();
+          // Validate token in background (non-blocking)
+          try {
+            await authService.validateToken();
+          } catch (validationError) {
+            // Don't clear auth state on validation errors to prevent redirect loops
           }
+        } else {
+          authService.logout();
+          setUser(null);
+          setIsAuthenticated(false);
         }
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
       }
     } catch (error) {
-      console.error('❌ Auth initialization error:', error);
-      await logout();
+      console.error('Auth initialization error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -89,18 +111,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       const response = await authService.login(email, password, twoFactorCode);
-      
+
       if (response.success) {
         setUser(response.user);
         setIsAuthenticated(true);
       } else if (response.requiresTwoFactor) {
-        // Return the response so the component can handle 2FA
         throw new Error('2FA_REQUIRED');
       } else {
         throw new Error(response.message || 'Login failed');
       }
     } catch (error) {
-      console.error('❌ Login error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -122,16 +142,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     try {
       setIsLoading(true);
+
+      // Call authService logout (clears localStorage)
       await authService.logout();
+
+      // Clear all redirect-related session storage
+      clearRedirectStorage();
+
+      // Clear React state
       setUser(null);
       setIsAuthenticated(false);
+
+      // Reset initialization flags to allow re-initialization
+      initializedRef.current = false;
     } catch (error) {
-      console.error('❌ Logout error:', error);
+      console.error('Logout error:', error);
       // Even if logout fails on server, clear local state
+      clearRedirectStorage();
       setUser(null);
       setIsAuthenticated(false);
+      initializedRef.current = false;
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Utility function to clear all redirect-related storage
+  const clearRedirectStorage = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('login-redirect-timestamp');
+      sessionStorage.removeItem('login-redirect-count');
+      sessionStorage.removeItem('dashboard-redirect-timestamp');
+      sessionStorage.removeItem('dashboard-redirect-count');
     }
   };
 
@@ -149,7 +191,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       return success;
     } catch (error) {
-      console.error('❌ Token refresh error:', error);
+      console.error('Token refresh error:', error);
       await logout();
       return false;
     }
@@ -161,7 +203,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userProfile = await authService.getProfile();
       setUser(userProfile);
     } catch (error) {
-      console.error('❌ Get profile error:', error);
+      console.error('Get profile error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -201,7 +243,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const result = await authService.setupTwoFactor();
       return result;
     } catch (error) {
-      console.error('❌ 2FA setup error:', error);
+      console.error('2FA setup error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -215,7 +257,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Refresh profile to get updated 2FA status
       await getProfile();
     } catch (error) {
-      console.error('❌ 2FA verification error:', error);
+      console.error('2FA verification error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -227,7 +269,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       await authService.requestPasswordReset(email);
     } catch (error) {
-      console.error('❌ Password reset request error:', error);
+      console.error('Password reset request error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -239,7 +281,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       await authService.resetPassword(token, newPassword);
     } catch (error) {
-      console.error('❌ Password reset error:', error);
+      console.error('Password reset error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -251,7 +293,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const sessions = await authService.getActiveSessions();
       return sessions;
     } catch (error) {
-      console.error('❌ Get active sessions error:', error);
+      console.error('Get active sessions error:', error);
       throw error;
     }
   };
@@ -262,7 +304,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await authService.logoutAllSessions();
       await logout(); // Also logout current session
     } catch (error) {
-      console.error('❌ Logout all sessions error:', error);
+      console.error('Logout all sessions error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -273,7 +315,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       return await authService.validateToken();
     } catch (error) {
-      console.error('❌ Token validation error:', error);
+      console.error('Token validation error:', error);
       return false;
     }
   };

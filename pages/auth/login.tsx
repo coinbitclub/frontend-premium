@@ -16,6 +16,7 @@ const LoginPage: NextPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -26,12 +27,94 @@ const LoginPage: NextPage = () => {
 
   useEffect(() => {
     setMounted(true);
-    
-    // Redirect if already authenticated
-    if (isAuthenticated) {
-      router.push('/user/dashboard');
+  }, []);
+
+  useEffect(() => {
+    console.log('🔑 Login: Auth state check:', { mounted, isLoading, isAuthenticated, redirecting });
+    console.log('🔍 DEBUG: Login useEffect triggered with:', {
+      mounted,
+      isLoading,
+      isAuthenticated,
+      redirecting,
+      currentPath: router.asPath,
+      currentQuery: router.query
+    });
+
+    // Only redirect if mounted, not loading, authenticated, and not already redirecting
+    if (mounted && !isLoading && isAuthenticated && !redirecting) {
+      console.log('🔍 DEBUG: Login - User authenticated, checking redirect conditions');
+      
+      // Enhanced loop prevention
+      const lastRedirect = sessionStorage.getItem('login-redirect-timestamp');
+      const redirectCount = parseInt(sessionStorage.getItem('login-redirect-count') || '0');
+      const now = Date.now();
+
+      console.log('🔄 Login: User authenticated, checking redirect protection...', { 
+        lastRedirect, 
+        redirectCount, 
+        now,
+        timeSinceLastRedirect: lastRedirect ? now - parseInt(lastRedirect) : 'N/A'
+      });
+
+      // Prevent redirect if:
+      // 1. Redirected less than 3 seconds ago
+      // 2. More than 3 redirects in the last 10 seconds
+      // 3. Already in a redirect process
+      if (
+        (lastRedirect && (now - parseInt(lastRedirect)) < 3000) ||
+        redirectCount > 3 ||
+        redirecting
+      ) {
+        console.warn('⚠️ Login: Redirect loop detected, skipping redirect', {
+          timeSinceLastRedirect: lastRedirect ? now - parseInt(lastRedirect) : 'N/A',
+          redirectCount,
+          redirecting,
+          condition1: lastRedirect && (now - parseInt(lastRedirect)) < 3000,
+          condition2: redirectCount > 3,
+          condition3: redirecting
+        });
+        return;
+      }
+
+      // Increment redirect counter and set timestamp
+      const newCount = redirectCount + 1;
+      sessionStorage.setItem('login-redirect-timestamp', now.toString());
+      sessionStorage.setItem('login-redirect-count', newCount.toString());
+      setRedirecting(true);
+
+      console.log('🔀 Login: Redirecting to dashboard... (attempt', newCount, ')');
+      console.log('🔍 DEBUG: Login - About to redirect to /user/dashboard');
+
+      // Add a small delay to prevent rapid redirects
+      setTimeout(() => {
+        console.log('🔍 DEBUG: Login - Executing redirect now');
+        router.push('/user/dashboard')
+          .then(() => {
+            console.log('✅ Login: Successfully redirected to dashboard');
+            // Clear all redirect timestamps on successful redirect
+            sessionStorage.removeItem('login-redirect-timestamp');
+            sessionStorage.removeItem('login-redirect-count');
+            sessionStorage.removeItem('dashboard-redirect-timestamp');
+            sessionStorage.removeItem('dashboard-redirect-count');
+          })
+          .catch(error => {
+            console.error('❌ Login: Redirect error:', error);
+            setRedirecting(false);
+            sessionStorage.removeItem('login-redirect-timestamp');
+            sessionStorage.removeItem('login-redirect-count');
+          });
+      }, 100);
+    } else if (!isAuthenticated) {
+      console.log('🔓 Login: User not authenticated, staying on login page');
+    } else {
+      console.log('🔍 DEBUG: Login - Not redirecting because:', {
+        mounted,
+        isLoading,
+        isAuthenticated,
+        redirecting
+      });
     }
-  }, [isAuthenticated, router]);
+  }, [mounted, isAuthenticated, isLoading, redirecting, router]);
 
   const handleLanguageChange = (lang: 'pt' | 'en') => {
     console.log('Login page - Button clicked for language:', lang);
@@ -105,10 +188,10 @@ const LoginPage: NextPage = () => {
     
     try {
       await login(formData.email, formData.password, formData.twoFactorCode);
-      
-      // Login successful, redirect based on user type
-      router.push('/user/dashboard');
-      
+
+      // Login successful, redirect will be handled by useEffect
+      // router.push('/user/dashboard'); // Removed to prevent double redirect
+
     } catch (error: any) {
       if (error.message === '2FA_REQUIRED') {
         setShowTwoFactor(true);
@@ -226,9 +309,10 @@ const LoginPage: NextPage = () => {
                       type="email"
                       value={formData.email}
                       onChange={handleInputChange}
+                      autoComplete="email"
                       className={`w-full pl-10 pr-4 py-3 bg-gray-700/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
-                        errors.email 
-                          ? 'border-red-500 focus:ring-red-500/50' 
+                        errors.email
+                          ? 'border-red-500 focus:ring-red-500/50'
                           : 'border-gray-600 focus:border-orange-500 focus:ring-orange-500/50'
                       }`}
                       placeholder={language === 'pt' ? 'seu@email.com' : 'your@email.com'}
@@ -252,9 +336,10 @@ const LoginPage: NextPage = () => {
                       type={showPassword ? 'text' : 'password'}
                       value={formData.password}
                       onChange={handleInputChange}
+                      autoComplete="current-password"
                       className={`w-full pl-10 pr-12 py-3 bg-gray-700/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
-                        errors.password 
-                          ? 'border-red-500 focus:ring-red-500/50' 
+                        errors.password
+                          ? 'border-red-500 focus:ring-red-500/50'
                           : 'border-gray-600 focus:border-orange-500 focus:ring-orange-500/50'
                       }`}
                       placeholder={language === 'pt' ? 'Sua senha' : 'Your password'}
