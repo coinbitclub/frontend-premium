@@ -132,8 +132,15 @@ const UserOperations: React.FC = () => {
     setMounted(true);
 
     // Initialize WebSocket connection
-    const newSocket = io('http://localhost:3333', {
-      transports: ['websocket', 'polling']
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+    const newSocket = io(apiUrl, {
+      transports: ['websocket', 'polling'],
+      autoConnect: true,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+      timeout: 20000,
+      forceNew: true
     });
 
     // Connection handlers
@@ -349,7 +356,8 @@ const UserOperations: React.FC = () => {
   // Fetch top signals from API
   const fetchTopSignals = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:3333/api/top-signals-test');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+      const response = await fetch(`${apiUrl}/api/top-signals-test`);
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data) {
@@ -369,6 +377,8 @@ const UserOperations: React.FC = () => {
   // Fetch all real-time data from backend API
   const fetchAllOperationsData = useCallback(async () => {
     try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+      
       // Fetch market indicators (Fear & Greed from real API)
       await fetchMarketIndicators();
 
@@ -376,7 +386,7 @@ const UserOperations: React.FC = () => {
       await fetchTopSignals();
 
       // Fetch AI Decision from backend (using demo data)
-      const aiResponse = await fetch('http://localhost:3333/api/top-signals-test');
+      const aiResponse = await fetch(`${apiUrl}/api/top-signals-test`);
       if (aiResponse.ok) {
         const data = await aiResponse.json();
         if (data.success && data.data?.length > 0) {
@@ -395,7 +405,7 @@ const UserOperations: React.FC = () => {
       }
 
       // Update signals with the same data (top 5 for main signals section)
-      const signalsResponse = await fetch('http://localhost:3333/api/top-signals-test');
+      const signalsResponse = await fetch(`${apiUrl}/api/top-signals-test`);
       if (signalsResponse.ok) {
         const data = await signalsResponse.json();
         if (data.success && data.data) {
@@ -414,7 +424,7 @@ const UserOperations: React.FC = () => {
       }
 
       // Update positions (using top signals that have positive P&L)
-      const positionsResponse = await fetch('http://localhost:3333/api/top-signals-test');
+      const positionsResponse = await fetch(`${apiUrl}/api/top-signals-test`);
       if (positionsResponse.ok) {
         const data = await positionsResponse.json();
         if (data.success && data.data) {
@@ -440,7 +450,7 @@ const UserOperations: React.FC = () => {
       }
 
       // Update daily stats (calculated from top signals data)
-      const statsResponse = await fetch('http://localhost:3333/api/top-signals-test');
+      const statsResponse = await fetch(`${apiUrl}/api/top-signals-test`);
       if (statsResponse.ok) {
         const data = await statsResponse.json();
         if (data.success && data.data) {

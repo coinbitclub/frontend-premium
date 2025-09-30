@@ -6,7 +6,7 @@ const nextConfig = {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://your-backend-domain.com';
     return [
       {
         source: '/api/:path*',
@@ -15,7 +15,11 @@ const nextConfig = {
     ];
   },
   images: {
-    domains: ['localhost', process.env.NEXT_PUBLIC_API_URL?.replace(/^https?:\/\//, '')].filter(Boolean),
+    domains: [
+      'localhost', 
+      process.env.NEXT_PUBLIC_API_URL?.replace(/^https?:\/\//, ''),
+      'your-backend-domain.com'
+    ].filter(Boolean),
   },
   webpack: (config, { isServer, webpack }) => {
     // Handle missing modules gracefully
