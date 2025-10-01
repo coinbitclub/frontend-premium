@@ -98,6 +98,11 @@ class AuthService {
         // Save to localStorage
         this.saveTokensToStorage();
         this.saveUserToStorage();
+        
+        // Save session ID if provided
+        if (data.sessionId && typeof window !== 'undefined') {
+          localStorage.setItem('auth_session_id', data.sessionId);
+        }
 
         return data;
       } else {
@@ -494,15 +499,46 @@ class AuthService {
   private clearStorage(): void {
     if (typeof window !== 'undefined') {
       console.log('🗑️ AuthService: Clearing all auth data from localStorage');
+      
+      // List all auth-related keys before clearing
+      const keysBeforeClear = Object.keys(localStorage).filter(key => 
+        key.includes('auth') || key.includes('token') || key.includes('user') || key.includes('session')
+      );
+      console.log('📋 Keys to be cleared:', keysBeforeClear);
+      
+      // Clear all auth-related keys
       localStorage.removeItem('auth_access_token');
       localStorage.removeItem('auth_refresh_token');
       localStorage.removeItem('auth_user');
       localStorage.removeItem('auth_session_id');
+      
       // Also clear any legacy keys
       localStorage.removeItem('auth-token');
       localStorage.removeItem('refresh-token');
       localStorage.removeItem('user');
-      console.log('✅ AuthService: All auth data cleared from localStorage');
+      localStorage.removeItem('token');
+      localStorage.removeItem('session');
+      localStorage.removeItem('sessionId');
+      localStorage.removeItem('session_id');
+      
+      // Clear any remaining auth-related keys
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('auth') || key.includes('token') || key.includes('session')) {
+          localStorage.removeItem(key);
+          console.log(`   🗑️ Removed: ${key}`);
+        }
+      });
+      
+      // Verify all auth keys are cleared
+      const keysAfterClear = Object.keys(localStorage).filter(key => 
+        key.includes('auth') || key.includes('token') || key.includes('user') || key.includes('session')
+      );
+      
+      if (keysAfterClear.length === 0) {
+        console.log('✅ AuthService: All auth data cleared from localStorage');
+      } else {
+        console.warn('⚠️ Some keys remain:', keysAfterClear);
+      }
     }
   }
 

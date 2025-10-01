@@ -143,25 +143,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
 
-      // Call authService logout (clears localStorage)
+      console.log('🚪 AuthContext: Starting logout process...');
+      
+      // Clear React state FIRST to prevent any re-renders from using stale data
+      setUser(null);
+      setIsAuthenticated(false);
+
+      // Call authService logout (clears localStorage and calls backend)
       await authService.logout();
 
       // Clear all redirect-related session storage
       clearRedirectStorage();
 
-      // Clear React state
-      setUser(null);
-      setIsAuthenticated(false);
-
-      // Reset initialization flags to allow re-initialization
-      initializedRef.current = false;
+      console.log('✅ AuthContext: Logout completed successfully');
+      
+      // DO NOT reset initializedRef to prevent re-initialization
+      // The next page load will handle initialization properly
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('❌ Logout error:', error);
       // Even if logout fails on server, clear local state
       clearRedirectStorage();
       setUser(null);
       setIsAuthenticated(false);
-      initializedRef.current = false;
+      
+      // Force clear all auth data
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+        console.log('🗑️ Force cleared all storage due to logout error');
+      }
     } finally {
       setIsLoading(false);
     }

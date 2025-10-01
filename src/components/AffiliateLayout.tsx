@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   FiHome, 
   FiUsers, 
@@ -34,6 +35,7 @@ export default function AffiliateLayout({
   description = 'Painel de Afiliados'
 }: AffiliateLayoutProps) {
   const { language, setLanguage } = useLanguage();
+  const { logout } = useAuth();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -78,9 +80,17 @@ export default function AffiliateLayout({
 
   const isActive = (path: string) => router.pathname === path;
 
-  const handleLogout = () => {
-    // Implementar logout
-    router.push('/');
+  const handleLogout = async () => {
+    try {
+      console.log('🚪 AffiliateLayout: Logout button clicked');
+      await logout();
+      console.log('✅ AffiliateLayout: Logout completed, redirecting to home');
+      router.push('/auth/login');
+    } catch (error) {
+      console.error('❌ AffiliateLayout: Logout error:', error);
+      // Even if error, still redirect
+      router.push('/auth/login');
+    }
   };
 
   return (

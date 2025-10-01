@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useLanguage } from '../hooks/useLanguage';
+import { useAuth } from '../src/contexts/AuthContext';
 import { FiHome, FiUser, FiSettings, FiLogOut, FiMenu, FiX, FiBell, FiGlobe, FiBarChart, FiDollarSign, FiActivity, FiTrendingUp, FiUsers } from 'react-icons/fi';
 
 interface UserLayoutProps {
@@ -17,6 +18,7 @@ export default function UserLayout({
   description = 'Plataforma de Trading Profissional'
 }: UserLayoutProps) {
   const { language, setLanguage } = useLanguage();
+  const { logout } = useAuth();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -61,9 +63,17 @@ export default function UserLayout({
 
   const isActive = (path: string) => router.pathname === path;
 
-  const handleLogout = () => {
-    // Implementar logout
-    router.push('/');
+  const handleLogout = async () => {
+    try {
+      console.log('🚪 UserLayout: Logout button clicked');
+      await logout();
+      console.log('✅ UserLayout: Logout completed, redirecting to login');
+      router.push('/auth/login');
+    } catch (error) {
+      console.error('❌ UserLayout: Logout error:', error);
+      // Even if error, still redirect
+      router.push('/auth/login');
+    }
   };
 
   return (

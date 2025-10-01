@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useLanguage } from '../hooks/useLanguage';
+import { useAuth } from '../src/contexts/AuthContext';
 import { 
   FiHome, 
   FiUsers, 
@@ -36,6 +37,7 @@ export default function AdminLayout({
   description = 'Painel Administrativo'
 }: AdminLayoutProps) {
   const { language, setLanguage } = useLanguage();
+  const { logout } = useAuth();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -104,9 +106,17 @@ export default function AdminLayout({
 
   const isActive = (path: string) => router.pathname === path;
 
-  const handleLogout = () => {
-    // Implementar logout
-    router.push('/');
+  const handleLogout = async () => {
+    try {
+      console.log('🚪 AdminLayout: Logout button clicked');
+      await logout();
+      console.log('✅ AdminLayout: Logout completed, redirecting to login');
+      router.push('/auth/login');
+    } catch (error) {
+      console.error('❌ AdminLayout: Logout error:', error);
+      // Even if error, still redirect
+      router.push('/auth/login');
+    }
   };
 
   return (
