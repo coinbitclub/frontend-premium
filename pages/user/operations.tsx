@@ -165,20 +165,42 @@ const UserOperations: React.FC = () => {
     });
 
     // Real-time event handlers
+
+    // ✅ NEW: Listen for TradingView signals (PRIMARY - real-time)
+    newSocket.on('trading_signal', (data) => {
+      console.log('📊 TradingView Signal Received:', data);
+
+      const newSignal: Signal = {
+        id: data.data?.id || `SIGNAL_${Date.now()}`,
+        pair: data.data?.pair || data.data?.symbol || 'BTC/USDT',
+        direction: data.data?.direction || (data.data?.action === 'BUY' ? 'LONG' : 'SHORT'),
+        strength: data.data?.confidence || 85,
+        confidence: data.data?.confidence || 85,
+        timestamp: new Date(data.data?.timestamp || data.timestamp),
+        status: 'PROCESSANDO',
+        reasoning: data.data?.strategy || 'TradingView Alert - Processing...'
+      };
+
+      // Add to top of signals list (keep last 20)
+      setSignals(prev => [newSignal, ...prev.slice(0, 19)]);
+
+      console.log(`✅ Signal added to UI: ${newSignal.pair} ${newSignal.direction}`);
+    });
+
+    // LEGACY: Keep for backward compatibility
     newSocket.on('signal_received', (data) => {
-      console.log('📡 Operations: Signal received:', data);
-      // Add new signal to the beginning of the list
+      console.log('📡 Operations: Signal received (legacy):', data);
       const newSignal: Signal = {
         id: Date.now().toString(),
         pair: data.data?.symbol || 'BTC/USDT',
         direction: data.data?.action === 'BUY' ? 'LONG' : 'SHORT',
-        strength: Math.floor(Math.random() * 40 + 50),
-        confidence: Math.random() * 40 + 50,
+        strength: 75,
+        confidence: 75,
         timestamp: new Date(data.timestamp),
         status: 'PROCESSANDO',
         reasoning: data.data?.strategy || 'Signal processamento em andamento...'
       };
-      setSignals(prev => [newSignal, ...prev.slice(0, 11)]);
+      setSignals(prev => [newSignal, ...prev.slice(0, 19)]);
     });
 
     newSocket.on('ai_decision', (data) => {
@@ -321,24 +343,45 @@ const UserOperations: React.FC = () => {
     return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Market indicators API integration
+  // Market indicators API integration - USE BACKEND ENDPOINT
   const fetchMarketIndicators = useCallback(async () => {
     try {
-      // Fetch Fear & Greed Index from Alternative.me API
-      const fearGreedResponse = await fetch('https://api.alternative.me/fng/');
-      if (fearGreedResponse.ok) {
-        const fearGreedData = await fearGreedResponse.json();
-        const fearGreedValue = parseInt(fearGreedData.data[0].value);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
-        // Update market indicators with real data
-        setMarketIndicators(prev => ({
-          ...prev,
-          fearAndGreed: fearGreedValue,
-          fearAndGreedStatus: getFearGreedStatusFromValue(fearGreedValue),
-          lastUpdate: new Date()
-        }));
+      // Get auth token from localStorage
+      const token = localStorage.getItem('auth_access_token');
+      if (!token) {
+        console.warn('No auth token for market indicators');
+        return;
+      }
 
-        console.log('📡 Updated Fear & Greed Index:', fearGreedValue);
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      // ✅ Use backend endpoint to get ALL market indicators at once
+      const response = await fetch(`${apiUrl}/api/operations/market-indicators`, { headers });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          const indicators = data.data;
+
+          // Update ALL market indicators from backend
+          setMarketIndicators({
+            fearAndGreed: indicators.fearAndGreed || 0,
+            fearAndGreedStatus: indicators.fearAndGreedStatus || 'NEUTRAL',
+            btcDominance: indicators.btcDominance || 0,
+            top100LongShort: {
+              long: indicators.top100LongShort?.long || 0,
+              short: indicators.top100LongShort?.short || 0
+            },
+            lastUpdate: new Date()
+          });
+
+          console.log('📡 Updated Market Indicators from backend:', indicators);
+        }
       }
     } catch (error) {
       console.error('Error fetching market indicators:', error);
@@ -357,7 +400,21 @@ const UserOperations: React.FC = () => {
   const fetchTopSignals = useCallback(async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
-      const response = await fetch(`${apiUrl}/api/top-signals-test`);
+
+      // Get auth token from localStorage
+      const token = localStorage.getItem('auth_access_token');
+      if (!token) {
+        console.warn('No auth token for top signals');
+        return;
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      // ✅ Use authenticated endpoint
+      const response = await fetch(`${apiUrl}/api/operations/top-signals`, { headers });
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data) {
@@ -367,6 +424,7 @@ const UserOperations: React.FC = () => {
             timestamp: new Date(signal.timestamp)
           }));
           setTopSignals(formattedSignals);
+          console.log('📡 Updated Top Signals:', formattedSignals.length);
         }
       }
     } catch (error) {
@@ -378,105 +436,126 @@ const UserOperations: React.FC = () => {
   const fetchAllOperationsData = useCallback(async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
-      
-      // Fetch market indicators (Fear & Greed from real API)
-      await fetchMarketIndicators();
 
-      // Fetch top signals
-      await fetchTopSignals();
-
-      // Fetch AI Decision from backend (using demo data)
-      const aiResponse = await fetch(`${apiUrl}/api/top-signals-test`);
-      if (aiResponse.ok) {
-        const data = await aiResponse.json();
-        if (data.success && data.data?.length > 0) {
-          // Use the first signal to simulate AI decision
-          const topSignal = data.data[0];
-          setAiDecision({
-            direction: topSignal.direction,
-            confidence: topSignal.confidence,
-            reasoning: topSignal.reasoning,
-            timestamp: new Date(),
-            marketSentiment: topSignal.performance === 'HIGH' ?
-              (language === 'pt' ? 'TENDÊNCIA FORTE' : 'STRONG TREND') :
-              (language === 'pt' ? 'ANÁLISE CONTÍNUA' : 'CONTINUOUS ANALYSIS')
-          });
-        }
+      // Get auth token from localStorage
+      const token = localStorage.getItem('auth_access_token');
+      if (!token) {
+        console.warn('No auth token found');
+        return;
       }
 
-      // Update signals with the same data (top 5 for main signals section)
-      const signalsResponse = await fetch(`${apiUrl}/api/top-signals-test`);
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      // ✅ CORRECT: Fetch real market indicators
+      await fetchMarketIndicators();
+
+      // ✅ CORRECT: Fetch AI Decision from real operations endpoint
+      const aiResponse = await fetch(`${apiUrl}/api/operations/ai-decision?language=${language}`, {
+        headers
+      });
+
+      // Check for authentication errors
+      if (aiResponse.status === 401) {
+        console.warn('Unauthorized - redirecting to login');
+        router.push('/auth/login');
+        return;
+      }
+
+      if (aiResponse.ok) {
+        const data = await aiResponse.json();
+        if (data.success && data.data) {
+          setAiDecision({
+            direction: data.data.direction || 'LONG',
+            confidence: data.data.confidence || 75,
+            reasoning: data.data.reasoning || '',
+            timestamp: new Date(data.timestamp),
+            marketSentiment: data.data.marketSentiment || 'ANALYZING'
+          });
+        }
+      } else {
+        console.warn('AI Decision fetch failed:', aiResponse.status);
+      }
+
+      // ✅ CORRECT: Fetch real signals
+      const signalsResponse = await fetch(`${apiUrl}/api/operations/signals`, {
+        headers
+      });
       if (signalsResponse.ok) {
         const data = await signalsResponse.json();
         if (data.success && data.data) {
           const formattedSignals: Signal[] = data.data.slice(0, 5).map((signal: any) => ({
-            id: signal.id,
-            pair: signal.pair,
+            id: signal.id || Date.now().toString(),
+            pair: signal.pair || signal.symbol,
             direction: signal.direction,
-            strength: Math.round(signal.confidence),
-            confidence: signal.confidence,
+            strength: Math.round(signal.confidence || 0),
+            confidence: signal.confidence || 0,
             timestamp: new Date(signal.timestamp),
-            status: signal.status,
-            reasoning: signal.reasoning
+            status: signal.status || 'PROCESSANDO',
+            reasoning: signal.reasoning || ''
           }));
           setSignals(formattedSignals);
         }
+      } else {
+        console.warn('Signals fetch failed:', signalsResponse.status);
       }
 
-      // Update positions (using top signals that have positive P&L)
-      const positionsResponse = await fetch(`${apiUrl}/api/top-signals-test`);
+      // ✅ CORRECT: Fetch real positions (open trades)
+      const positionsResponse = await fetch(`${apiUrl}/api/operations/positions`, {
+        headers
+      });
       if (positionsResponse.ok) {
         const data = await positionsResponse.json();
         if (data.success && data.data) {
-          const formattedPositions: Position[] = data.data
-            .filter((signal: any) => signal.pnl > 0 && signal.status === 'EXECUTADO')
-            .slice(0, 3)
-            .map((signal: any) => ({
-              id: signal.id,
-              pair: signal.pair,
-              type: signal.direction,
-              entryPrice: signal.entryPrice,
-              currentPrice: signal.currentPrice,
-              quantity: signal.quantity,
-              pnl: signal.pnl,
-              pnlPercent: signal.pnlPercent,
-              status: 'OPEN' as 'OPEN' | 'CLOSED',
-              timestamp: new Date(signal.timestamp),
-              stopLoss: signal.stopLoss,
-              takeProfit: signal.takeProfit
-            }));
+          const formattedPositions: Position[] = data.data.map((position: any) => ({
+            id: position.id || position.operation_id,
+            pair: position.pair || position.trading_pair,
+            type: position.type || position.operation_type,
+            entryPrice: position.entryPrice || position.entry_price,
+            currentPrice: position.currentPrice || position.current_price,
+            quantity: position.quantity,
+            pnl: position.pnl || position.profit_loss_usd || 0,
+            pnlPercent: position.pnlPercent || position.profit_loss_percentage || 0,
+            status: position.status,
+            timestamp: new Date(position.timestamp || position.entry_time),
+            stopLoss: position.stopLoss || position.stop_loss,
+            takeProfit: position.takeProfit || position.take_profit
+          }));
           setPositions(formattedPositions);
         }
+      } else {
+        console.warn('Positions fetch failed:', positionsResponse.status);
       }
 
-      // Update daily stats (calculated from top signals data)
-      const statsResponse = await fetch(`${apiUrl}/api/top-signals-test`);
+      // ✅ CORRECT: Fetch daily stats from real data
+      const statsResponse = await fetch(`${apiUrl}/api/operations/daily-stats`, {
+        headers
+      });
       if (statsResponse.ok) {
         const data = await statsResponse.json();
         if (data.success && data.data) {
-          const signals = data.data;
-          const executedSignals = signals.filter((s: any) => s.status === 'EXECUTADO');
-          const profitableSignals = executedSignals.filter((s: any) => s.pnl > 0);
-          const totalPnL = executedSignals.reduce((acc: number, s: any) => acc + s.pnl, 0);
-          const avgReturn = executedSignals.length > 0
-            ? executedSignals.reduce((acc: number, s: any) => acc + s.pnlPercent, 0) / executedSignals.length
-            : 0;
-
           setDailyStats({
-            operationsToday: executedSignals.length,
-            successRate: executedSignals.length > 0 ? (profitableSignals.length / executedSignals.length) * 100 : 0,
-            historicalSuccessRate: 73.2, // Keep historical value
-            todayReturnUSD: totalPnL,
-            todayReturnPercent: avgReturn,
-            totalInvested: 10000
+            operationsToday: data.data.operationsToday || 0,
+            successRate: data.data.successRate || 0,
+            historicalSuccessRate: data.data.historicalSuccessRate || 73.2,
+            todayReturnUSD: data.data.todayReturnUSD || 0,
+            todayReturnPercent: data.data.todayReturnPercent || 0,
+            totalInvested: data.data.totalInvested || 10000
           });
         }
+      } else {
+        console.warn('Daily stats fetch failed:', statsResponse.status);
       }
+
+      // ✅ CORRECT: Fetch top signals
+      await fetchTopSignals();
 
     } catch (error) {
       console.error('Error fetching real-time operations data:', error);
     }
-  }, [fetchMarketIndicators, fetchTopSignals, language]);
+  }, [fetchMarketIndicators, fetchTopSignals, language, router]);
 
   // Fetch all real-time data on mount and every interval
   useEffect(() => {
@@ -1067,6 +1146,18 @@ const UserOperations: React.FC = () => {
                           signal.direction === 'LONG' ? 'bg-green-500/30 text-green-300' : 'bg-red-500/30 text-red-300'
                         }`}>
                           {signal.direction}
+                        </div>
+                      </div>
+
+                      {/* Price Display - Entry vs Current */}
+                      <div className="mb-3 space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-400">Entry:</span>
+                          <span className="text-white font-medium">${signal.entryPrice.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-400">Current:</span>
+                          <span className="text-blue-400 font-medium">${signal.currentPrice.toFixed(2)}</span>
                         </div>
                       </div>
 

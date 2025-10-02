@@ -147,23 +147,30 @@ const UserSettings: React.FC = () => {
               }));
             }
 
-            // Update API keys if available
-            if (settings.api_keys) {
-              setApiKeys(prev => ({
-                ...prev,
-                binance: {
-                  ...prev.binance,
-                  apiKey: settings.api_keys.binance_api_key || prev.binance.apiKey,
-                  secretKey: settings.api_keys.binance_secret_key || prev.binance.secretKey,
-                  connected: settings.api_keys.binance_connected || prev.binance.connected
-                },
-                bybit: {
-                  ...prev.bybit,
-                  apiKey: settings.api_keys.bybit_api_key || prev.bybit.apiKey,
-                  secretKey: settings.api_keys.bybit_secret_key || prev.bybit.secretKey,
-                  connected: settings.api_keys.bybit_connected || prev.bybit.connected
-                }
-              }));
+            // Load API keys separately (they are now stored in user_api_keys table)
+            try {
+              const apiKeysResponse = await apiService.getApiKeys() as any;
+              if (apiKeysResponse.success && apiKeysResponse.apiKeys) {
+                const binanceKey = apiKeysResponse.apiKeys.find((k: any) => k.exchange === 'BINANCE');
+                const bybitKey = apiKeysResponse.apiKeys.find((k: any) => k.exchange === 'BYBIT');
+
+                setApiKeys(prev => ({
+                  binance: {
+                    ...prev.binance,
+                    apiKey: binanceKey ? binanceKey.api_key : '',
+                    connected: !!binanceKey,
+                    lastConnection: binanceKey ? binanceKey.last_validated_at : null
+                  },
+                  bybit: {
+                    ...prev.bybit,
+                    apiKey: bybitKey ? bybitKey.api_key : '',
+                    connected: !!bybitKey,
+                    lastConnection: bybitKey ? bybitKey.last_validated_at : null
+                  }
+                }));
+              }
+            } catch (error) {
+              console.log('No API keys found or error loading them:', error);
             }
 
             // Update notifications if available
@@ -225,12 +232,11 @@ const UserSettings: React.FC = () => {
     if (keys.apiKey && keys.secretKey) {
       setSaving(true);
       try {
+        // Trim whitespace from API keys before sending
         const response: any = await apiService.addApiKey({
           exchange,
-          api_key: keys.apiKey,
-          api_secret: keys.secretKey,
-          passphrase: "", // Empty string for exchanges that don't use passphrase (like Binance)
-          environment: "testnet"
+          api_key: keys.apiKey.trim(),
+          api_secret: keys.secretKey.trim()
         });
 
         if (response.success) {

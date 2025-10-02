@@ -211,6 +211,17 @@ class ApiService {
     });
   }
 
+  // New encrypted API Keys endpoints
+  async getAPIKeysStatus() {
+    return this.request('/api/user-api-keys/all/status');
+  }
+
+  async verifyAPIKey(exchange: string) {
+    return this.request(`/api/user-api-keys/${exchange}/verify`, {
+      method: 'POST',
+    });
+  }
+
   // User Preferences
   async getUserPreferences() {
     return this.request('/api/user-settings/preferences');

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
-import { FiDollarSign, FiTrendingUp, FiTarget, FiRefreshCw } from 'react-icons/fi';
+import { FiDollarSign, FiTrendingUp, FiTarget, FiRefreshCw, FiAlertCircle, FiArrowRight } from 'react-icons/fi';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useAPIKeys } from '../../hooks/useAPIKeys';
 import UserLayout from '../../components/UserLayout';
 import ResponsiveContainer from '../../components/ResponsiveContainer';
 import { useToast } from '../../components/Toast';
@@ -18,6 +19,7 @@ export default function UserDashboard() {
   const { isMobile } = useResponsive();
   const { showToast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
+  const { hasAnyKeys, hasVerifiedKeys } = useAPIKeys();
   const [loading, setLoading] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [dailyStats, setDailyStats] = useState<DailyStats | null>(null);
@@ -407,6 +409,72 @@ export default function UserDashboard() {
               <FiRefreshCw className={`text-orange-400 group-hover:scale-110 transition-transform ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
+
+          {/* API Keys Warning Banner */}
+          {!hasAnyKeys && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mb-6"
+            >
+              <div className="bg-gradient-to-r from-orange-500/20 to-yellow-500/20 border border-orange-500/30 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <FiAlertCircle className="text-orange-400 text-xl flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="text-orange-400 font-bold mb-1">
+                      {language === 'pt' ? 'Ação Necessária: Conecte suas API Keys' : 'Action Required: Connect Your API Keys'}
+                    </h3>
+                    <p className="text-gray-300 text-sm mb-3">
+                      {language === 'pt'
+                        ? 'Para começar a operar, você precisa conectar suas API keys da Bybit ou Binance. Seus fundos ficam seguros na sua própria exchange!'
+                        : 'To start trading, you need to connect your Bybit or Binance API keys. Your funds stay safe in your own exchange!'}
+                    </p>
+                    <button
+                      onClick={() => router.push('/settings/api-keys')}
+                      className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-black font-bold py-2 px-4 rounded-lg transition-all flex items-center gap-2 text-sm"
+                    >
+                      {language === 'pt' ? 'Conectar API Keys' : 'Connect API Keys'}
+                      <FiArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Pending Verification Warning */}
+          {hasAnyKeys && !hasVerifiedKeys && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mb-6"
+            >
+              <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <FiAlertCircle className="text-yellow-400 text-xl flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="text-yellow-400 font-bold mb-1">
+                      {language === 'pt' ? 'Verificação Pendente' : 'Verification Pending'}
+                    </h3>
+                    <p className="text-gray-300 text-sm mb-3">
+                      {language === 'pt'
+                        ? 'Suas API keys precisam ser verificadas antes de começar a operar.'
+                        : 'Your API keys need to be verified before you can start trading.'}
+                    </p>
+                    <button
+                      onClick={() => router.push('/settings/api-keys')}
+                      className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-black font-bold py-2 px-4 rounded-lg transition-all flex items-center gap-2 text-sm"
+                    >
+                      {language === 'pt' ? 'Verificar API Keys' : 'Verify API Keys'}
+                      <FiArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* Balance Cards */}
           <div className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-4 gap-6'}`}>
