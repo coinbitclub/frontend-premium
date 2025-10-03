@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../hooks/useLanguage';
 import UserLayout from '../../components/UserLayout';
-import io from 'socket.io-client';
+import { useSocket } from '../../src/contexts/SocketContext';
 
 // Tipos para o fluxo real do MarketBot
 interface MarketIndicators {
@@ -85,8 +85,9 @@ const UserOperations: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [socket, setSocket] = useState<any>(null);
-  const [isConnected, setIsConnected] = useState(false);
+
+  // Use global socket context
+  const { socket, isConnected, connectionError } = useSocket();
   
   // Cache keys
   const CACHE_KEY = 'operations_data';
@@ -131,43 +132,19 @@ const UserOperations: React.FC = () => {
   useEffect(() => {
     setMounted(true);
 
-    // Initialize WebSocket connection
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
-    const newSocket = io(apiUrl, {
-      transports: ['websocket', 'polling'],
-      autoConnect: true,
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
-      timeout: 20000,
-      forceNew: true
-    });
+    // Socket is now managed by SocketContext
+    // No need to create or authenticate here
+    if (!socket) {
+      console.log('⏳ Waiting for socket connection...');
+      return;
+    }
 
-    // Connection handlers
-    newSocket.on('connect', () => {
-      console.log('🔗 Connected to operations WebSocket');
-      setIsConnected(true);
-
-      // Authenticate user (in production, use real JWT token)
-      newSocket.emit('authenticate', {
-        userId: 1, // Mock user ID - in production get from auth context
-        token: 'mock-token',
-        userType: 'user'
-      });
-
-      // Join trading room
-      newSocket.emit('join_trading', 1);
-    });
-
-    newSocket.on('disconnect', () => {
-      console.log('❌ Disconnected from operations WebSocket');
-      setIsConnected(false);
-    });
+    console.log('📡 Socket available in operations page');
 
     // Real-time event handlers
 
     // ✅ NEW: Listen for TradingView signals (PRIMARY - real-time)
-    newSocket.on('trading_signal', (data) => {
+    socket.on('trading_signal', (data) => {
       console.log('📊 TradingView Signal Received:', data);
 
       const newSignal: Signal = {
@@ -188,7 +165,7 @@ const UserOperations: React.FC = () => {
     });
 
     // LEGACY: Keep for backward compatibility
-    newSocket.on('signal_received', (data) => {
+    socket.on('signal_received', (data) => {
       console.log('📡 Operations: Signal received (legacy):', data);
       const newSignal: Signal = {
         id: Date.now().toString(),
@@ -203,7 +180,7 @@ const UserOperations: React.FC = () => {
       setSignals(prev => [newSignal, ...prev.slice(0, 19)]);
     });
 
-    newSocket.on('ai_decision', (data) => {
+    socket.on('ai_decision', (data) => {
       console.log('🤖 Operations: AI decision:', data);
       setAiDecision({
         direction: data.action || 'LONG',
@@ -216,7 +193,7 @@ const UserOperations: React.FC = () => {
       });
     });
 
-    newSocket.on('trade_executed', (data) => {
+    socket.on('trade_executed', (data) => {
       console.log('📈 Operations: Trade executed:', data);
       // Update signal status to EXECUTADO
       setSignals(prev => prev.map(signal => {
@@ -227,7 +204,7 @@ const UserOperations: React.FC = () => {
       }));
     });
 
-    newSocket.on('position_update', (data) => {
+    socket.on('position_update', (data) => {
       console.log('📊 Operations: Position update:', data);
 
       setPositions(prev => {
@@ -262,7 +239,7 @@ const UserOperations: React.FC = () => {
       });
     });
 
-    newSocket.on('balance_update', (data) => {
+    socket.on('balance_update', (data) => {
       console.log('💰 Operations: Balance update:', data);
       // Update daily stats based on balance changes
       setDailyStats(prev => ({
@@ -272,7 +249,7 @@ const UserOperations: React.FC = () => {
       }));
     });
 
-    newSocket.on('execution_summary', (data) => {
+    socket.on('execution_summary', (data) => {
       console.log('📊 Operations: Execution summary:', data);
       setDailyStats(prev => ({
         ...prev,
@@ -282,8 +259,6 @@ const UserOperations: React.FC = () => {
           : prev.successRate
       }));
     });
-
-    setSocket(newSocket);
 
     // Update time every minute
     const timeInterval = setInterval(() => {
@@ -300,12 +275,21 @@ const UserOperations: React.FC = () => {
       });
     }
 
-    // Cleanup
+    // Cleanup - remove event listeners
     return () => {
       clearInterval(timeInterval);
-      newSocket.disconnect();
+      // Clean up socket event listeners
+      if (socket) {
+        socket.off('trading_signal');
+        socket.off('signal_received');
+        socket.off('ai_decision');
+        socket.off('trade_executed');
+        socket.off('position_update');
+        socket.off('balance_update');
+        socket.off('execution_summary');
+      }
     };
-  }, [language]);
+  }, [socket, language]);
 
   // Fallback data loading removed - all data now comes from real-time API
 
