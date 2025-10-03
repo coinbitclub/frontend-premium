@@ -48,8 +48,57 @@ const AffiliateLinks: React.FC = () => {
 
   useEffect(() => {
     setMounted(true);
-    
-    // Mock data for affiliate links
+    fetchAffiliateLinks();
+  }, []);
+
+  const fetchAffiliateLinks = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        generateMockLinks(); // Fallback to mock data
+        return;
+      }
+
+      const response = await fetch('/api/affiliate/links', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.links) {
+          const formattedLinks: AffiliateLink[] = data.links.map((link: any) => {
+            const conversionRate = link.clicks > 0 ? (link.conversions / link.clicks) * 100 : 0;
+
+            return {
+              id: link.id.toString(),
+              name: link.campaign || 'Affiliate Link',
+              url: link.url,
+              shortCode: link.code,
+              clicks: link.clicks || 0,
+              conversions: link.conversions || 0,
+              conversionRate: Math.round(conversionRate * 10) / 10,
+              commissions: 0, // Would need to calculate from commissions table
+              createdAt: new Date(link.createdAt),
+              isActive: true,
+              description: link.campaign || ''
+            };
+          });
+          setLinks(formattedLinks);
+        } else {
+          generateMockLinks();
+        }
+      } else {
+        generateMockLinks();
+      }
+
+    } catch (error) {
+      console.error('Error fetching affiliate links:', error);
+      generateMockLinks(); // Fallback to mock data on error
+    }
+  };
+
+  const generateMockLinks = () => {
     const mockLinks: AffiliateLink[] = [
       {
         id: '1',
@@ -107,9 +156,8 @@ const AffiliateLinks: React.FC = () => {
         customParams: 'source=instagram'
       }
     ];
-
     setLinks(mockLinks);
-  }, []);
+  };
 
   const copyToClipboard = async (text: string, linkId: string) => {
     try {
@@ -121,30 +169,41 @@ const AffiliateLinks: React.FC = () => {
     }
   };
 
-  const handleCreateLink = () => {
+  const handleCreateLink = async () => {
     if (!newLink.name.trim()) return;
 
-    const customParams = newLink.customParams ? `&${newLink.customParams}` : '';
-    const shortCode = `${baseAffiliateCode}-${Date.now().toString().slice(-4)}`;
-    
-    const link: AffiliateLink = {
-      id: Date.now().toString(),
-      name: newLink.name,
-      url: `https://coinbitclub.com/register?ref=${baseAffiliateCode}${customParams}`,
-      shortCode,
-      clicks: 0,
-      conversions: 0,
-      conversionRate: 0,
-      commissions: 0,
-      createdAt: new Date(),
-      isActive: true,
-      description: newLink.description || undefined,
-      customParams: newLink.customParams || undefined
-    };
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
 
-    setLinks(prev => [...prev, link]);
-    setNewLink({ name: '', description: '', customParams: '' });
-    setShowCreateModal(false);
+      const response = await fetch('/api/affiliate/create-link', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          campaign: newLink.name
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Refresh the links list
+          await fetchAffiliateLinks();
+          setNewLink({ name: '', description: '', customParams: '' });
+          setShowCreateModal(false);
+        }
+      } else {
+        console.error('Failed to create affiliate link');
+      }
+    } catch (error) {
+      console.error('Error creating affiliate link:', error);
+    }
   };
 
   const handleToggleLink = (id: string) => {

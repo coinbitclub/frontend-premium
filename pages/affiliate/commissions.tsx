@@ -67,9 +67,9 @@ const AffiliateCommissions: React.FC = () => {
 
   useEffect(() => {
     setMounted(true);
-    generateCommissionData();
+    fetchCommissionData();
     generateWithdrawalData();
-    
+
     // Analytics
     if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
       gtag('event', 'affiliate_commissions_view', {
@@ -79,6 +79,70 @@ const AffiliateCommissions: React.FC = () => {
       });
     }
   }, [language]);
+
+  const fetchCommissionData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        generateCommissionData(); // Fallback to mock data
+        return;
+      }
+
+      // Fetch commissions and stats in parallel
+      const [commissionsRes, statsRes] = await Promise.all([
+        fetch('/api/affiliate/commissions?limit=100', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/affiliate/stats', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      ]);
+
+      if (commissionsRes.ok) {
+        const commissionsData = await commissionsRes.json();
+        if (commissionsData.success && commissionsData.commissions) {
+          const formattedCommissions: Commission[] = commissionsData.commissions.map((comm: any) => ({
+            id: comm.id.toString(),
+            referralName: comm.description || 'Commission',
+            referralEmail: '',
+            amount: comm.amount || 0,
+            type: comm.type === 'signup' ? 'SIGNUP' :
+                  comm.type === 'trading' ? 'TRADING' :
+                  comm.type === 'bonus' ? 'BONUS' : 'MONTHLY',
+            date: new Date(comm.createdAt),
+            status: comm.status === 'pending' ? 'PENDING' :
+                    comm.paidAt ? 'PAID' : 'PROCESSING',
+            transactionId: comm.paidAt ? `TXN${comm.id}` : undefined,
+            description: comm.description || ''
+          }));
+          setCommissions(formattedCommissions);
+        }
+      }
+
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        if (statsData.success) {
+          const currentBalance = statsData.stats.currentBalance || 0;
+          const totalEarnings = statsData.stats.totalCommissions || 0;
+          const monthlyEarnings = statsData.stats.monthlyCommissions || 0;
+
+          setStats({
+            totalEarned: totalEarnings,
+            monthlyEarnings: monthlyEarnings,
+            pendingPayments: currentBalance,
+            totalWithdrawn: totalEarnings - currentBalance,
+            availableBalance: currentBalance,
+            nextPaymentDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+          });
+        }
+      }
+
+    } catch (error) {
+      console.error('Error fetching commission data:', error);
+      generateCommissionData(); // Fallback to mock data on error
+    }
+  };
 
   const generateCommissionData = () => {
     const sampleCommissions: Commission[] = [
@@ -188,65 +252,99 @@ const AffiliateCommissions: React.FC = () => {
     }
   };
 
-  const handleWithdrawal = () => {
+  const handleWithdrawal = async () => {
     const amount = parseFloat(withdrawalAmount);
     if (amount > 0 && amount <= stats.availableBalance) {
-      // Simular criação de saque
-      const newWithdrawal: WithdrawalRequest = {
-        id: Date.now().toString(),
-        amount: amount,
-        method: withdrawalMethod,
-        status: 'PENDING',
-        requestDate: new Date(),
-        fees: withdrawalMethod === 'PIX' ? amount * 0.005 : amount * 0.01,
-        netAmount: amount - (withdrawalMethod === 'PIX' ? amount * 0.005 : amount * 0.01)
-      };
+      const token = localStorage.getItem('token');
 
-      setWithdrawals(prev => [newWithdrawal, ...prev]);
-      setStats(prev => ({
-        ...prev,
-        availableBalance: prev.availableBalance - amount,
-        pendingPayments: prev.pendingPayments + amount
-      }));
-
-      setShowWithdrawalModal(false);
-      setWithdrawalAmount('');
-      
-      if (typeof gtag !== 'undefined') {
-        gtag('event', 'withdrawal_request', {
-          amount: amount,
-          method: withdrawalMethod,
-          event_category: 'affiliate_financial'
+      try {
+        const response = await fetch('/api/affiliate/withdraw', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            amount,
+            method: withdrawalMethod
+          })
         });
+
+        if (response.ok) {
+          const data = await response.json();
+
+          // Refresh data from API
+          await fetchCommissionData();
+
+          setShowWithdrawalModal(false);
+          setWithdrawalAmount('');
+
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'withdrawal_request', {
+              amount: amount,
+              method: withdrawalMethod,
+              event_category: 'affiliate_financial'
+            });
+          }
+
+          alert(`Saque solicitado com sucesso! Valor líquido: $${data.withdrawal.netAmount.toFixed(2)}`);
+        } else {
+          const error = await response.json();
+          alert(`Erro ao solicitar saque: ${error.error}`);
+        }
+      } catch (error) {
+        console.error('Withdrawal error:', error);
+        alert('Erro ao processar saque. Tente novamente.');
       }
     }
   };
 
-  const handleConversion = () => {
+  const handleConversion = async () => {
     const amount = parseFloat(conversionAmount);
     if (amount > 0 && amount <= stats.availableBalance) {
-      const bonusAmount = amount * 0.1; // 10% de bônus
-      const totalCredit = amount + bonusAmount;
-      
-      // Simular conversão em crédito
-      setStats(prev => ({
-        ...prev,
-        availableBalance: prev.availableBalance - amount
-      }));
+      const token = localStorage.getItem('token');
 
-      setShowConversionModal(false);
-      setConversionAmount('');
-      
-      // Aqui você adicionaria a lógica para creditar no sistema do usuário
-      alert(`Conversão realizada! $${amount.toFixed(2)} convertidos em $${totalCredit.toFixed(2)} de crédito (incluindo bônus de 10%)`);
-      
-      if (typeof gtag !== 'undefined') {
-        gtag('event', 'commission_conversion', {
-          amount: amount,
-          bonus: bonusAmount,
-          total_credit: totalCredit,
-          event_category: 'affiliate_financial'
+      try {
+        const response = await fetch('/api/affiliate/convert-to-credit', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ amount })
         });
+
+        if (response.ok) {
+          const data = await response.json();
+
+          // Refresh data from API
+          await fetchCommissionData();
+
+          setShowConversionModal(false);
+          setConversionAmount('');
+
+          alert(
+            `Conversão realizada com sucesso!\n\n` +
+            `Valor convertido: $${data.conversion.amount.toFixed(2)}\n` +
+            `Bônus (10%): $${data.conversion.bonus.toFixed(2)}\n` +
+            `Total em créditos: $${data.conversion.total.toFixed(2)}`
+          );
+
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'commission_conversion', {
+              amount: amount,
+              bonus: data.conversion.bonus,
+              total_credit: data.conversion.total,
+              event_category: 'affiliate_financial'
+            });
+          }
+        } else {
+          const error = await response.json();
+          alert(`Erro ao converter: ${error.error}`);
+        }
+      } catch (error) {
+        console.error('Conversion error:', error);
+        alert('Erro ao processar conversão. Tente novamente.');
       }
     }
   };

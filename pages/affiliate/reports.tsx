@@ -75,8 +75,11 @@ const AffiliateReports: React.FC = () => {
 
   useEffect(() => {
     setMounted(true);
-    generateReportData();
-    
+    fetchReportData();
+
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchReportData, 30000);
+
     // Analytics
     if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
       gtag('event', 'affiliate_reports_view', {
@@ -86,7 +89,76 @@ const AffiliateReports: React.FC = () => {
         report_type: activeReport
       });
     }
-  }, [language, activeReport]);
+
+    return () => clearInterval(interval);
+  }, [language, activeReport, selectedPeriod]);
+
+  const fetchReportData = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const [reportsRes, statsRes] = await Promise.all([
+        fetch(`/api/affiliate/reports?period=${selectedPeriod}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/affiliate/stats', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      ]);
+
+      if (reportsRes.ok && statsRes.ok) {
+        const reportsData = await reportsRes.json();
+        const statsData = await statsRes.json();
+
+        // Map monthly data from API
+        const monthlyData: MonthlyData[] = reportsData.monthlyStats.map((stat: any) => ({
+          month: stat.month || 'N/A',
+          referrals: parseInt(stat.referrals) || 0,
+          commissions: parseFloat(stat.commissions) || 0,
+          conversions: parseInt(stat.conversions) || 0,
+          revenue: parseFloat(stat.revenue) || 0
+        }));
+
+        // Map top referrals from API
+        const topReferrals: TopReferral[] = reportsData.topReferrals.map((ref: any) => ({
+          id: ref.id.toString(),
+          name: ref.name || 'Unknown',
+          email: ref.email || '',
+          totalCommissions: parseFloat(ref.total_commissions) || 0,
+          totalTrades: parseInt(ref.total_trades) || 0,
+          joinDate: new Date(ref.join_date),
+          successRate: parseFloat(ref.success_rate) || 0
+        }));
+
+        setReportData({
+          performanceMetrics: {
+            totalClicks: reportsData.performanceMetrics?.totalClicks || 0,
+            uniqueVisitors: reportsData.performanceMetrics?.uniqueVisitors || 0,
+            signupConversions: reportsData.performanceMetrics?.signupConversions || 0,
+            tradingConversions: reportsData.performanceMetrics?.tradingConversions || 0,
+            averageOrderValue: statsData.stats?.totalCommissions / statsData.stats?.totalReferrals || 0,
+            customerLifetimeValue: statsData.stats?.totalCommissions / statsData.stats?.activeReferrals || 0
+          },
+          monthlyData,
+          topReferrals,
+          conversionFunnel: {
+            clicks: reportsData.conversionFunnel?.clicks || 0,
+            visitors: reportsData.conversionFunnel?.visitors || 0,
+            signups: reportsData.conversionFunnel?.signups || 0,
+            depositsFirstTime: reportsData.conversionFunnel?.deposits || 0,
+            activeTradersMonth: reportsData.conversionFunnel?.activeTraders || 0
+          }
+        });
+      } else {
+        // Fallback to mock data on API error
+        generateReportData();
+      }
+    } catch (error) {
+      console.error('Error fetching report data:', error);
+      generateReportData(); // Fallback to mock data
+    }
+  };
 
   const generateReportData = () => {
     // Dados mensais dos últimos 6 meses

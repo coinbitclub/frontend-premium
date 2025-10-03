@@ -73,13 +73,13 @@ const AffiliateDashboard: React.FC = () => {
 
   useEffect(() => {
     setMounted(true);
-    generateInitialData();
-    
+    fetchAffiliateData();
+
     // Update time every minute
     const timeInterval = setInterval(() => {
       setCurrentTime(new Date());
     }, 60000);
-    
+
     // Analytics
     if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
       gtag('event', 'affiliate_dashboard_view', {
@@ -89,10 +89,10 @@ const AffiliateDashboard: React.FC = () => {
         page_type: 'dashboard'
       });
     }
-    
+
     // Update data every 30 seconds
     const dataInterval = setInterval(() => {
-      updateRealTimeData();
+      fetchAffiliateData();
     }, 30000);
 
     return () => {
@@ -100,6 +100,85 @@ const AffiliateDashboard: React.FC = () => {
       clearInterval(dataInterval);
     };
   }, [language]);
+
+  const fetchAffiliateData = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        generateInitialData(); // Fallback to mock data
+        setLoading(false);
+        return;
+      }
+
+      // Fetch affiliate stats, referrals, and commissions in parallel
+      const [statsRes, referralsRes, commissionsRes] = await Promise.all([
+        fetch('/api/affiliate/stats', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/affiliate/referrals?limit=10', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/affiliate/commissions?limit=10', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      ]);
+
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        if (statsData.success) {
+          setAffiliateStats({
+            totalReferrals: statsData.stats.totalReferrals || 0,
+            activeReferrals: statsData.stats.activeReferrals || 0,
+            totalCommissions: statsData.stats.totalCommissions || 0,
+            monthlyCommissions: statsData.stats.monthlyCommissions || 0,
+            conversionRate: statsData.stats.activeReferrals > 0
+              ? (statsData.stats.activeReferrals / statsData.stats.totalReferrals) * 100
+              : 0,
+            totalEarnings: statsData.stats.currentBalance || 0
+          });
+        }
+      }
+
+      if (referralsRes.ok) {
+        const referralsData = await referralsRes.json();
+        if (referralsData.success && referralsData.referrals) {
+          const formattedReferrals: Referral[] = referralsData.referrals.map((ref: any) => ({
+            id: ref.id.toString(),
+            name: ref.name || 'Unknown',
+            email: ref.email || '',
+            joinDate: new Date(ref.referredAt),
+            status: ref.status === 'active' ? 'ACTIVE' : ref.status === 'pending' ? 'PENDING' : 'INACTIVE',
+            totalInvested: ref.conversionValue || 0,
+            commissionGenerated: ref.conversionValue * 0.015 || 0
+          }));
+          setRecentReferrals(formattedReferrals);
+        }
+      }
+
+      if (commissionsRes.ok) {
+        const commissionsData = await commissionsRes.json();
+        if (commissionsData.success && commissionsData.commissions) {
+          const formattedCommissions: Commission[] = commissionsData.commissions.map((comm: any) => ({
+            id: comm.id.toString(),
+            referralName: comm.description || 'Commission',
+            amount: comm.amount || 0,
+            type: comm.type === 'signup' ? 'SIGNUP' : comm.type === 'trading' ? 'TRADING' : 'MONTHLY',
+            date: new Date(comm.createdAt),
+            status: comm.status === 'pending' ? 'PENDING' : comm.paidAt ? 'PAID' : 'PROCESSING'
+          }));
+          setRecentCommissions(formattedCommissions);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error fetching affiliate data:', error);
+      generateInitialData(); // Fallback to mock data on error
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const generateInitialData = () => {
     // Referências recentes

@@ -60,8 +60,8 @@ const AffiliateReferrals: React.FC = () => {
 
   useEffect(() => {
     setMounted(true);
-    generateReferralData();
-    
+    fetchReferralData();
+
     // Analytics
     if (typeof window !== 'undefined' && typeof gtag !== 'undefined') {
       gtag('event', 'affiliate_referrals_view', {
@@ -72,6 +72,69 @@ const AffiliateReferrals: React.FC = () => {
       });
     }
   }, [language]);
+
+  const fetchReferralData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        generateReferralData(); // Fallback to mock data
+        return;
+      }
+
+      // Fetch referrals and stats in parallel
+      const [referralsRes, statsRes] = await Promise.all([
+        fetch('/api/affiliate/referrals?limit=100', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/affiliate/stats', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      ]);
+
+      if (referralsRes.ok) {
+        const referralsData = await referralsRes.json();
+        if (referralsData.success && referralsData.referrals) {
+          const formattedReferrals: Referral[] = referralsData.referrals.map((ref: any) => ({
+            id: ref.id.toString(),
+            name: ref.name || 'Unknown',
+            email: ref.email || '',
+            joinDate: new Date(ref.referredAt),
+            status: ref.status === 'active' ? 'ACTIVE' : ref.status === 'pending' ? 'PENDING' : 'INACTIVE',
+            totalInvested: ref.conversionValue || 0,
+            commissionGenerated: (ref.conversionValue || 0) * 0.015,
+            lastActivity: new Date(ref.convertedAt || ref.referredAt),
+            totalTrades: 0,
+            successRate: 0,
+            referralCode: affiliateCode
+          }));
+          setReferrals(formattedReferrals);
+        }
+      }
+
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        if (statsData.success) {
+          const totalRefs = statsData.stats.totalReferrals || 0;
+          const activeRefs = statsData.stats.activeReferrals || 0;
+          const totalInvestment = referrals.reduce((sum, r) => sum + r.totalInvested, 0);
+
+          setStats({
+            totalReferrals: totalRefs,
+            activeReferrals: activeRefs,
+            pendingReferrals: totalRefs - activeRefs,
+            totalCommissions: statsData.stats.totalCommissions || 0,
+            conversionRate: totalRefs > 0 ? (activeRefs / totalRefs) * 100 : 0,
+            averageInvestment: totalRefs > 0 ? totalInvestment / totalRefs : 0
+          });
+        }
+      }
+
+    } catch (error) {
+      console.error('Error fetching referral data:', error);
+      generateReferralData(); // Fallback to mock data on error
+    }
+  };
 
   const generateReferralData = () => {
     const sampleReferrals: Referral[] = [

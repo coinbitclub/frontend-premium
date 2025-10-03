@@ -38,21 +38,21 @@ const AffiliatePerformance: React.FC = () => {
   const { language } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('6m');
-  const [performanceData] = useState<PerformanceData>({
-    totalCommissions: 8947.50,
-    monthlyCommissions: 1245.80,
-    totalReferrals: 47,
-    activeReferrals: 32,
-    conversionRate: 68.1,
-    averageCommission: 190.37,
+  const [performanceData, setPerformanceData] = useState<PerformanceData>({
+    totalCommissions: 0,
+    monthlyCommissions: 0,
+    totalReferrals: 0,
+    activeReferrals: 0,
+    conversionRate: 0,
+    averageCommission: 0,
     bestMonth: {
-      month: 'July 2025',
-      amount: 2156.90
+      month: 'N/A',
+      amount: 0
     },
-    growth: 24.7
+    growth: 0
   });
 
-  const [monthlyData] = useState<MonthlyData[]>([
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([
     { month: 'Jan', commissions: 567.30, referrals: 3, conversions: 2 },
     { month: 'Feb', commissions: 834.50, referrals: 5, conversions: 4 },
     { month: 'Mar', commissions: 1123.80, referrals: 6, conversions: 5 },
@@ -65,7 +65,67 @@ const AffiliatePerformance: React.FC = () => {
 
   useEffect(() => {
     setMounted(true);
+    fetchPerformanceData();
   }, []);
+
+  const fetchPerformanceData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+
+      const [statsRes, performanceRes] = await Promise.all([
+        fetch('/api/affiliate/stats', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/affiliate/performance', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      ]);
+
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        if (statsData.success) {
+          const stats = statsData.stats;
+          const avgCommission = stats.totalReferrals > 0
+            ? stats.totalCommissions / stats.totalReferrals
+            : 0;
+
+          setPerformanceData({
+            totalCommissions: stats.totalCommissions || 0,
+            monthlyCommissions: stats.monthlyCommissions || 0,
+            totalReferrals: stats.totalReferrals || 0,
+            activeReferrals: stats.activeReferrals || 0,
+            conversionRate: stats.totalReferrals > 0
+              ? (stats.activeReferrals / stats.totalReferrals) * 100
+              : 0,
+            averageCommission: avgCommission,
+            bestMonth: {
+              month: 'Current Month',
+              amount: stats.monthlyCommissions || 0
+            },
+            growth: 0 // Would need historical data to calculate
+          });
+        }
+      }
+
+      if (performanceRes.ok) {
+        const perfData = await performanceRes.json();
+        if (perfData.success && perfData.performance) {
+          setPerformanceData(prev => ({
+            ...prev,
+            conversionRate: perfData.performance.conversionRate || prev.conversionRate,
+            averageCommission: perfData.performance.averageCommission || prev.averageCommission
+          }));
+        }
+      }
+
+    } catch (error) {
+      console.error('Error fetching performance data:', error);
+    }
+  };
 
   const getRankBadge = (commissions: number) => {
     if (commissions >= 5000) return { rank: 'Diamond', color: 'text-blue-400', bg: 'bg-blue-500/20' };
