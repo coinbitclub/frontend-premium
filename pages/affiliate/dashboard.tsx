@@ -61,11 +61,11 @@ const AffiliateDashboard: React.FC = () => {
 
   // Estados para dados de usuário (como afiliado também é usuário)
   const [userStats, setUserStats] = useState<UserStats>({
-    totalBalance: 15430.50,
-    todayReturn: 347.20,
-    todayReturnPercent: 2.31,
-    totalOperations: 156,
-    successRate: 87.5
+    totalBalance: 0,
+    todayReturn: 0,
+    todayReturnPercent: 0,
+    totalOperations: 0,
+    successRate: 0
   });
 
   const [recentReferrals, setRecentReferrals] = useState<Referral[]>([]);
@@ -112,8 +112,8 @@ const AffiliateDashboard: React.FC = () => {
         return;
       }
 
-      // Fetch affiliate stats, referrals, and commissions in parallel
-      const [statsRes, referralsRes, commissionsRes] = await Promise.all([
+      // Fetch affiliate stats, referrals, commissions, user profile, and trading stats in parallel
+      const [statsRes, referralsRes, commissionsRes, profileRes, dailyStatsRes] = await Promise.all([
         fetch('/api/affiliate/stats', {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
@@ -121,6 +121,12 @@ const AffiliateDashboard: React.FC = () => {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
         fetch('/api/affiliate/commissions?limit=10', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/auth/profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/operations/daily-stats', {
           headers: { 'Authorization': `Bearer ${token}` }
         })
       ]);
@@ -169,6 +175,33 @@ const AffiliateDashboard: React.FC = () => {
             status: comm.status === 'pending' ? 'PENDING' : comm.paidAt ? 'PAID' : 'PROCESSING'
           }));
           setRecentCommissions(formattedCommissions);
+        }
+      }
+
+      // Process user profile data (for balance)
+      if (profileRes.ok) {
+        const profileData = await profileRes.json();
+        if (profileData.success && profileData.user) {
+          const user = profileData.user;
+          setUserStats(prev => ({
+            ...prev,
+            totalBalance: parseFloat(user.balance_real_usd || user.balance_real_brl || 0)
+          }));
+        }
+      }
+
+      // Process daily trading stats
+      if (dailyStatsRes.ok) {
+        const dailyStatsData = await dailyStatsRes.json();
+        if (dailyStatsData.success && dailyStatsData.data) {
+          const stats = dailyStatsData.data;
+          setUserStats(prev => ({
+            ...prev,
+            todayReturn: parseFloat(stats.todayProfit || 0),
+            todayReturnPercent: parseFloat(stats.todayProfitPercent || 0),
+            totalOperations: parseInt(stats.totalTrades || 0),
+            successRate: parseFloat(stats.successRate || 0)
+          }));
         }
       }
 
@@ -278,23 +311,6 @@ const AffiliateDashboard: React.FC = () => {
     setRecentCommissions(commissions);
   };
 
-  const updateRealTimeData = () => {
-    // Atualizar estatísticas do afiliado
-    setAffiliateStats(prev => ({
-      ...prev,
-      monthlyCommissions: prev.monthlyCommissions + (Math.random() - 0.3) * 50,
-      totalCommissions: prev.totalCommissions + (Math.random() - 0.3) * 20,
-      conversionRate: Math.max(60, Math.min(80, prev.conversionRate + (Math.random() - 0.5) * 2))
-    }));
-
-    // Atualizar estatísticas do usuário
-    setUserStats(prev => ({
-      ...prev,
-      todayReturn: prev.todayReturn + (Math.random() - 0.3) * 20,
-      todayReturnPercent: prev.todayReturnPercent + (Math.random() - 0.3) * 0.5,
-      successRate: Math.max(75, Math.min(95, prev.successRate + (Math.random() - 0.5) * 1))
-    }));
-  };
 
   const getStatusColor = (status: string): string => {
     switch (status) {

@@ -49,14 +49,14 @@ const AffiliateReferrals: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<string>('joinDate');
-  
+
   // Estados para modal de vincular usuário
   const [showAffiliateModal, setShowAffiliateModal] = useState(false);
   const [sponsorCode, setSponsorCode] = useState('');
 
-  // Link de indicação do usuário
-  const affiliateCode = 'CBB-AFC-2024-USER';
-  const referralLink = `https://coinbitclub.com/register?ref=${affiliateCode}`;
+  // Link de indicação do usuário (will be fetched from API)
+  const [affiliateCode, setAffiliateCode] = useState('');
+  const [referralLink, setReferralLink] = useState('');
 
   useEffect(() => {
     setMounted(true);
@@ -127,6 +127,14 @@ const AffiliateReferrals: React.FC = () => {
             conversionRate: totalRefs > 0 ? (activeRefs / totalRefs) * 100 : 0,
             averageInvestment: totalRefs > 0 ? totalInvestment / totalRefs : 0
           });
+
+          // Set affiliate code and referral link from real data
+          if (statsData.stats.affiliateCode) {
+            const code = statsData.stats.affiliateCode;
+            const frontendUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || window.location.origin;
+            setAffiliateCode(code);
+            setReferralLink(`${frontendUrl}/register?ref=${code}`);
+          }
         }
       }
 
