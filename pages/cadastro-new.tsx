@@ -773,3 +773,4 @@ const CadastroNewPage: NextPage = () => {
 };
 
 export default CadastroNewPage;
+

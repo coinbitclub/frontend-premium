@@ -34,6 +34,11 @@ interface Signal {
   timestamp: Date;
   status: 'PROCESSANDO' | 'APROVADO' | 'DESCARTADO' | 'EXECUTADO';
   reasoning: string;
+  entryPrice?: number;
+  currentPrice?: number;
+  quantity?: number;
+  pnl?: number;
+  pnlPercent?: number;
 }
 
 interface Position {
@@ -60,25 +65,6 @@ interface DailyStats {
   totalInvested: number;
 }
 
-interface TopSignal {
-  rank: number;
-  id: string;
-  pair: string;
-  direction: 'LONG' | 'SHORT';
-  confidence: number;
-  entryPrice: number;
-  currentPrice: number;
-  quantity: number;
-  pnl: number;
-  pnlPercent: number;
-  status: 'PROCESSANDO' | 'APROVADO' | 'DESCARTADO' | 'EXECUTADO';
-  timestamp: Date;
-  reasoning: string;
-  source: string;
-  performance: 'HIGH' | 'MEDIUM' | 'LOW';
-  activity: 'ACTIVE' | 'MONITORING' | 'COMPLETED';
-}
-
 const UserOperations: React.FC = () => {
   const [mounted, setMounted] = useState<boolean>(false);
   const { language, t } = useLanguage();
@@ -88,11 +74,7 @@ const UserOperations: React.FC = () => {
 
   // Use global socket context
   const { socket, isConnected, connectionError } = useSocket();
-  
-  // Cache keys
-  const CACHE_KEY = 'operations_data';
-  const CACHE_DURATION = 30 * 1000; // 30 seconds
-  
+    
   // Estados do fluxo real - inicializados vazios para dados em tempo real
   const [marketIndicators, setMarketIndicators] = useState<MarketIndicators>({
     fearAndGreed: 0,
@@ -114,7 +96,6 @@ const UserOperations: React.FC = () => {
   
   const [signals, setSignals] = useState<Signal[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
-  const [topSignals, setTopSignals] = useState<TopSignal[]>([]);
   
   const [dailyStats, setDailyStats] = useState<DailyStats>({
     operationsToday: 0,
@@ -260,6 +241,45 @@ const UserOperations: React.FC = () => {
       }));
     });
 
+    // ✅ NEW: Listen for real-time signal updates from database
+    socket.on('signal_update', (data) => {
+      console.log('📡 Operations: Signal update received:', data);
+
+      const updatedSignal: Signal = {
+        id: data.data?.id || `SIGNAL_${Date.now()}`,
+        pair: data.data?.pair || 'BTC/USDT',
+        direction: data.data?.direction || 'LONG',
+        strength: data.data?.confidence || 85,
+        confidence: data.data?.confidence || 85,
+        timestamp: new Date(data.data?.timestamp || data.timestamp),
+        status: data.data?.status || 'PROCESSANDO',
+        reasoning: data.data?.reasoning || 'Database signal update'
+      };
+
+      // Update signals list with real-time data
+      setSignals(prev => {
+        const existingIndex = prev.findIndex(s => s.id === updatedSignal.id);
+        
+        if (existingIndex >= 0) {
+          // Update existing signal
+          const updated = [...prev];
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            ...updatedSignal,
+            // Keep P&L data if available
+            pnl: data.data?.pnl || updated[existingIndex].pnl,
+            pnlPercent: data.data?.pnlPercent || updated[existingIndex].pnlPercent
+          };
+          return updated;
+        } else {
+          // Add new signal to top of list
+          return [updatedSignal, ...prev.slice(0, 19)];
+        }
+      });
+
+      console.log(`✅ Signal updated in UI: ${updatedSignal.pair} ${updatedSignal.direction} (${updatedSignal.status})`);
+    });
+
     // Update time every minute
     const timeInterval = setInterval(() => {
       setCurrentTime(new Date());
@@ -287,6 +307,7 @@ const UserOperations: React.FC = () => {
         socket.off('position_update');
         socket.off('balance_update');
         socket.off('execution_summary');
+        socket.off('signal_update'); // ✅ NEW: Clean up signal_update listener
       }
     };
   }, [socket, language]);
@@ -380,41 +401,8 @@ const UserOperations: React.FC = () => {
     return 'EXTREME_GREED';
   };
 
-  // Fetch top signals from API
-  const fetchTopSignals = useCallback(async () => {
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
-
-      // Get auth token from localStorage
-      const token = localStorage.getItem('auth_access_token');
-      if (!token) {
-        console.warn('No auth token for top signals');
-        return;
-      }
-
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-
-      // ✅ Use authenticated endpoint
-      const response = await fetch(`${apiUrl}/api/operations/top-signals`, { headers });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          // Convert API data to component format
-          const formattedSignals: TopSignal[] = data.data.map((signal: any) => ({
-            ...signal,
-            timestamp: new Date(signal.timestamp)
-          }));
-          setTopSignals(formattedSignals);
-          console.log('📡 Updated Top Signals:', formattedSignals.length);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching top signals:', error);
-    }
-  }, []);
+  // REMOVED: fetchTopSignals function
+  // Top signals functionality removed - signals now come via WebSocket from TradingView webhook
 
   // Fetch all real-time data from backend API
   const fetchAllOperationsData = useCallback(async () => {
@@ -463,28 +451,13 @@ const UserOperations: React.FC = () => {
         console.warn('AI Decision fetch failed:', aiResponse.status);
       }
 
-      // ✅ CORRECT: Fetch real signals
-      const signalsResponse = await fetch(`${apiUrl}/api/operations/signals`, {
-        headers
-      });
-      if (signalsResponse.ok) {
-        const data = await signalsResponse.json();
-        if (data.success && data.data) {
-          const formattedSignals: Signal[] = data.data.slice(0, 5).map((signal: any) => ({
-            id: signal.id || Date.now().toString(),
-            pair: signal.pair || signal.symbol,
-            direction: signal.direction,
-            strength: Math.round(signal.confidence || 0),
-            confidence: signal.confidence || 0,
-            timestamp: new Date(signal.timestamp),
-            status: signal.status || 'PROCESSANDO',
-            reasoning: signal.reasoning || ''
-          }));
-          setSignals(formattedSignals);
-        }
-      } else {
-        console.warn('Signals fetch failed:', signalsResponse.status);
-      }
+      // ✅ SIGNALS NOW COME VIA WEBSOCKET ONLY
+      // No API call needed - signals are broadcasted in real-time from TradingView webhook
+      console.log('📡 Signals now come via WebSocket from TradingView webhook');
+      console.log('📡 Listening to: trading_signal and signal_update events');
+      
+      // Keep signals array empty initially - will be populated via WebSocket
+      setSignals([]);
 
       // ✅ CORRECT: Fetch real positions (open trades)
       const positionsResponse = await fetch(`${apiUrl}/api/operations/positions`, {
@@ -533,13 +506,12 @@ const UserOperations: React.FC = () => {
         console.warn('Daily stats fetch failed:', statsResponse.status);
       }
 
-      // ✅ CORRECT: Fetch top signals
-      await fetchTopSignals();
+      // REMOVED: fetchTopSignals call - signals now come via WebSocket from TradingView webhook
 
     } catch (error) {
       console.error('Error fetching real-time operations data:', error);
     }
-  }, [fetchMarketIndicators, fetchTopSignals, language, router]);
+  }, [fetchMarketIndicators, language, router]);
 
   // Fetch all real-time data on mount and every interval
   useEffect(() => {
@@ -1065,154 +1037,6 @@ const UserOperations: React.FC = () => {
                     </motion.div>
                   ))}
                 </AnimatePresence>
-              </div>
-            </motion.div>
-
-            {/* TOP 10 PROCESS SIGNALS - REAL-TIME RANKING */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
-              className="bg-gradient-to-br from-purple-900/40 to-indigo-900/30 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-6 relative overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-indigo-500/10 to-purple-500/5 animate-pulse"></div>
-
-              <div className="flex items-center gap-3 mb-6 relative z-10">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                  className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center"
-                >
-                  <span className="text-white font-bold text-sm">🔝</span>
-                </motion.div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">
-                    {language === 'pt' ? 'TOP 10 SINAIS DE PROCESSO' : 'TOP 10 PROCESS SIGNALS'}
-                  </h3>
-                  <p className="text-purple-300 text-sm">
-                    {language === 'pt'
-                      ? `${topSignals.length} sinais classificados por performance`
-                      : `${topSignals.length} signals ranked by performance`
-                    }
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 relative z-10">
-                <AnimatePresence mode="popLayout">
-                  {topSignals.slice(0, 10).map((signal, index) => (
-                    <motion.div
-                      key={signal.id}
-                      initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.8, y: -20 }}
-                      transition={{
-                        delay: index * 0.1,
-                        duration: 0.4,
-                        type: "spring",
-                        bounce: 0.4
-                      }}
-                      className={`bg-black/40 backdrop-blur-sm rounded-lg p-4 border-2 transition-all duration-300 hover:scale-105 relative overflow-hidden ${
-                        signal.performance === 'HIGH' ? 'border-green-500/60 bg-green-500/10 shadow-lg shadow-green-500/20' :
-                        signal.performance === 'MEDIUM' ? 'border-yellow-500/60 bg-yellow-500/10 shadow-lg shadow-yellow-500/20' :
-                        'border-red-500/60 bg-red-500/10 shadow-lg shadow-red-500/20'
-                      }`}
-                    >
-                      {/* Rank Badge */}
-                      <div className="absolute -top-2 -left-2 w-8 h-8 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg">
-                        #{signal.rank}
-                      </div>
-
-                      {/* Pair and Direction */}
-                      <div className="flex items-center justify-between mb-3 mt-2">
-                        <div className="text-xs font-bold text-white">{signal.pair}</div>
-                        <div className={`text-xs font-bold px-2 py-1 rounded-full ${
-                          signal.direction === 'LONG' ? 'bg-green-500/30 text-green-300' : 'bg-red-500/30 text-red-300'
-                        }`}>
-                          {signal.direction}
-                        </div>
-                      </div>
-
-                      {/* Price Display - Entry vs Current */}
-                      <div className="mb-3 space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-400">Entry:</span>
-                          <span className="text-white font-medium">${signal.entryPrice.toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-400">Current:</span>
-                          <span className="text-blue-400 font-medium">${signal.currentPrice.toFixed(2)}</span>
-                        </div>
-                      </div>
-
-                      {/* P&L Display */}
-                      <div className="mb-3">
-                        <div className={`text-lg font-bold ${
-                          signal.pnl >= 0 ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                          {formatPercent(signal.pnlPercent)}
-                        </div>
-                        <div className={`text-xs ${
-                          signal.pnl >= 0 ? 'text-green-300' : 'text-red-300'
-                        }`}>
-                          {formatPrice(signal.pnl)}
-                        </div>
-                      </div>
-
-                      {/* Confidence and Activity */}
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs text-purple-300">
-                          {signal.confidence}% conf.
-                        </div>
-                        <div className={`text-xs px-2 py-1 rounded ${
-                          signal.activity === 'ACTIVE' ? 'bg-green-500/20 text-green-300' :
-                          signal.activity === 'MONITORING' ? 'bg-yellow-500/20 text-yellow-300' :
-                          'bg-gray-500/20 text-gray-300'
-                        }`}>
-                          {signal.activity}
-                        </div>
-                      </div>
-
-                      {/* Status */}
-                      <div className={`text-xs text-center px-2 py-1 rounded-full font-semibold ${
-                        signal.status === 'EXECUTADO' ? 'bg-green-500/20 text-green-400' :
-                        signal.status === 'APROVADO' ? 'bg-blue-500/20 text-blue-400' :
-                        signal.status === 'DESCARTADO' ? 'bg-red-500/20 text-red-400' :
-                        'bg-yellow-500/20 text-yellow-400'
-                      }`}>
-                        {signal.status}
-                      </div>
-
-                      {/* Performance indicator */}
-                      <motion.div
-                        animate={{
-                          scale: signal.performance === 'HIGH' ? [1, 1.1, 1] : 1,
-                          opacity: signal.performance === 'HIGH' ? [1, 0.7, 1] : 1
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: signal.performance === 'HIGH' ? Infinity : 0,
-                          ease: "easeInOut"
-                        }}
-                        className={`absolute top-2 right-2 w-2 h-2 rounded-full ${
-                          signal.performance === 'HIGH' ? 'bg-green-400' :
-                          signal.performance === 'MEDIUM' ? 'bg-yellow-400' :
-                          'bg-red-400'
-                        }`}
-                      />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-
-              {/* Update indicator */}
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-purple-500/20 text-xs text-purple-300 relative z-10">
-                <span>
-                  {language === 'pt' ? 'Atualizado automaticamente a cada 30s' : 'Auto-updated every 30s'}
-                </span>
-                <span>
-                  {language === 'pt' ? 'Fonte: Sistema de Trading' : 'Source: Trading System'}
-                </span>
               </div>
             </motion.div>
 
