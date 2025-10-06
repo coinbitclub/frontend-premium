@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
-import { FiDollarSign, FiTrendingUp, FiTarget, FiRefreshCw, FiAlertCircle, FiArrowRight } from 'react-icons/fi';
+import { FiDollarSign, FiTrendingUp, FiTarget, FiRefreshCw, FiAlertCircle, FiArrowRight, FiUsers } from 'react-icons/fi';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -10,7 +10,8 @@ import UserLayout from '../../components/UserLayout';
 import ResponsiveContainer from '../../components/ResponsiveContainer';
 import { useToast } from '../../components/Toast';
 import { UserProfile } from '../../src/services/userService';
-import { DailyStats } from '../../src/services/operationsService';
+import userService from '../../src/services/userService';
+import { DailyStats, operationsService } from '../../src/services/operationsService';
 
 export default function UserDashboard() {
   // ALL HOOKS MUST BE AT THE TOP - NEVER USE HOOKS AFTER CONDITIONAL RETURNS
@@ -27,16 +28,116 @@ export default function UserDashboard() {
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Define all callbacks - FIXED: Use mock data instead of real-time data
+  // Define all callbacks - Use real API data
   const loadDashboardData = useCallback(async () => {
     try {
       setDataLoading(true);
       setError(null);
 
-      // FIXED: Use mock data instead of API calls
-      console.log('📊 Dashboard: Loading mock data...');
+      console.log('📊 Dashboard: Loading real data from API...');
       
-      // Mock user profile data
+      // Fetch user profile and daily stats in parallel
+      const [userProfileResponse, dailyStatsResponse] = await Promise.all([
+        userService.getUserProfile(),
+        operationsService.getDailyStats()
+      ]);
+
+      console.log('📊 Dashboard: API responses received:', {
+        userProfileSuccess: userProfileResponse?.success,
+        dailyStatsResponse: dailyStatsResponse ? 'received' : 'null/undefined'
+      });
+
+      if (userProfileResponse.success) {
+        // Ensure all balance values are properly handled
+        const userProfile = userProfileResponse.user;
+        if (userProfile.balances) {
+          // Helper function to safely convert to number and handle null/NaN
+          const safeNumber = (value: any): number => {
+            const num = Number(value);
+            return isNaN(num) || num === null || num === undefined ? 0 : num;
+          };
+
+          // Safely convert all balance values
+          userProfile.balances.balance_real_brl = safeNumber(userProfile.balances.balance_real_brl);
+          userProfile.balances.balance_real_usd = safeNumber(userProfile.balances.balance_real_usd);
+          userProfile.balances.balance_admin_brl = safeNumber(userProfile.balances.balance_admin_brl);
+          userProfile.balances.balance_admin_usd = safeNumber(userProfile.balances.balance_admin_usd);
+          userProfile.balances.balance_commission_brl = safeNumber(userProfile.balances.balance_commission_brl);
+          userProfile.balances.balance_commission_usd = safeNumber(userProfile.balances.balance_commission_usd);
+        }
+        setUserProfile(userProfile);
+        console.log('✅ Dashboard: User profile loaded successfully');
+      } else {
+        console.error('❌ Dashboard: Failed to load user profile');
+        throw new Error('Failed to load user profile');
+      }
+
+      if (dailyStatsResponse && dailyStatsResponse !== null) {
+        // Ensure all stats values are properly handled
+        const safeNumber = (value: any): number => {
+          const num = Number(value);
+          return isNaN(num) || num === null || num === undefined ? 0 : num;
+        };
+
+        // Safely convert all stats values
+        const safeStats = {
+          ...dailyStatsResponse,
+          operationsToday: safeNumber(dailyStatsResponse.operationsToday),
+          successRate: safeNumber(dailyStatsResponse.successRate),
+          totalProfit: safeNumber(dailyStatsResponse.totalProfit),
+          totalLoss: safeNumber(dailyStatsResponse.totalLoss),
+          netProfit: safeNumber(dailyStatsResponse.netProfit),
+          winStreak: safeNumber(dailyStatsResponse.winStreak),
+          averageHoldTime: safeNumber(dailyStatsResponse.averageHoldTime),
+          volumeTraded: safeNumber(dailyStatsResponse.volumeTraded),
+          bestTrade: safeNumber(dailyStatsResponse.bestTrade),
+          worstTrade: safeNumber(dailyStatsResponse.worstTrade),
+          historicalSuccessRate: safeNumber(dailyStatsResponse.historicalSuccessRate),
+          todayReturnUSD: safeNumber(dailyStatsResponse.todayReturnUSD),
+          todayReturnPercent: safeNumber(dailyStatsResponse.todayReturnPercent),
+          totalInvested: safeNumber(dailyStatsResponse.totalInvested) || 10000
+        };
+
+        setDailyStats(safeStats);
+        console.log('✅ Dashboard: Daily stats loaded successfully:', {
+          todayReturnPercent: safeStats.todayReturnPercent,
+          successRate: safeStats.successRate
+        });
+      } else {
+        console.warn('⚠️ Dashboard: No daily stats available, using defaults');
+        // Set default daily stats if none available
+        setDailyStats({
+          operationsToday: 0,
+          successRate: 0,
+          totalProfit: 0,
+          totalLoss: 0,
+          netProfit: 0,
+          winStreak: 0,
+          averageHoldTime: 0,
+          volumeTraded: 0,
+          bestTrade: 0,
+          worstTrade: 0,
+          historicalSuccessRate: 0,
+          todayReturnUSD: 0,
+          todayReturnPercent: 0,
+          totalInvested: 10000
+        });
+      }
+      
+      console.log('✅ Dashboard: Real data loaded successfully');
+    } catch (error) {
+      console.error('❌ Dashboard: Error loading real data:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setError(errorMessage);
+      showToast(
+        language === 'pt' 
+          ? 'Erro ao carregar dados do dashboard' 
+          : 'Error loading dashboard data',
+        'error'
+      );
+      
+      // Fallback to mock data on error
+      console.log('🔄 Dashboard: Falling back to mock data...');
       const mockUserProfile = {
         user: {
           id: 1,
@@ -70,7 +171,6 @@ export default function UserDashboard() {
         last_activity_at: new Date().toISOString()
       };
 
-      // Mock daily stats data
       const mockDailyStats = {
         operationsToday: 12,
         successRate: 75.5,
@@ -90,16 +190,6 @@ export default function UserDashboard() {
 
       setUserProfile(mockUserProfile);
       setDailyStats(mockDailyStats);
-      
-      console.log('✅ Dashboard: Mock data loaded successfully');
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      setError(errorMessage);
-      showToast(
-        language === 'pt' ? 'Erro ao carregar dados' : 'Error loading data',
-        'error'
-      );
     } finally {
       setDataLoading(false);
     }
@@ -157,7 +247,8 @@ export default function UserDashboard() {
           total: 0,
           binance: 0,
           bybit: 0,
-          prepaid: 0
+          prepaid: 0,
+          commission: 0
         },
         performance: {
           todayReturn: '0.0',
@@ -170,31 +261,57 @@ export default function UserDashboard() {
       balance_real_brl: 0,
       balance_real_usd: 0,
       balance_admin_brl: 0,
-      balance_admin_usd: 0
+      balance_admin_usd: 0,
+      balance_commission_brl: 0,
+      balance_commission_usd: 0
     };
-    const totalBalance = (
-      balances.balance_real_brl +
-      balances.balance_real_usd +
-      balances.balance_admin_brl +
-      balances.balance_admin_usd
-    );
+
+    // Helper function to safely convert to number and handle null/NaN
+    const safeNumber = (value: any): number => {
+      const num = Number(value);
+      return isNaN(num) || num === null || num === undefined ? 0 : num;
+    };
+
+    // Safely convert all balance values
+    const realBrl = safeNumber(balances.balance_real_brl);
+    const realUsd = safeNumber(balances.balance_real_usd);
+    const adminBrl = safeNumber(balances.balance_admin_brl);
+    const adminUsd = safeNumber(balances.balance_admin_usd);
+    const commissionBrl = safeNumber(balances.balance_commission_brl);
+    const commissionUsd = safeNumber(balances.balance_commission_usd);
+
+    const totalBalance = realBrl + realUsd + adminBrl + adminUsd;
 
     // For now, we'll distribute the balance between exchanges
     // In a real implementation, you'd have separate exchange balance APIs
     const binanceBalance = totalBalance * 0.4; // 40% on Binance
     const bybitBalance = totalBalance * 0.5;   // 50% on Bybit
-    const prepaidBalance = balances.balance_admin_brl + balances.balance_admin_usd; // Admin credits
+    const prepaidBalance = adminBrl + adminUsd; // Admin credits
+    const commissionBalance = commissionBrl + commissionUsd; // Commission credits
+
+    // Debug performance calculation
+    const todayReturnValue = safeNumber(dailyStats?.todayReturnPercent);
+    const winRateValue = safeNumber(dailyStats?.successRate);
+    
+    console.log('📊 Dashboard: Performance calculation:', {
+      dailyStatsExists: !!dailyStats,
+      todayReturnPercent: dailyStats?.todayReturnPercent,
+      successRate: dailyStats?.successRate,
+      calculatedTodayReturn: todayReturnValue,
+      calculatedWinRate: winRateValue
+    });
 
     return {
       balances: {
         total: totalBalance,
         binance: binanceBalance,
         bybit: bybitBalance,
-        prepaid: prepaidBalance
+        prepaid: prepaidBalance,
+        commission: commissionBalance
       },
       performance: {
-        todayReturn: dailyStats.todayReturnPercent?.toFixed(1) || '0.0',
-        winRate: dailyStats.successRate?.toFixed(1) || '0.0'
+        todayReturn: todayReturnValue.toFixed(1),
+        winRate: winRateValue.toFixed(1)
       }
     };
   }, [userProfile, dailyStats]);
@@ -477,7 +594,7 @@ export default function UserDashboard() {
           )}
 
           {/* Balance Cards */}
-          <div className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-4 gap-6'}`}>
+          <div className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-5 gap-4'}`}>
             {/* Saldo Total */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -570,6 +687,29 @@ export default function UserDashboard() {
                 </p>
                 <p className={`text-white font-bold ${isMobile ? 'text-lg' : 'text-2xl'}`}>
                   {dataLoading ? '...' : `$${dashboardData.balances.prepaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Saldo Comissão */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className={`bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700/30 hover:border-purple-400/50 transition-all group ${dataLoading ? 'animate-pulse' : ''}`}
+            >
+              <div className="flex items-center space-x-3 mb-3">
+                <div className="p-2 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg">
+                  <FiUsers className="text-purple-400 text-xl" />
+                </div>
+                <span className="text-purple-400 text-xs font-medium">COMISSÃO</span>
+              </div>
+              <div>
+                <p className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'} mb-1`}>
+                  {language === 'pt' ? 'Saldo Comissão' : 'Commission Balance'}
+                </p>
+                <p className={`text-white font-bold ${isMobile ? 'text-lg' : 'text-2xl'}`}>
+                  {dataLoading ? '...' : `$${dashboardData.balances.commission.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </p>
               </div>
             </motion.div>

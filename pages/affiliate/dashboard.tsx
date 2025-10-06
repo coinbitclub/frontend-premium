@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FiUsers, FiDollarSign, FiTrendingUp, FiTarget, FiActivity, FiEye, FiArrowUpRight, FiRefreshCw } from 'react-icons/fi';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useSocket } from '../../src/contexts/SocketContext';
 import AffiliateLayout from '../../src/components/AffiliateLayout';
 
 // Interfaces para dados de afiliado
@@ -46,6 +47,7 @@ interface Commission {
 const AffiliateDashboard: React.FC = () => {
   const [mounted, setMounted] = useState<boolean>(false);
   const { language, t } = useLanguage();
+  const { socket } = useSocket();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(false);
   
@@ -100,6 +102,75 @@ const AffiliateDashboard: React.FC = () => {
       clearInterval(dataInterval);
     };
   }, [language]);
+
+  // WebSocket event listeners for real-time affiliate updates
+  useEffect(() => {
+    if (!socket) return;
+
+    // Listen for affiliate commission updates
+    const handleAffiliateCommissionUpdate = (data: any) => {
+      console.log('💰 Real-time affiliate commission update:', data);
+      setAffiliateStats(prev => ({
+        ...prev,
+        totalCommissions: prev.totalCommissions + data.data.amount,
+        totalEarnings: prev.totalEarnings + data.data.amount
+      }));
+      
+      // Show notification
+      if (typeof window !== 'undefined') {
+        // You can add a toast notification here
+        console.log(`🎉 New commission earned: $${data.data.amount.toFixed(2)}`);
+      }
+    };
+
+    // Listen for affiliate balance updates
+    const handleAffiliateBalanceUpdate = (data: any) => {
+      console.log('💳 Real-time affiliate balance update:', data);
+      setAffiliateStats(prev => ({
+        ...prev,
+        totalEarnings: data.data.totalEarnings,
+        totalCommissions: data.data.currentBalance
+      }));
+    };
+
+    // Listen for new referral notifications
+    const handleNewReferral = (data: any) => {
+      console.log('👥 New referral notification:', data);
+      setAffiliateStats(prev => ({
+        ...prev,
+        totalReferrals: prev.totalReferrals + 1,
+        activeReferrals: prev.activeReferrals + 1
+      }));
+      
+      // Show notification
+      if (typeof window !== 'undefined') {
+        console.log(`🎉 New referral: ${data.data.referredUserName}`);
+      }
+    };
+
+    // Listen for commission paid notifications
+    const handleCommissionPaid = (data: any) => {
+      console.log('💸 Commission paid notification:', data);
+      // You can add payment confirmation UI here
+      if (typeof window !== 'undefined') {
+        console.log(`✅ Commission paid: $${data.data.amount.toFixed(2)}`);
+      }
+    };
+
+    // Register event listeners
+    socket.on('affiliate_commission_update', handleAffiliateCommissionUpdate);
+    socket.on('affiliate_balance_update', handleAffiliateBalanceUpdate);
+    socket.on('new_referral', handleNewReferral);
+    socket.on('commission_paid', handleCommissionPaid);
+
+    // Cleanup event listeners
+    return () => {
+      socket.off('affiliate_commission_update', handleAffiliateCommissionUpdate);
+      socket.off('affiliate_balance_update', handleAffiliateBalanceUpdate);
+      socket.off('new_referral', handleNewReferral);
+      socket.off('commission_paid', handleCommissionPaid);
+    };
+  }, [socket]);
 
   const fetchAffiliateData = async () => {
     setLoading(true);

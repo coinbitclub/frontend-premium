@@ -49,6 +49,43 @@ const RegisterPage: NextPage = () => {
 
   useEffect(() => {
     setMounted(true);
+    
+    // Check for affiliate referral code in URL parameters
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const refCode = urlParams.get('ref');
+      
+      if (refCode) {
+        console.log('🔗 Affiliate referral code detected:', refCode);
+        
+        // Auto-populate affiliate code field
+        setFormData(prev => ({ 
+          ...prev, 
+          affiliateCode: refCode.toUpperCase() 
+        }));
+        
+        // Track click on affiliate link
+        fetch('/api/affiliate/track-click', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json' 
+          },
+          body: JSON.stringify({ 
+            affiliateCode: refCode,
+            metadata: {
+              ip: '', // Will be filled by backend
+              userAgent: navigator.userAgent,
+              referrer: document.referrer,
+              timestamp: new Date().toISOString()
+            }
+          })
+        }).catch(err => {
+          console.log('Click tracking error (non-critical):', err);
+        });
+        
+        console.log('✅ Affiliate code auto-populated and click tracked');
+      }
+    }
   }, []);
 
   const handleLanguageChange = (lang: 'pt' | 'en') => {
@@ -254,11 +291,39 @@ const RegisterPage: NextPage = () => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Mock de registro bem-sucedido
-      localStorage.setItem('user', JSON.stringify({
+      const userData = {
         email: formData.email,
         name: `${formData.firstName} ${formData.lastName}`,
         type: 'user'
-      }));
+      };
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      // Track affiliate conversion if affiliate code was provided
+      if (formData.affiliateCode && formData.affiliateCode.trim() !== '') {
+        try {
+          console.log('🤝 Tracking affiliate conversion for code:', formData.affiliateCode);
+          
+          // Note: In a real implementation, you would get the actual user ID from the registration response
+          // For now, we'll use a mock user ID
+          const mockUserId = Date.now(); // This would be the actual user ID from registration
+          
+          await fetch('/api/affiliate/track-conversion', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ 
+              affiliateCode: formData.affiliateCode,
+              userId: mockUserId,
+              amount: 0 // No initial deposit amount
+            })
+          });
+          
+          console.log('✅ Affiliate conversion tracked successfully');
+        } catch (error) {
+          console.log('Conversion tracking error (non-critical):', error);
+        }
+      }
       
       // Redirecionar para dashboard
       router.push('/dashboard');
