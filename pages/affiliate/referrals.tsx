@@ -75,7 +75,7 @@ const AffiliateReferrals: React.FC = () => {
 
   const fetchReferralData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_access_token');
       if (!token) {
         console.error('No auth token found');
         generateReferralData(); // Fallback to mock data

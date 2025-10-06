@@ -94,7 +94,7 @@ const AffiliateReports: React.FC = () => {
   }, [language, activeReport, selectedPeriod]);
 
   const fetchReportData = async () => {
-    const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_access_token');
     if (!token) return;
 
     try {

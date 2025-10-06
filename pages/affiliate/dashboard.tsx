@@ -175,13 +175,15 @@ const AffiliateDashboard: React.FC = () => {
   const fetchAffiliateData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_access_token');
       if (!token) {
         console.error('No auth token found');
         generateInitialData(); // Fallback to mock data
         setLoading(false);
         return;
       }
+
+      console.log('📊 Affiliate Dashboard: Loading real data from API...');
 
       // Fetch affiliate stats, referrals, commissions, user profile, and trading stats in parallel
       const [statsRes, referralsRes, commissionsRes, profileRes, dailyStatsRes] = await Promise.all([
@@ -201,6 +203,14 @@ const AffiliateDashboard: React.FC = () => {
           headers: { 'Authorization': `Bearer ${token}` }
         })
       ]);
+
+      console.log('📊 Affiliate Dashboard: API responses received:', {
+        statsOk: statsRes.ok,
+        referralsOk: referralsRes.ok,
+        commissionsOk: commissionsRes.ok,
+        profileOk: profileRes.ok,
+        dailyStatsOk: dailyStatsRes.ok
+      });
 
       if (statsRes.ok) {
         const statsData = await statsRes.json();

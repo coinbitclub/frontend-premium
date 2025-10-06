@@ -70,7 +70,7 @@ const AffiliatePerformance: React.FC = () => {
 
   const fetchPerformanceData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_access_token');
       if (!token) {
         console.error('No auth token found');
         return;

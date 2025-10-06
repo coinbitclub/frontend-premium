@@ -82,7 +82,7 @@ const AffiliateCommissions: React.FC = () => {
 
   const fetchCommissionData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_access_token');
       if (!token) {
         console.error('No auth token found');
         generateCommissionData(); // Fallback to mock data
@@ -255,7 +255,7 @@ const AffiliateCommissions: React.FC = () => {
   const handleWithdrawal = async () => {
     const amount = parseFloat(withdrawalAmount);
     if (amount > 0 && amount <= stats.availableBalance) {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_access_token');
 
       try {
         const response = await fetch('/api/affiliate/withdraw', {
@@ -302,7 +302,7 @@ const AffiliateCommissions: React.FC = () => {
   const handleConversion = async () => {
     const amount = parseFloat(conversionAmount);
     if (amount > 0 && amount <= stats.availableBalance) {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_access_token');
 
       try {
         const response = await fetch('/api/affiliate/convert-to-credit', {

@@ -53,7 +53,7 @@ const AffiliateLinks: React.FC = () => {
 
   const fetchAffiliateLinks = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_access_token');
       if (!token) {
         console.error('No auth token found');
         generateMockLinks(); // Fallback to mock data
@@ -173,7 +173,7 @@ const AffiliateLinks: React.FC = () => {
     if (!newLink.name.trim()) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_access_token');
       if (!token) {
         console.error('No auth token found');
         return;
