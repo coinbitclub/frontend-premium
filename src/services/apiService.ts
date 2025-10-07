@@ -186,27 +186,40 @@ class ApiService {
     });
   }
 
-  // API Keys Management
+  // API Keys Management (Legacy - redirected to new encrypted endpoints)
   async getApiKeys() {
-    return this.request('/api/user-settings/api-keys');
+    return this.request('/api/user-api-keys/all/status');
   }
 
   async addApiKey(data: any) {
-    return this.request('/api/user-settings/api-keys', {
+    // Map to new endpoint format: /api/user-api-keys/:exchange
+    const exchange = data.exchange || 'bybit';
+    return this.request(`/api/user-api-keys/${exchange}`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        apiKey: data.apiKey,
+        apiSecret: data.apiSecret,
+        useForTrading: data.useForTrading !== false
+      }),
     });
   }
 
   async updateApiKey(id: string, data: any) {
-    return this.request(`/api/user-settings/api-keys/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
+    // Map to new endpoint format
+    const exchange = data.exchange || id;
+    return this.request(`/api/user-api-keys/${exchange}`, {
+      method: 'POST',
+      body: JSON.stringify({
+        apiKey: data.apiKey,
+        apiSecret: data.apiSecret,
+        useForTrading: data.useForTrading !== false
+      }),
     });
   }
 
   async deleteApiKey(id: string) {
-    return this.request(`/api/user-settings/api-keys/${id}`, {
+    // Map to new endpoint format
+    return this.request(`/api/user-api-keys/${id}`, {
       method: 'DELETE',
     });
   }

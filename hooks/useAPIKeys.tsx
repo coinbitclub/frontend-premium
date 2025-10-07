@@ -84,8 +84,8 @@ export function useAPIKeys() {
     try {
       const response: any = await apiService.addApiKey({
         exchange: exchange.toLowerCase(),
-        api_key: apiKey,
-        api_secret: apiSecret
+        apiKey: apiKey,
+        apiSecret: apiSecret
       });
 
       if (response.success) {
