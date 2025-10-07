@@ -6,12 +6,20 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSocket } from '../src/contexts/SocketContext';
+import { useAuth } from '../src/contexts/AuthContext';
 
 const SocketConnectionStatus: React.FC = () => {
   const { isConnected, connectionError, reconnectAttempts } = useSocket();
+  const { isAuthenticated } = useAuth();
 
   // Don't show anything if connected
   if (isConnected && !connectionError) {
+    return null;
+  }
+
+  // Don't show connection status on login/registration pages
+  // Socket only connects after authentication
+  if (!isAuthenticated) {
     return null;
   }
 
