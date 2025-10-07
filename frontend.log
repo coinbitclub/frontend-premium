@@ -1,0 +1,16 @@
+npm warn config production Use `--omit=dev` instead.
+
+> frontend-premium-limpo@0.1.0 dev
+> next dev -p 3003
+
+  ▲ Next.js 14.2.30
+  - Local:        http://localhost:3003
+  - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 4.9s
+ ○ Compiling / ...
+ ✓ Compiled / in 22.6s (775 modules)
+ ✓ Compiled in 419ms (775 modules)
+ GET / 200 in 24848ms
+ GET / 200 in 18ms
