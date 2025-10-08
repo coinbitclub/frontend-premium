@@ -150,22 +150,22 @@ const UserSettings: React.FC = () => {
             // Load API keys separately (they are now stored in user_api_keys table)
             try {
               const apiKeysResponse = await apiService.getApiKeys() as any;
-              if (apiKeysResponse.success && apiKeysResponse.apiKeys) {
-                const binanceKey = apiKeysResponse.apiKeys.find((k: any) => k.exchange === 'BINANCE');
-                const bybitKey = apiKeysResponse.apiKeys.find((k: any) => k.exchange === 'BYBIT');
+              if (apiKeysResponse.success && apiKeysResponse.exchanges) {
+                const binanceData = apiKeysResponse.exchanges.binance;
+                const bybitData = apiKeysResponse.exchanges.bybit;
 
                 setApiKeys(prev => ({
                   binance: {
                     ...prev.binance,
-                    apiKey: binanceKey ? binanceKey.api_key : '',
-                    connected: !!binanceKey,
-                    lastConnection: binanceKey ? binanceKey.last_validated_at : null
+                    apiKey: binanceData?.masked_key || '',
+                    connected: binanceData?.has_key || false,
+                    lastConnection: binanceData?.verified_at || null
                   },
                   bybit: {
                     ...prev.bybit,
-                    apiKey: bybitKey ? bybitKey.api_key : '',
-                    connected: !!bybitKey,
-                    lastConnection: bybitKey ? bybitKey.last_validated_at : null
+                    apiKey: bybitData?.masked_key || '',
+                    connected: bybitData?.has_key || false,
+                    lastConnection: bybitData?.verified_at || null
                   }
                 }));
               }
@@ -235,8 +235,8 @@ const UserSettings: React.FC = () => {
         // Trim whitespace from API keys before sending
         const response: any = await apiService.addApiKey({
           exchange,
-          api_key: keys.apiKey.trim(),
-          api_secret: keys.secretKey.trim()
+          apiKey: keys.apiKey.trim(),
+          apiSecret: keys.secretKey.trim()
         });
 
         if (response.success) {
@@ -946,7 +946,7 @@ const UserSettings: React.FC = () => {
                   <div className="space-y-3">
                     <div className="p-3 bg-black/20 rounded-lg">
                       <div className="text-gray-300 text-sm mb-1">API Key</div>
-                      <div className="text-white font-mono">****...{apiKeys.binance.apiKey.slice(-8)}</div>
+                      <div className="text-white font-mono">{apiKeys.binance.apiKey || '****...****'}</div>
                     </div>
                     <div className="p-3 bg-black/20 rounded-lg">
                       <div className="text-gray-300 text-sm mb-1">
@@ -1049,7 +1049,7 @@ const UserSettings: React.FC = () => {
                   <div className="space-y-3">
                     <div className="p-3 bg-black/20 rounded-lg">
                       <div className="text-gray-300 text-sm mb-1">API Key</div>
-                      <div className="text-white font-mono">****...{apiKeys.bybit.apiKey.slice(-8)}</div>
+                      <div className="text-white font-mono">{apiKeys.bybit.apiKey || '****...****'}</div>
                     </div>
                     <div className="p-3 bg-black/20 rounded-lg">
                       <div className="text-gray-300 text-sm mb-1">
