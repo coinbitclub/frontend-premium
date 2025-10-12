@@ -71,8 +71,22 @@ class ExchangeBalanceService {
    */
   async getAllExchangeBalances(): Promise<AllExchangeBalances> {
     try {
+      // Debug: Check token before request
+      const token = localStorage.getItem('auth_access_token');
       console.log('📊 Fetching all exchange balances from API...');
+      console.log('   URL:', `${API_BASE_URL}/api/user-settings/all-balances`);
+      console.log('   Token:', token ? `${token.substring(0, 30)}...` : 'NO TOKEN!');
+      
       const response = await apiClient.get('/user-settings/all-balances');
+      
+      console.log('📊 Raw API response:', {
+        status: response.status,
+        success: response.data.success,
+        has_data: !!response.data.data,
+        binance_equity: response.data.data?.binance?.total_equity,
+        bybit_equity: response.data.data?.bybit?.total_equity,
+        total: response.data.data?.total_usd
+      });
       
       if (response.data.success) {
         console.log('✅ Exchange balances loaded successfully:', response.data.data);
@@ -83,6 +97,10 @@ class ExchangeBalanceService {
       }
     } catch (error) {
       console.error('❌ Error fetching exchange balances:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('   Status:', error.response?.status);
+        console.error('   Response:', error.response?.data);
+      }
       
       // Return empty balances on error
       return {
