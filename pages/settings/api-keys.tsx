@@ -14,7 +14,8 @@ import {
   FiAlertCircle,
   FiCheckCircle,
   FiXCircle,
-  FiClock
+  FiClock,
+  FiEdit2
 } from 'react-icons/fi';
 
 interface APIKeyFormData {
@@ -39,6 +40,11 @@ const APIKeysSettings: React.FC = () => {
   } = useAPIKeys();
 
   const [showForm, setShowForm] = useState<{ bybit: boolean; binance: boolean }>({
+    bybit: false,
+    binance: false
+  });
+
+  const [editMode, setEditMode] = useState<{ bybit: boolean; binance: boolean }>({
     bybit: false,
     binance: false
   });
@@ -74,13 +80,15 @@ const APIKeysSettings: React.FC = () => {
       const result = await addAPIKey(exchange, apiKey, apiSecret);
 
       if (result.success) {
+        const isUpdate = editMode[exchange];
         showToast(
           language === 'pt'
-            ? `API Key ${exchange} adicionada com sucesso!`
-            : `${exchange} API Key added successfully!`,
+            ? `API Key ${exchange} ${isUpdate ? 'atualizada' : 'adicionada'} com sucesso!`
+            : `${exchange} API Key ${isUpdate ? 'updated' : 'added'} successfully!`,
           'success'
         );
         setShowForm(prev => ({ ...prev, [exchange]: false }));
+        setEditMode(prev => ({ ...prev, [exchange]: false }));
         setFormData(prev => ({
           ...prev,
           [exchange]: { apiKey: '', apiSecret: '' }
@@ -96,6 +104,16 @@ const APIKeysSettings: React.FC = () => {
     } finally {
       setProcessing(prev => ({ ...prev, [exchange]: false }));
     }
+  };
+
+  const handleEditKey = (exchange: 'bybit' | 'binance') => {
+    setEditMode(prev => ({ ...prev, [exchange]: true }));
+    setShowForm(prev => ({ ...prev, [exchange]: true }));
+    // Clear form when entering edit mode
+    setFormData(prev => ({
+      ...prev,
+      [exchange]: { apiKey: '', apiSecret: '' }
+    }));
   };
 
   const handleVerifyKey = async (exchange: 'bybit' | 'binance') => {
@@ -255,6 +273,14 @@ const APIKeysSettings: React.FC = () => {
                 </button>
               )}
               <button
+                onClick={() => handleEditKey(exchange)}
+                disabled={processing[exchange]}
+                className="bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-blue-500/10 text-blue-400 font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                <FiEdit2 className="w-4 h-4" />
+                {language === 'pt' ? 'Editar' : 'Edit'}
+              </button>
+              <button
                 onClick={() => handleDeleteKey(exchange)}
                 disabled={processing[exchange]}
                 className="bg-red-500/20 hover:bg-red-500/30 disabled:bg-red-500/10 text-red-400 font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
@@ -266,6 +292,24 @@ const APIKeysSettings: React.FC = () => {
           </div>
         ) : showForm[exchange] ? (
           <div className="space-y-4">
+            {/* Edit Mode Indicator */}
+            {editMode[exchange] && (
+              <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <div className="flex items-center gap-2 text-blue-400 text-sm">
+                  <FiEdit2 />
+                  <span className="font-medium">
+                    {language === 'pt' ? 'Modo de Edição' : 'Edit Mode'}
+                  </span>
+                  <span className="text-gray-400">-</span>
+                  <span className="text-gray-300">
+                    {language === 'pt' 
+                      ? 'Digite suas novas credenciais'
+                      : 'Enter your new credentials'}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* API Key Input */}
             <div>
               <label className="block text-gray-300 text-sm mb-2">
@@ -321,14 +365,21 @@ const APIKeysSettings: React.FC = () => {
               >
                 {processing[exchange] ? (
                   <><FiRefreshCw className="w-4 h-4 animate-spin" />
-                  {language === 'pt' ? 'Adicionando...' : 'Adding...'}</>
+                  {language === 'pt' 
+                    ? (editMode[exchange] ? 'Atualizando...' : 'Adicionando...')
+                    : (editMode[exchange] ? 'Updating...' : 'Adding...')}</>
                 ) : (
                   <><FiCheck className="w-4 h-4" />
-                  {language === 'pt' ? 'Adicionar' : 'Add'}</>
+                  {language === 'pt' 
+                    ? (editMode[exchange] ? 'Atualizar' : 'Adicionar')
+                    : (editMode[exchange] ? 'Update' : 'Add')}</>
                 )}
               </button>
               <button
-                onClick={() => setShowForm(prev => ({ ...prev, [exchange]: false }))}
+                onClick={() => {
+                  setShowForm(prev => ({ ...prev, [exchange]: false }));
+                  setEditMode(prev => ({ ...prev, [exchange]: false }));
+                }}
                 disabled={processing[exchange]}
                 className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-600/50 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
               >

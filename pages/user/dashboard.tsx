@@ -12,6 +12,7 @@ import { useToast } from '../../components/Toast';
 import { UserProfile } from '../../src/services/userService';
 import userService from '../../src/services/userService';
 import { DailyStats, operationsService } from '../../src/services/operationsService';
+import { AllExchangeBalances, exchangeBalanceService } from '../../src/services/exchangeBalanceService';
 
 export default function UserDashboard() {
   // ALL HOOKS MUST BE AT THE TOP - NEVER USE HOOKS AFTER CONDITIONAL RETURNS
@@ -24,6 +25,7 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [dailyStats, setDailyStats] = useState<DailyStats | null>(null);
+  const [exchangeBalances, setExchangeBalances] = useState<AllExchangeBalances | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,15 +38,17 @@ export default function UserDashboard() {
 
       console.log('📊 Dashboard: Loading real data from API...');
       
-      // Fetch user profile and daily stats in parallel
-      const [userProfileResponse, dailyStatsResponse] = await Promise.all([
+      // Fetch user profile, daily stats, and exchange balances in parallel
+      const [userProfileResponse, dailyStatsResponse, exchangeBalancesResponse] = await Promise.all([
         userService.getUserProfile(),
-        operationsService.getDailyStats()
+        operationsService.getDailyStats(),
+        exchangeBalanceService.getAllExchangeBalances()
       ]);
 
       console.log('📊 Dashboard: API responses received:', {
         userProfileSuccess: userProfileResponse?.success,
-        dailyStatsResponse: dailyStatsResponse ? 'received' : 'null/undefined'
+        dailyStatsResponse: dailyStatsResponse ? 'received' : 'null/undefined',
+        exchangeBalancesReceived: exchangeBalancesResponse ? 'received' : 'null/undefined'
       });
 
       if (userProfileResponse.success) {
@@ -121,6 +125,25 @@ export default function UserDashboard() {
           todayReturnUSD: 0,
           todayReturnPercent: 0,
           totalInvested: 10000
+        });
+      }
+
+      // Handle exchange balances
+      if (exchangeBalancesResponse) {
+        setExchangeBalances(exchangeBalancesResponse);
+        console.log('✅ Dashboard: Exchange balances loaded successfully:', {
+          binance: exchangeBalancesResponse.binance?.total_equity || 0,
+          bybit: exchangeBalancesResponse.bybit?.total_equity || 0,
+          total: exchangeBalancesResponse.total_usd,
+          has_keys: exchangeBalancesResponse.has_keys
+        });
+      } else {
+        console.warn('⚠️ Dashboard: No exchange balances available');
+        setExchangeBalances({
+          binance: null,
+          bybit: null,
+          total_usd: 0,
+          has_keys: false
         });
       }
       
@@ -202,44 +225,17 @@ export default function UserDashboard() {
       'info'
     );
 
-    // FIXED: Generate new mock data on refresh
-    try {
-      setDataLoading(true);
-      
-      // Generate new random mock data
-      const newMockDailyStats = {
-        operationsToday: Math.floor(Math.random() * 20) + 5,
-        successRate: 60 + Math.random() * 30,
-        totalProfit: Math.random() * 5000 + 1000,
-        totalLoss: Math.random() * 2000 + 500,
-        netProfit: Math.random() * 3000,
-        winStreak: Math.floor(Math.random() * 10) + 1,
-        averageHoldTime: Math.floor(Math.random() * 3600) + 300,
-        volumeTraded: Math.random() * 100000 + 10000,
-        bestTrade: Math.random() * 1000 + 100,
-        worstTrade: -(Math.random() * 500 + 50),
-        historicalSuccessRate: 60 + Math.random() * 30,
-        todayReturnUSD: (Math.random() - 0.5) * 2000,
-        todayReturnPercent: (Math.random() - 0.5) * 10,
-        totalInvested: Math.random() * 50000 + 10000
-      };
-
-      setDailyStats(newMockDailyStats);
-      console.log('✅ Dashboard: Mock data refreshed with new values');
-    } catch (error) {
-      console.error('Error refreshing data:', error);
-    } finally {
-      setDataLoading(false);
-    }
+    // Reload all real data
+    await loadDashboardData();
 
     setLoading(false);
     showToast(
       language === 'pt' ? 'Dados atualizados!' : 'Data updated!',
       'success'
     );
-  }, [language, showToast]);
+  }, [language, showToast, loadDashboardData]);
 
-  // Calculate dashboard data from mock data with memoization
+  // Calculate dashboard data with real exchange balances
   const dashboardData = useMemo(() => {
     if (!userProfile || !dailyStats) {
       return {
@@ -280,12 +276,19 @@ export default function UserDashboard() {
     const commissionBrl = safeNumber(balances.balance_commission_brl);
     const commissionUsd = safeNumber(balances.balance_commission_usd);
 
-    const totalBalance = realBrl + realUsd + adminBrl + adminUsd;
-
-    // For now, we'll distribute the balance between exchanges
-    // In a real implementation, you'd have separate exchange balance APIs
-    const binanceBalance = totalBalance * 0.4; // 40% on Binance
-    const bybitBalance = totalBalance * 0.5;   // 50% on Bybit
+    // Use REAL exchange balances from API
+    const binanceBalance = exchangeBalances?.binance && !exchangeBalances.binance.error 
+      ? safeNumber(exchangeBalances.binance.total_equity) 
+      : 0;
+    const bybitBalance = exchangeBalances?.bybit && !exchangeBalances.bybit.error 
+      ? safeNumber(exchangeBalances.bybit.total_equity) 
+      : 0;
+    
+    // Calculate total from real exchange balances + database balances
+    const exchangeTotalBalance = binanceBalance + bybitBalance;
+    const databaseTotalBalance = realBrl + realUsd + adminBrl + adminUsd;
+    const totalBalance = exchangeTotalBalance || databaseTotalBalance; // Use exchange balances if available, otherwise use database
+    
     const prepaidBalance = adminBrl + adminUsd; // Admin credits
     const commissionBalance = commissionBrl + commissionUsd; // Commission credits
 
@@ -314,7 +317,7 @@ export default function UserDashboard() {
         winRate: winRateValue.toFixed(1)
       }
     };
-  }, [userProfile, dailyStats]);
+  }, [userProfile, dailyStats, exchangeBalances]);
 
   // ALL EFFECTS MUST BE DECLARED BEFORE ANY CONDITIONAL RETURNS
   // Authentication check with enhanced redirect protection
