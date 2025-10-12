@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -7,16 +7,18 @@ import { motion } from 'framer-motion';
 import { FaUser, FaLock, FaEye, FaEyeSlash, FaArrowLeft, FaGlobe, FaShieldAlt } from 'react-icons/fa';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useAuth } from '../../src/contexts/AuthContext';
+// Authentication removed - PublicRoute disabled
+
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 const LoginPage: NextPage = () => {
   const router = useRouter();
   const { language, setLanguage } = useLanguage();
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [redirecting, setRedirecting] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -29,125 +31,26 @@ const LoginPage: NextPage = () => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    console.log('🔑 Login: Auth state check:', { mounted, isLoading, isAuthenticated, redirecting });
-    console.log('🔍 DEBUG: Login useEffect triggered with:', {
-      mounted,
-      isLoading,
-      isAuthenticated,
-      redirecting,
-      currentPath: router.asPath,
-      currentQuery: router.query
-    });
-
-    // Only redirect if mounted, not loading, authenticated, and not already redirecting
-    if (mounted && !isLoading && isAuthenticated && !redirecting) {
-      console.log('🔍 DEBUG: Login - User authenticated, checking redirect conditions');
-      
-      // Enhanced loop prevention
-      const lastRedirect = sessionStorage.getItem('login-redirect-timestamp');
-      const redirectCount = parseInt(sessionStorage.getItem('login-redirect-count') || '0');
-      const now = Date.now();
-
-      console.log('🔄 Login: User authenticated, checking redirect protection...', { 
-        lastRedirect, 
-        redirectCount, 
-        now,
-        timeSinceLastRedirect: lastRedirect ? now - parseInt(lastRedirect) : 'N/A'
-      });
-
-      // Prevent redirect if:
-      // 1. Redirected less than 3 seconds ago
-      // 2. More than 3 redirects in the last 10 seconds
-      // 3. Already in a redirect process
-      if (
-        (lastRedirect && (now - parseInt(lastRedirect)) < 3000) ||
-        redirectCount > 3 ||
-        redirecting
-      ) {
-        console.warn('⚠️ Login: Redirect loop detected, skipping redirect', {
-          timeSinceLastRedirect: lastRedirect ? now - parseInt(lastRedirect) : 'N/A',
-          redirectCount,
-          redirecting,
-          condition1: lastRedirect && (now - parseInt(lastRedirect)) < 3000,
-          condition2: redirectCount > 3,
-          condition3: redirecting
-        });
-        return;
-      }
-
-      // Increment redirect counter and set timestamp
-      const newCount = redirectCount + 1;
-      sessionStorage.setItem('login-redirect-timestamp', now.toString());
-      sessionStorage.setItem('login-redirect-count', newCount.toString());
-      setRedirecting(true);
-
-      console.log('🔀 Login: Redirecting to dashboard... (attempt', newCount, ')');
-      console.log('🔍 DEBUG: Login - About to redirect to /user/dashboard');
-
-      // Add a small delay to prevent rapid redirects
-      setTimeout(() => {
-        console.log('🔍 DEBUG: Login - Executing redirect now');
-        router.push('/user/dashboard')
-          .then(() => {
-            console.log('✅ Login: Successfully redirected to dashboard');
-            // Clear all redirect timestamps on successful redirect
-            sessionStorage.removeItem('login-redirect-timestamp');
-            sessionStorage.removeItem('login-redirect-count');
-            sessionStorage.removeItem('dashboard-redirect-timestamp');
-            sessionStorage.removeItem('dashboard-redirect-count');
-          })
-          .catch(error => {
-            console.error('❌ Login: Redirect error:', error);
-            setRedirecting(false);
-            sessionStorage.removeItem('login-redirect-timestamp');
-            sessionStorage.removeItem('login-redirect-count');
-          });
-      }, 100);
-    } else if (!isAuthenticated) {
-      console.log('🔓 Login: User not authenticated, staying on login page');
-    } else {
-      console.log('🔍 DEBUG: Login - Not redirecting because:', {
-        mounted,
-        isLoading,
-        isAuthenticated,
-        redirecting
-      });
-    }
-  }, [mounted, isAuthenticated, isLoading, redirecting, router]);
-
-  const handleLanguageChange = (lang: 'pt' | 'en') => {
-    console.log('Login page - Button clicked for language:', lang);
-    console.log('Current language state:', language);
-    console.log('setLanguage function available:', !!setLanguage);
+  // ALL HOOKS MUST BE DEFINED BEFORE ANY EARLY RETURNS
+  const handleLanguageChange = useCallback((lang: 'pt' | 'en') => {
+    IS_DEV && console.log('Login page - Button clicked for language:', lang);
+    IS_DEV && console.log('Current language state:', language);
+    IS_DEV && console.log('setLanguage function available:', !!setLanguage);
     
     if (setLanguage && typeof setLanguage === 'function') {
       setLanguage(lang);
-      console.log('Language change function called with:', lang);
+      IS_DEV && console.log('Language change function called with:', lang);
       
       // Force re-render by checking state after a small delay
       setTimeout(() => {
-        console.log('Language after change:', language);
+        IS_DEV && console.log('Language after change:', language);
       }, 100);
     } else {
       console.error('setLanguage function not available:', setLanguage);
     }
-  };
+  }, [language, setLanguage]);
 
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-black font-bold text-xl">C</span>
-          </div>
-          <p className="text-gray-400">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -157,9 +60,9 @@ const LoginPage: NextPage = () => {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
-  };
+  }, [errors]);
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors: {[key: string]: string} = {};
 
     if (!formData.email) {
@@ -176,9 +79,9 @@ const LoginPage: NextPage = () => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [formData.email, formData.password, language]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
@@ -189,8 +92,11 @@ const LoginPage: NextPage = () => {
     try {
       await login(formData.email, formData.password, formData.twoFactorCode);
 
-      // Login successful, redirect will be handled by useEffect
-      // router.push('/user/dashboard'); // Removed to prevent double redirect
+      // Login successful - redirect to dashboard
+      IS_DEV && console.log('✅ Login successful, redirecting to dashboard...');
+      
+      // Manual redirect since authentication routes are disabled
+      router.push('/user/dashboard');
 
     } catch (error: any) {
       if (error.message === '2FA_REQUIRED') {
@@ -204,7 +110,21 @@ const LoginPage: NextPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [validateForm, login, formData.email, formData.password, formData.twoFactorCode, language, router]);
+
+  // Early return AFTER all hooks are defined
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-black font-bold text-xl">C</span>
+          </div>
+          <p className="text-gray-400">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -6,6 +6,8 @@ import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
 import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash, FaPhone, FaArrowLeft, FaGlobe, FaUsers, FaTicketAlt } from 'react-icons/fa';
 import { useLanguage } from '../../hooks/useLanguage';
+
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 interface FormData {
   firstName: string;
@@ -56,7 +58,7 @@ const RegisterPage: NextPage = () => {
       const refCode = urlParams.get('ref');
       
       if (refCode) {
-        console.log('🔗 Affiliate referral code detected:', refCode);
+        IS_DEV && console.log('🔗 Affiliate referral code detected:', refCode);
         
         // Auto-populate affiliate code field
         setFormData(prev => ({ 
@@ -80,23 +82,23 @@ const RegisterPage: NextPage = () => {
             }
           })
         }).catch(err => {
-          console.log('Click tracking error (non-critical):', err);
+          IS_DEV && console.log('Click tracking error (non-critical):', err);
         });
         
-        console.log('✅ Affiliate code auto-populated and click tracked');
+        IS_DEV && console.log('✅ Affiliate code auto-populated and click tracked');
       }
     }
   }, []);
 
-  const handleLanguageChange = (lang: 'pt' | 'en') => {
-    console.log('Register page - Button clicked for language:', lang);
+  const handleLanguageChange = useCallback((lang: 'pt' | 'en') => {
+    IS_DEV && console.log('Register page - Button clicked for language:', lang);
     if (changeLanguage && typeof changeLanguage === 'function') {
       changeLanguage(lang);
-      console.log('Language changed to:', lang);
+      IS_DEV && console.log('Language changed to:', lang);
     } else {
       console.error('changeLanguage function not available');
     }
-  };
+  }, [changeLanguage]);
 
   if (!mounted || !isLoaded) {
     return (
@@ -111,7 +113,7 @@ const RegisterPage: NextPage = () => {
     );
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -121,7 +123,7 @@ const RegisterPage: NextPage = () => {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
-  };
+  }, [errors]);
 
   const availableCountries = [
     { code: '+55', flag: '🇧🇷', name: 'Brasil', country: 'Brasil' },
@@ -136,7 +138,7 @@ const RegisterPage: NextPage = () => {
     { code: '+65', flag: '��', name: 'Singapura', country: 'Singapura' }
   ];
 
-  const validateCoupon = async () => {
+  const validateCoupon = useCallback(async () => {
     if (!formData.discountCoupon.trim()) return;
     
     try {
@@ -170,9 +172,9 @@ const RegisterPage: NextPage = () => {
         message: 'Erro ao validar cupom'
       });
     }
-  };
+  }, [formData.discountCoupon]);
 
-  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleCountryChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedCountry = availableCountries.find(c => c.code === e.target.value);
     if (selectedCountry) {
       setFormData(prev => ({
@@ -181,17 +183,17 @@ const RegisterPage: NextPage = () => {
         country: selectedCountry.country
       }));
     }
-  };
+  }, [availableCountries]);
 
-  const handleCouponChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCouponChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
       discountCoupon: e.target.value.toUpperCase()
     }));
     setCouponValidated(null);
-  };
+  }, []);
 
-  const validateStep1 = () => {
+  const validateStep1 = useCallback(() => {
     const newErrors: {[key: string]: string} = {};
 
     if (!formData.firstName.trim()) {
@@ -216,9 +218,9 @@ const RegisterPage: NextPage = () => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [formData.firstName, formData.lastName, formData.email, formData.phone]);
 
-  const validateStep2 = () => {
+  const validateStep2 = useCallback(() => {
     const newErrors: {[key: string]: string} = {};
 
     if (!formData.password) {
@@ -241,21 +243,21 @@ const RegisterPage: NextPage = () => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [formData.password, formData.confirmPassword, formData.acceptTerms]);
 
-  const handleNextStep = () => {
+  const handleNextStep = useCallback(() => {
     if (currentStep === 1 && validateStep1()) {
       setCurrentStep(2);
     }
-  };
+  }, [currentStep, validateStep1]);
 
-  const handlePrevStep = () => {
+  const handlePrevStep = useCallback(() => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
-  };
+  }, [currentStep]);
 
-  const formatPhone = (value: string) => {
+  const formatPhone = useCallback((value: string) => {
     // Remove tudo que não é dígito
     const numbers = value.replace(/\D/g, '');
     
@@ -269,17 +271,17 @@ const RegisterPage: NextPage = () => {
     } else {
       return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
     }
-  };
+  }, []);
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhoneChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhone(e.target.value);
     setFormData(prev => ({ ...prev, phone: formatted }));
     if (errors.phone) {
       setErrors(prev => ({ ...prev, phone: '' }));
     }
-  };
+  }, [formatPhone, errors.phone]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateStep2()) return;
@@ -289,6 +291,8 @@ const RegisterPage: NextPage = () => {
     try {
       // Simular registro
       await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      IS_DEV && console.log('📝 Processing registration...');
       
       // Mock de registro bem-sucedido
       const userData = {
@@ -301,7 +305,7 @@ const RegisterPage: NextPage = () => {
       // Track affiliate conversion if affiliate code was provided
       if (formData.affiliateCode && formData.affiliateCode.trim() !== '') {
         try {
-          console.log('🤝 Tracking affiliate conversion for code:', formData.affiliateCode);
+          IS_DEV && console.log('🤝 Tracking affiliate conversion for code:', formData.affiliateCode);
           
           // Note: In a real implementation, you would get the actual user ID from the registration response
           // For now, we'll use a mock user ID
@@ -319,9 +323,9 @@ const RegisterPage: NextPage = () => {
             })
           });
           
-          console.log('✅ Affiliate conversion tracked successfully');
+          IS_DEV && console.log('✅ Affiliate conversion tracked successfully');
         } catch (error) {
-          console.log('Conversion tracking error (non-critical):', error);
+          IS_DEV && console.log('Conversion tracking error (non-critical):', error);
         }
       }
       
@@ -332,7 +336,7 @@ const RegisterPage: NextPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [validateStep2, formData.email, formData.firstName, formData.lastName, formData.affiliateCode, router]);
 
   return (
     <>

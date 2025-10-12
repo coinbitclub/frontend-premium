@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useToast } from '../../components/Toast';
 import UserLayout from '../../components/UserLayout';
 import { apiService } from '../../src/services/apiService';
+// Authentication removed - ProtectedRoute disabled
+
+const IS_DEV = process.env.NODE_ENV === 'development';
+
 import {
   FiSettings,
   FiBell,
@@ -201,7 +205,7 @@ const UserSettings: React.FC = () => {
     loadSettings();
   }, [mounted, language, showToast]);
 
-  const handleTradingChange = (field: string, value: any) => {
+  const handleTradingChange = useCallback((field: string, value: any) => {
     setTradingSettings(prev => {
       const newSettings = { ...prev, [field]: value };
 
@@ -225,9 +229,9 @@ const UserSettings: React.FC = () => {
 
       return newSettings;
     });
-  };
+  }, []);
 
-  const handleApiKeySubmit = async (exchange: 'binance' | 'bybit') => {
+  const handleApiKeySubmit = useCallback(async (exchange: 'binance' | 'bybit') => {
     const keys = apiKeys[exchange];
     if (keys.apiKey && keys.secretKey) {
       setSaving(true);
@@ -275,9 +279,9 @@ const UserSettings: React.FC = () => {
         setSaving(false);
       }
     }
-  };
+  }, [apiKeys, language, showToast]);
 
-  const handleDisconnectApi = (exchange: 'binance' | 'bybit') => {
+  const handleDisconnectApi = useCallback((exchange: 'binance' | 'bybit') => {
     setApiKeys(prev => ({
       ...prev,
       [exchange]: {
@@ -293,9 +297,9 @@ const UserSettings: React.FC = () => {
         : `${exchange} API Key disconnected`,
       'info'
     );
-  };
+  }, [language, showToast]);
 
-  const handleSaveSettings = async () => {
+  const handleSaveSettings = useCallback(async () => {
     setSaving(true);
     try {
       // Save based on active tab
@@ -412,15 +416,15 @@ const UserSettings: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  };
+  }, [activeTab, tradingSettings, personalData, bankingData, notifications, language, showToast]);
 
-  const tabs = [
+  const tabs = useMemo(() => [
     { id: 'trading', label: language === 'pt' ? 'Trading' : 'Trading', icon: FiTrendingUp },
     { id: 'personal', label: language === 'pt' ? 'Dados Pessoais' : 'Personal Data', icon: FiUser },
     { id: 'banking', label: language === 'pt' ? 'Dados Bancários' : 'Banking Data', icon: FiCreditCard },
     { id: 'apis', label: 'API Keys', icon: FiKey },
     { id: 'notifications', label: language === 'pt' ? 'Notificações' : 'Notifications', icon: FiBell }
-  ];
+  ], [language]);
 
   if (!mounted || loading) {
     return (
@@ -437,6 +441,7 @@ const UserSettings: React.FC = () => {
   }
 
   return (
+    <>
     <UserLayout>
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
@@ -1222,6 +1227,7 @@ const UserSettings: React.FC = () => {
         </motion.div>
       </div>
     </UserLayout>
+    </>
   );
 };
 

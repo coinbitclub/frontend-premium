@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../hooks/useLanguage';
 import UserLayout from '../../components/UserLayout';
@@ -18,6 +18,9 @@ import {
   FiUsers,
   FiTrendingDown
 } from 'react-icons/fi';
+// Authentication removed - ProtectedRoute disabled
+
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 const UserPerformance: React.FC = () => {
   const { language } = useLanguage();
@@ -30,16 +33,12 @@ const UserPerformance: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    const fetchPerformanceData = async () => {
+  const fetchPerformanceData = useCallback(async () => {
       if (!mounted) return;
 
       try {
         setLoading(true);
+        IS_DEV && console.log('📈 Performance: Loading data...');
 
         // Fetch all performance data in parallel
         const [overview, metrics, operations, distribution, chart] = await Promise.all([
@@ -55,6 +54,8 @@ const UserPerformance: React.FC = () => {
         setRecentOperations(operations);
         setDistributionData(distribution);
         setChartData(chart);
+        
+        IS_DEV && console.log('✅ Performance: Data loaded');
       } catch (error) {
         console.error('Error fetching performance data:', error);
         // Check if it's an auth error
@@ -64,13 +65,19 @@ const UserPerformance: React.FC = () => {
       } finally {
         setLoading(false);
       }
-    };
+    }, [mounted]);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     fetchPerformanceData();
-  }, [mounted]);
+  }, [fetchPerformanceData]);
 
   if (!mounted || loading) {
     return (
+      <>
       <UserLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
@@ -80,13 +87,40 @@ const UserPerformance: React.FC = () => {
           </div>
         </div>
       </UserLayout>
+      </>
     );
   }
 
   // Show mock data if there are auth issues but don't redirect
   if (authError) {
-    console.log('Authentication error detected, showing demo data instead of redirecting');
+    IS_DEV && console.log('Authentication error detected, showing demo data instead of redirecting');
   }
+
+  // Memoize distribution display data
+  const distributionDisplay = useMemo(() => 
+    distributionData.length > 0 ? distributionData : [
+      { label: 'BTC', percentage: 35, value: 1247.50, color: 'orange' },
+      { label: 'ETH', percentage: 28, value: 892.30, color: 'blue' },
+      { label: 'ADA', percentage: 22, value: 634.20, color: 'green' },
+      { label: 'SOL', percentage: 15, value: 425.80, color: 'purple' }
+    ],
+    [distributionData]
+  );
+
+  // Memoize recent operations display data
+  const operationsDisplay = useMemo(() => 
+    recentOperations.length > 0 ? recentOperations : [
+      { symbol: 'BTC/USDT', direction: 'LONG', profit: 247.80, profitPercentage: 2.48, openTime: '2024-01-15T14:32:00', status: 'CLOSED' },
+      { symbol: 'ETH/USDT', direction: 'SHORT', profit: -45.30, profitPercentage: -1.2, openTime: '2024-01-15T13:45:00', status: 'CLOSED' },
+      { symbol: 'ADA/USDT', direction: 'LONG', profit: 78.90, profitPercentage: 1.85, openTime: '2024-01-15T12:15:00', status: 'CLOSED' },
+      { symbol: 'SOL/USDT', direction: 'LONG', profit: 156.40, profitPercentage: 3.2, openTime: '2024-01-15T11:30:00', status: 'CLOSED' },
+      { symbol: 'BTC/USDT', direction: 'SHORT', profit: -23.10, profitPercentage: -0.8, openTime: '2024-01-15T10:45:00', status: 'CLOSED' },
+      { symbol: 'ETH/USDT', direction: 'LONG', profit: 89.50, profitPercentage: 2.1, openTime: '2024-01-14T16:20:00', status: 'CLOSED' },
+      { symbol: 'DOT/USDT', direction: 'LONG', profit: 34.70, profitPercentage: 1.4, openTime: '2024-01-14T15:10:00', status: 'CLOSED' },
+      { symbol: 'BTC/USDT', direction: 'LONG', profit: 312.80, profitPercentage: 4.2, openTime: '2024-01-14T14:25:00', status: 'CLOSED' }
+    ],
+    [recentOperations]
+  );
 
   return (
     <UserLayout>
@@ -258,12 +292,7 @@ const UserPerformance: React.FC = () => {
               </h2>
             </div>
             <div className="space-y-4">
-              {(distributionData.length > 0 ? distributionData : [
-                { label: 'BTC', percentage: 35, value: 1247.50, color: 'orange' },
-                { label: 'ETH', percentage: 28, value: 892.30, color: 'blue' },
-                { label: 'ADA', percentage: 22, value: 634.20, color: 'green' },
-                { label: 'SOL', percentage: 15, value: 425.80, color: 'purple' }
-              ]).map((item) => (
+              {distributionDisplay.map((item) => (
                 <div key={item.label || item.pair} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`w-3 h-3 rounded-full bg-${item.color}-400`}></div>
@@ -349,16 +378,7 @@ const UserPerformance: React.FC = () => {
             </span>
           </div>
           <div className="space-y-3">
-            {(recentOperations.length > 0 ? recentOperations : [
-              { symbol: 'BTC/USDT', direction: 'LONG', profit: 247.80, profitPercentage: 2.48, openTime: '2024-01-15T14:32:00', status: 'CLOSED' },
-              { symbol: 'ETH/USDT', direction: 'SHORT', profit: -45.30, profitPercentage: -1.2, openTime: '2024-01-15T13:45:00', status: 'CLOSED' },
-              { symbol: 'ADA/USDT', direction: 'LONG', profit: 78.90, profitPercentage: 1.85, openTime: '2024-01-15T12:15:00', status: 'CLOSED' },
-              { symbol: 'SOL/USDT', direction: 'LONG', profit: 156.40, profitPercentage: 3.2, openTime: '2024-01-15T11:30:00', status: 'CLOSED' },
-              { symbol: 'BTC/USDT', direction: 'SHORT', profit: -23.10, profitPercentage: -0.8, openTime: '2024-01-15T10:45:00', status: 'CLOSED' },
-              { symbol: 'ETH/USDT', direction: 'LONG', profit: 89.50, profitPercentage: 2.1, openTime: '2024-01-14T16:20:00', status: 'CLOSED' },
-              { symbol: 'DOT/USDT', direction: 'LONG', profit: 34.70, profitPercentage: 1.4, openTime: '2024-01-14T15:10:00', status: 'CLOSED' },
-              { symbol: 'BTC/USDT', direction: 'LONG', profit: 312.80, profitPercentage: 4.2, openTime: '2024-01-14T14:25:00', status: 'CLOSED' }
-            ]).map((operation, index) => (
+            {operationsDisplay.map((operation, index) => (
               <div key={index} className="flex items-center justify-between p-4 bg-black/20 rounded-lg border border-gray-600/30 hover:border-blue-400/50 transition-all">
                 <div className="flex items-center gap-4">
                   <div className={`w-2 h-2 rounded-full ${

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -14,6 +14,9 @@ import {
   FaGlobe,
   FaShieldAlt 
 } from 'react-icons/fa';
+// Authentication removed - PublicRoute disabled
+
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 interface FormData {
   countryCode: string;
@@ -70,7 +73,7 @@ const ForgotPasswordPage: NextPage = () => {
   }, []);
 
   // Analytics tracking functions
-  const trackForgotPasswordStep = (step: number, action: string) => {
+  const trackForgotPasswordStep = useCallback((step: number, action: string) => {
     if (typeof gtag !== 'undefined') {
       gtag('event', 'forgot_password_step', {
         step: step,
@@ -79,7 +82,7 @@ const ForgotPasswordPage: NextPage = () => {
         event_category: 'authentication'
       });
     }
-  };
+  }, [language]);
 
   // Available countries
   const availableCountries: Country[] = [
@@ -180,12 +183,13 @@ const ForgotPasswordPage: NextPage = () => {
   const currentT = t[language];
 
   // Handle language change
-  const handleLanguageChange = (lang: 'pt' | 'en') => {
+  const handleLanguageChange = useCallback((lang: 'pt' | 'en') => {
+    IS_DEV && console.log('Forgot password page - Language changed to:', lang);
     setLanguage(lang);
-  };
+  }, []);
 
   // Handle input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
     if (name === 'phone') {
@@ -204,12 +208,12 @@ const ForgotPasswordPage: NextPage = () => {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
-  };
+  }, [errors]);
 
   // Handle country change
-  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleCountryChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setFormData(prev => ({ ...prev, countryCode: e.target.value }));
-  };
+  }, []);
 
   // Timer for OTP resend
   useEffect(() => {
@@ -223,7 +227,7 @@ const ForgotPasswordPage: NextPage = () => {
   }, [resendTimer]);
 
   // Validate form
-  const validateStep = (currentStep: number): boolean => {
+  const validateStep = useCallback((currentStep: number): boolean => {
     const newErrors: Errors = {};
 
     if (currentStep === 1) {
@@ -274,10 +278,10 @@ const ForgotPasswordPage: NextPage = () => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [formData.phone, formData.otpCode, formData.newPassword, formData.confirmPassword, language]);
 
   // Send OTP code
-  const sendOtpCode = async () => {
+  const sendOtpCode = useCallback(async () => {
     if (!validateStep(1)) return;
 
     setOtpLoading(true);
@@ -290,7 +294,7 @@ const ForgotPasswordPage: NextPage = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      console.log('Sending SMS to:', formData.countryCode + formData.phone);
+      IS_DEV && console.log('Sending SMS to:', formData.countryCode + formData.phone);
       
       setOtpSent(true);
       setStep(2);
@@ -312,10 +316,10 @@ const ForgotPasswordPage: NextPage = () => {
     } finally {
       setOtpLoading(false);
     }
-  };
+  }, [validateStep, trackForgotPasswordStep, formData.countryCode, formData.phone, language]);
 
   // Verify OTP code
-  const verifyOtpCode = async () => {
+  const verifyOtpCode = useCallback(async () => {
     if (!validateStep(2)) return;
 
     setOtpLoading(true);
@@ -356,10 +360,10 @@ const ForgotPasswordPage: NextPage = () => {
     } finally {
       setOtpLoading(false);
     }
-  };
+  }, [validateStep, trackForgotPasswordStep, formData.otpCode, language]);
 
   // Reset password
-  const resetPassword = async () => {
+  const resetPassword = useCallback(async () => {
     if (!validateStep(3)) return;
 
     setLoading(true);
@@ -372,7 +376,7 @@ const ForgotPasswordPage: NextPage = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      console.log('Resetting password for:', formData.countryCode + formData.phone);
+      IS_DEV && console.log('Resetting password for:', formData.countryCode + formData.phone);
       
       setStep(4);
       setErrors({});
@@ -393,24 +397,24 @@ const ForgotPasswordPage: NextPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [validateStep, trackForgotPasswordStep, formData.countryCode, formData.phone, language]);
 
   // Calculate password strength
-  const getPasswordStrength = (password: string): string => {
+  const getPasswordStrength = useCallback((password: string): string => {
     if (password.length < 6) return currentT.weak;
     if (password.length >= 8 && /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) return currentT.strong;
     return currentT.medium;
-  };
+  }, [currentT.weak, currentT.strong, currentT.medium]);
 
   // Format phone number
-  const formatPhone = (phone: string) => {
+  const formatPhone = useCallback((phone: string) => {
     const numbers = phone.replace(/\D/g, '');
     if (numbers.length <= 10) {
       return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '$1 $2-$3');
     } else {
       return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '$1 $2-$3');
     }
-  };
+  }, []);
 
   return (
     <>

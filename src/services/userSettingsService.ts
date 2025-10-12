@@ -1,9 +1,7 @@
 /**
- * User Settings Service
+ * 🔧 USER SETTINGS SERVICE - OPTIMIZED
  * Handles API calls for user exchange preferences, balance, and trading settings
  */
-
-import { apiService } from './apiService';
 
 export interface ExchangePreference {
   user_id: number;
@@ -49,32 +47,61 @@ export interface TradingSettings {
 }
 
 class UserSettingsService {
+  private baseUrl: string;
+
+  constructor() {
+    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333/api';
+    // Ensure baseUrl ends with /api
+    if (!this.baseUrl.endsWith('/api')) {
+      this.baseUrl = this.baseUrl.replace(/\/$/, '') + '/api';
+    }
+  }
+
+  /**
+   * Generic API request method
+   */
+  private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_access_token') : null;
+    
+    const config: RequestInit = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    try {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, config);
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Network error' }));
+        throw new Error(error.error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    } catch (error: any) {
+      console.error(`API request failed [${endpoint}]:`, error.message);
+      throw error;
+    }
+  }
+
   /**
    * Get user's preferred exchange
    */
   async getPreferredExchange(): Promise<ExchangePreference> {
-    try {
-      const response = await apiService.get('/user/settings/exchange');
-      return response.data;
-    } catch (error: any) {
-      console.error('Error fetching preferred exchange:', error);
-      throw error;
-    }
+    return this.makeRequest<ExchangePreference>('/user-settings/exchange');
   }
 
   /**
    * Update user's preferred exchange
    */
   async updatePreferredExchange(exchange: string): Promise<ExchangePreference> {
-    try {
-      const response = await apiService.put('/user/settings/exchange', {
-        preferred_exchange: exchange
-      });
-      return response.data;
-    } catch (error: any) {
-      console.error('Error updating preferred exchange:', error);
-      throw error;
-    }
+    return this.makeRequest<ExchangePreference>('/user-settings/exchange', {
+      method: 'PUT',
+      body: JSON.stringify({ preferred_exchange: exchange })
+    });
   }
 
   /**
@@ -85,39 +112,21 @@ class UserSettingsService {
     exchanges: ExchangeInfo[];
     total: number;
   }> {
-    try {
-      const response = await apiService.get('/user/settings/exchanges');
-      return response.data;
-    } catch (error: any) {
-      console.error('Error fetching configured exchanges:', error);
-      throw error;
-    }
+    return this.makeRequest('/user-settings/exchanges');
   }
 
   /**
    * Get user's real-time balance from preferred exchange
    */
   async getMainnetBalance(): Promise<UserBalance> {
-    try {
-      const response = await apiService.get('/user/settings/balance');
-      return response.data;
-    } catch (error: any) {
-      console.error('Error fetching mainnet balance:', error);
-      throw error;
-    }
+    return this.makeRequest<UserBalance>('/user-settings/balance');
   }
 
   /**
    * Get user's trading settings
    */
   async getTradingSettings(): Promise<TradingSettings> {
-    try {
-      const response = await apiService.get('/user/settings/trading');
-      return response.data;
-    } catch (error: any) {
-      console.error('Error fetching trading settings:', error);
-      throw error;
-    }
+    return this.makeRequest<TradingSettings>('/user-settings/trading');
   }
 
   /**
@@ -128,13 +137,10 @@ class UserSettingsService {
     max_open_positions?: number;
     default_leverage?: number;
   }): Promise<TradingSettings> {
-    try {
-      const response = await apiService.put('/user/settings/trading', settings);
-      return response.data;
-    } catch (error: any) {
-      console.error('Error updating trading settings:', error);
-      throw error;
-    }
+    return this.makeRequest<TradingSettings>('/user-settings/trading', {
+      method: 'PUT',
+      body: JSON.stringify(settings)
+    });
   }
 }
 

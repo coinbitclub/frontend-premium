@@ -1,13 +1,16 @@
 /**
- * Socket.IO Context
- * Provides global WebSocket connection management across the application
+ * 🔌 SOCKET.IO CONTEXT - OPTIMIZED
+ * High-performance WebSocket connection management
  */
 
-import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, ReactNode } from 'react';
 import { Socket } from 'socket.io-client';
 import { createSocketConnection, disconnectSocket } from '../../utils/socket';
 import { useAuth } from './AuthContext';
 import authService from '../services/authService';
+
+// Environment flag for debug logging
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -31,21 +34,32 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const { user, isAuthenticated } = useAuth();
-  const token = authService.getAccessToken();
 
+  // Socket connection effect - optimized with proper cleanup
   useEffect(() => {
     // Only create socket if user is authenticated
-    if (!isAuthenticated || !user || !token) {
-      // Disconnect socket if user logs out
+    if (!isAuthenticated || !user) {
+      IS_DEV && console.log('🔌 SocketContext: User not authenticated, disconnecting socket');
+      
+      // Cleanup existing socket
       if (socket) {
         disconnectSocket(socket);
         setSocket(null);
         setIsConnected(false);
+        setConnectionError(null);
+        setReconnectAttempts(0);
       }
       return;
     }
 
-    console.log('🔌 Initializing socket connection for user:', user.email);
+    // Fetch token inside useEffect
+    const token = authService.getAccessToken();
+    if (!token) {
+      IS_DEV && console.log('🔌 SocketContext: No token available, skipping connection');
+      return;
+    }
+
+    IS_DEV && console.log('🔌 SocketContext: Initializing socket for user:', user.email);
 
     // Create socket connection
     const newSocket = createSocketConnection({
@@ -54,109 +68,123 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       timeout: 20000
     });
 
-    // Connection success
-    newSocket.on('connect', () => {
-      console.log('✅ Socket connected successfully');
+    // Define event handlers
+    const handleConnect = () => {
+      IS_DEV && console.log('✅ Socket connected');
       setIsConnected(true);
       setConnectionError(null);
       setReconnectAttempts(0);
 
-      // Authenticate with real JWT token
+      // Authenticate
       newSocket.emit('authenticate', {
         userId: user.id,
         token: token,
         userType: user.user_type
       });
 
-      console.log('🔐 Authentication sent for user:', user.id);
-
-      // Join user-specific room
+      // Join trading room
       newSocket.emit('join_trading', user.id);
-      console.log('🚪 Joined trading room:', user.id);
-    });
+    };
 
-    // Connection error
-    newSocket.on('connect_error', (error) => {
-      console.error('❌ Socket connection error:', error.message);
+    const handleConnectError = (error: Error) => {
+      IS_DEV && console.error('❌ Socket connection error:', error.message);
       setConnectionError(error.message);
       setIsConnected(false);
-    });
+    };
 
-    // Connection timeout
-    newSocket.on('connect_timeout', () => {
-      console.error('⏱️ Socket connection timeout');
+    const handleConnectTimeout = () => {
+      IS_DEV && console.error('⏱️ Socket connection timeout');
       setConnectionError('Connection timeout. Please check your internet connection.');
       setIsConnected(false);
-    });
+    };
 
-    // Reconnection attempt
-    newSocket.on('reconnect_attempt', (attempt) => {
-      console.log(`🔄 Reconnection attempt ${attempt}...`);
+    const handleReconnectAttempt = (attempt: number) => {
+      IS_DEV && console.log(`🔄 Reconnection attempt ${attempt}`);
       setReconnectAttempts(attempt);
-    });
+    };
 
-    // Reconnection success
-    newSocket.on('reconnect', (attempt) => {
-      console.log(`✅ Reconnected successfully after ${attempt} attempts`);
+    const handleReconnect = (attempt: number) => {
+      IS_DEV && console.log(`✅ Reconnected after ${attempt} attempts`);
       setIsConnected(true);
       setConnectionError(null);
       setReconnectAttempts(0);
-    });
+    };
 
-    // Reconnection failed
-    newSocket.on('reconnect_failed', () => {
+    const handleReconnectFailed = () => {
       console.error('🔴 Reconnection failed after maximum attempts');
       setConnectionError('Unable to connect to server. Please refresh the page.');
       setIsConnected(false);
-    });
+    };
 
-    // Disconnection
-    newSocket.on('disconnect', (reason) => {
-      console.warn('⚠️ Socket disconnected:', reason);
+    const handleDisconnect = (reason: string) => {
+      IS_DEV && console.warn('⚠️ Socket disconnected:', reason);
       setIsConnected(false);
 
       // Auto-reconnect unless explicitly disconnected
       if (reason === 'io server disconnect') {
         newSocket.connect();
       }
-    });
+    };
 
-    // Authentication response
-    newSocket.on('authenticated', (data) => {
-      console.log('✅ Authentication successful:', data);
-    });
+    const handleAuthenticated = (data: any) => {
+      IS_DEV && console.log('✅ Socket authenticated:', data);
+    };
 
-    newSocket.on('authentication_error', (error) => {
-      console.error('❌ Authentication error:', error);
+    const handleAuthenticationError = (error: any) => {
+      console.error('❌ Socket authentication error:', error);
       setConnectionError('Authentication failed. Please login again.');
-    });
+    };
+
+    // Register event listeners
+    newSocket.on('connect', handleConnect);
+    newSocket.on('connect_error', handleConnectError);
+    newSocket.on('connect_timeout', handleConnectTimeout);
+    newSocket.on('reconnect_attempt', handleReconnectAttempt);
+    newSocket.on('reconnect', handleReconnect);
+    newSocket.on('reconnect_failed', handleReconnectFailed);
+    newSocket.on('disconnect', handleDisconnect);
+    newSocket.on('authenticated', handleAuthenticated);
+    newSocket.on('authentication_error', handleAuthenticationError);
 
     setSocket(newSocket);
 
-    // Cleanup on unmount or auth change
+    // Cleanup function - properly remove all event listeners
     return () => {
-      console.log('🔌 Cleaning up socket connection');
+      IS_DEV && console.log('🔌 SocketContext: Cleaning up socket');
+      
+      // Remove all event listeners
+      newSocket.off('connect', handleConnect);
+      newSocket.off('connect_error', handleConnectError);
+      newSocket.off('connect_timeout', handleConnectTimeout);
+      newSocket.off('reconnect_attempt', handleReconnectAttempt);
+      newSocket.off('reconnect', handleReconnect);
+      newSocket.off('reconnect_failed', handleReconnectFailed);
+      newSocket.off('disconnect', handleDisconnect);
+      newSocket.off('authenticated', handleAuthenticated);
+      newSocket.off('authentication_error', handleAuthenticationError);
+      
+      // Disconnect socket
       disconnectSocket(newSocket);
     };
-  }, [isAuthenticated, user?.id, token]); // Reconnect if auth changes
+  }, [isAuthenticated, user?.id]); // Only reconnect if auth status or user ID changes
 
-  // Emit event
+  // Emit event - memoized
   const emit = useCallback((event: string, data?: any) => {
     if (socket && isConnected) {
       socket.emit(event, data);
     } else {
-      console.warn(`⚠️ Cannot emit "${event}": Socket not connected`);
+      IS_DEV && console.warn(`⚠️ Cannot emit "${event}": Socket not connected`);
     }
   }, [socket, isConnected]);
 
-  // Subscribe to event
+  // Subscribe to event - memoized
   const on = useCallback((event: string, callback: (data: any) => void) => {
     if (socket) {
       socket.on(event, callback);
     }
   }, [socket]);
 
-  // Unsubscribe from event
+  // Unsubscribe from event - memoized
   const off = useCallback((event: string, callback?: (data: any) => void) => {
     if (socket) {
       if (callback) {
@@ -167,7 +195,8 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     }
   }, [socket]);
 
-  const value: SocketContextType = {
+  // Memoize context value to prevent unnecessary re-renders
+  const value = useMemo<SocketContextType>(() => ({
     socket,
     isConnected,
     connectionError,
@@ -175,7 +204,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     emit,
     on,
     off
-  };
+  }), [socket, isConnected, connectionError, reconnectAttempts, emit, on, off]);
 
   return (
     <SocketContext.Provider value={value}>
@@ -185,7 +214,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 };
 
 // Custom hook to use socket context
-export const useSocket = () => {
+export const useSocket = (): SocketContextType => {
   const context = useContext(SocketContext);
   if (!context) {
     throw new Error('useSocket must be used within a SocketProvider');
@@ -193,17 +222,22 @@ export const useSocket = () => {
   return context;
 };
 
-// Custom hook for specific socket events
-export const useSocketEvent = (event: string, callback: (data: any) => void) => {
+// Custom hook for specific socket events - optimized
+export const useSocketEvent = (event: string, callback: (data: any) => void, enabled: boolean = true) => {
   const { socket, isConnected } = useSocket();
 
-  useEffect(() => {
-    if (!socket || !isConnected) return;
+  // Memoize callback to prevent unnecessary effect re-runs
+  const memoizedCallback = useCallback(callback, [callback]);
 
-    socket.on(event, callback);
+  useEffect(() => {
+    if (!socket || !isConnected || !enabled) return;
+
+    socket.on(event, memoizedCallback);
 
     return () => {
-      socket.off(event, callback);
+      socket.off(event, memoizedCallback);
     };
-  }, [socket, isConnected, event, callback]);
+  }, [socket, isConnected, event, memoizedCallback, enabled]);
 };
+
+export default SocketContext;

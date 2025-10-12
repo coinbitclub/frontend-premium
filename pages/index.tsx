@@ -6,7 +6,7 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to landing page
+    // Redirect to landing page immediately
     router.replace('/home');
   }, [router]);
 

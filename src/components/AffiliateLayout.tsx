@@ -1,4 +1,4 @@
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode, useState, useCallback, useMemo } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -23,6 +23,8 @@ import {
   FiShare2
 } from 'react-icons/fi';
 
+const IS_DEV = process.env.NODE_ENV === 'development';
+
 interface AffiliateLayoutProps {
   children: ReactNode;
   title?: string;
@@ -39,7 +41,7 @@ export default function AffiliateLayout({
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navigation = [
+  const navigation = useMemo(() => [
     { 
       name: language === 'pt' ? 'Dashboard' : 'Dashboard', 
       href: '/affiliate/dashboard', 
@@ -76,22 +78,22 @@ export default function AffiliateLayout({
       icon: FiUserCheck,
       isSpecial: true
     },
-  ];
+  ], [language]);
 
-  const isActive = (path: string) => router.pathname === path;
+  const isActive = useCallback((path: string) => router.pathname === path, [router.pathname]);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
-      console.log('🚪 AffiliateLayout: Logout button clicked');
+      IS_DEV && console.log('🚪 AffiliateLayout: Logout button clicked');
       await logout();
-      console.log('✅ AffiliateLayout: Logout completed, redirecting to home');
+      IS_DEV && console.log('✅ AffiliateLayout: Logout completed, redirecting to home');
       router.push('/auth/login');
     } catch (error) {
       console.error('❌ AffiliateLayout: Logout error:', error);
       // Even if error, still redirect
       router.push('/auth/login');
     }
-  };
+  }, [logout, router]);
 
   return (
     <>

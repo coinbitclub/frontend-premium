@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
 import RobotDemoLanding from '../components/RobotDemoLanding';
+
+const IS_DEV = process.env.NODE_ENV === 'development';
 type Language = 'pt' | 'en';
+
 export default function Home() {
   const [currentLanguage, setCurrentLanguage] = useState<Language>('pt');
   const [mounted, setMounted] = useState(false);
@@ -27,7 +30,7 @@ export default function Home() {
         setCurrentLanguage(savedLanguage);
       }
     } catch (error) {
-      console.warn('Error loading language:', error);
+      IS_DEV && console.warn('Error loading language:', error);
     }
     // Analytics
     if (typeof gtag !== 'undefined') {
@@ -51,18 +54,18 @@ export default function Home() {
       clearTimeout(timeout);
     };
   }, []);
-  const handleLanguageChange = (lang: Language) => {
+  const handleLanguageChange = useCallback((lang: Language) => {
     setCurrentLanguage(lang);
     try {
       localStorage.setItem('coinbitclub-language', lang);
     } catch (error) {
-      console.warn('Error saving language:', error);
+      IS_DEV && console.warn('Error saving language:', error);
     }
-  };
-  const handleNavigation = (path: string) => {
+  }, []);
+  const handleNavigation = useCallback((path: string) => {
     router.push(path);
-  };
-  const handleCTAClick = (action: string) => {
+  }, [router]);
+  const handleCTAClick = useCallback((action: string) => {
     if (typeof gtag !== 'undefined') {
       gtag('event', 'cta_click', {
         event_category: 'CTA',
@@ -71,15 +74,15 @@ export default function Home() {
     }
     // Navegar para a página de cadastro
     router.push('/cadastro-new');
-  };
-  const handleModalOpen = (modal: string) => {
+  }, [router]);
+  const handleModalOpen = useCallback((modal: string) => {
     if (typeof gtag !== 'undefined') {
       gtag('event', 'modal_open', {
         event_category: 'Modal',
         event_label: modal
       });
     }
-  };
+  }, []);
   // Textos em múltiplos idiomas
   const texts = {
     pt: {
@@ -195,7 +198,7 @@ export default function Home() {
       }
     }
   };
-  const t = texts[currentLanguage];
+  const t = useMemo(() => texts[currentLanguage], [currentLanguage]);
   if (!mounted) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">

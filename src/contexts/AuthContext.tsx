@@ -1,10 +1,13 @@
 /**
- * 🔐 AUTHENTICATION CONTEXT - REACT CONTEXT
- * Contexto de autenticação para gerenciar estado global do usuário
+ * 🔐 AUTHENTICATION CONTEXT - OPTIMIZED
+ * High-performance authentication state management
  */
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, ReactNode } from 'react';
 import authService, { User } from '../services/authService';
+
+// Environment flag for debug logging
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 interface AuthContextType {
   // User state
@@ -53,45 +56,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const initializingRef = React.useRef(false);
-  const initializedRef = React.useRef(false);
 
-  // Initialize authentication state - ONLY ONCE with protection against multiple calls
-  useEffect(() => {
-    // Prevent multiple simultaneous initializations
-    if (initializingRef.current || initializedRef.current) {
-      return;
+  // Utility function to clear redirect storage - memoized
+  const clearRedirectStorage = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('login-redirect-timestamp');
+      sessionStorage.removeItem('login-redirect-count');
+      sessionStorage.removeItem('dashboard-redirect-timestamp');
+      sessionStorage.removeItem('dashboard-redirect-count');
     }
-
-    initializingRef.current = true;
-    initializeAuth().finally(() => {
-      initializingRef.current = false;
-      initializedRef.current = true;
-    });
   }, []);
 
-  const initializeAuth = async () => {
+  // Initialize authentication state on mount - memoized
+  const initializeAuth = useCallback(async () => {
     try {
-      setIsLoading(true);
-
-      // Check if user is already authenticated locally
+      IS_DEV && console.log('🔐 AuthContext: Initializing...');
+      
       const hasTokens = authService.isAuthenticated();
       
       if (hasTokens) {
         const currentUser = authService.getCurrentUser();
         
         if (currentUser) {
-          // Set authenticated state immediately
+          // Batch state updates
           setUser(currentUser);
           setIsAuthenticated(true);
           
+          IS_DEV && console.log('✅ User authenticated from storage');
+          
           // Validate token in background (non-blocking)
-          try {
-            await authService.validateToken();
-          } catch (validationError) {
-            // Don't clear auth state on validation errors to prevent redirect loops
-          }
+          authService.validateToken().catch(error => {
+            IS_DEV && console.warn('⚠️ Token validation warning:', error.message);
+          });
         } else {
+          // Clear invalid auth state
           authService.logout();
           setUser(null);
           setIsAuthenticated(false);
@@ -101,33 +99,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsAuthenticated(false);
       }
     } catch (error) {
-      console.error('Auth initialization error:', error);
+      console.error('❌ Auth initialization error:', error);
+      setUser(null);
+      setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const login = async (email: string, password: string, twoFactorCode?: string) => {
+  // Initialize on mount
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
+
+  // Login function - memoized
+  const login = useCallback(async (email: string, password: string, twoFactorCode?: string) => {
     try {
       setIsLoading(true);
       const response = await authService.login(email, password, twoFactorCode);
 
       if (response.success) {
+        // Batch all state updates together - React 18 automatic batching
         setUser(response.user);
         setIsAuthenticated(true);
+        setIsLoading(false);
+        
+        IS_DEV && console.log('✅ Login successful');
       } else if (response.requiresTwoFactor) {
+        setIsLoading(false);
         throw new Error('2FA_REQUIRED');
       } else {
+        setIsLoading(false);
         throw new Error(response.message || 'Login failed');
       }
     } catch (error) {
-      throw error;
-    } finally {
       setIsLoading(false);
+      throw error;
     }
-  };
+  }, []);
 
-  const register = async (userData: any) => {
+  // Register function - memoized
+  const register = useCallback(async (userData: any) => {
     try {
       setIsLoading(true);
       await authService.register(userData);
@@ -137,57 +149,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  // Logout function - memoized
+  const logout = useCallback(async () => {
     try {
       setIsLoading(true);
-
-      console.log('🚪 AuthContext: Starting logout process...');
       
-      // Clear React state FIRST to prevent any re-renders from using stale data
+      // Clear React state first
       setUser(null);
       setIsAuthenticated(false);
 
-      // Call authService logout (clears localStorage and calls backend)
+      // Call backend logout
       await authService.logout();
-
-      // Clear all redirect-related session storage
       clearRedirectStorage();
-
-      console.log('✅ AuthContext: Logout completed successfully');
       
-      // DO NOT reset initializedRef to prevent re-initialization
-      // The next page load will handle initialization properly
+      IS_DEV && console.log('✅ Logout successful');
     } catch (error) {
       console.error('❌ Logout error:', error);
-      // Even if logout fails on server, clear local state
+      
+      // Ensure clean state even on error
       clearRedirectStorage();
       setUser(null);
       setIsAuthenticated(false);
       
-      // Force clear all auth data
+      // Force clear storage
       if (typeof window !== 'undefined') {
         localStorage.clear();
         sessionStorage.clear();
-        console.log('🗑️ Force cleared all storage due to logout error');
       }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [clearRedirectStorage]);
 
-  // Utility function to clear all redirect-related storage
-  const clearRedirectStorage = () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('login-redirect-timestamp');
-      sessionStorage.removeItem('login-redirect-count');
-      sessionStorage.removeItem('dashboard-redirect-timestamp');
-      sessionStorage.removeItem('dashboard-redirect-count');
-    }
-  };
-
-  const refreshToken = async (): Promise<boolean> => {
+  // Refresh token - memoized
+  const refreshToken = useCallback(async (): Promise<boolean> => {
     try {
       const success = await authService.refreshAccessToken();
       if (success) {
@@ -205,9 +202,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await logout();
       return false;
     }
-  };
+  }, [logout]);
 
-  const getProfile = async () => {
+  // Get profile - memoized
+  const getProfile = useCallback(async () => {
     try {
       setIsLoading(true);
       const userProfile = await authService.getProfile();
@@ -218,63 +216,62 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const updateProfile = (data: Partial<User>) => {
-    if (user) {
-      const updatedUser = { ...user, ...data };
-      setUser(updatedUser);
-    }
-  };
+  // Update profile - memoized
+  const updateProfile = useCallback((data: Partial<User>) => {
+    setUser(prevUser => prevUser ? { ...prevUser, ...data } : null);
+  }, []);
 
-  const hasPermission = (permission: string): boolean => {
+  // Permission checks - memoized
+  const hasPermission = useCallback((permission: string): boolean => {
     return authService.hasPermission(permission);
-  };
+  }, []);
 
-  const isAdmin = (): boolean => {
+  const isAdmin = useCallback((): boolean => {
     return authService.isAdmin();
-  };
+  }, []);
 
-  const isUserType = (userType: string): boolean => {
+  const isUserType = useCallback((userType: string): boolean => {
     return authService.isUserType(userType);
-  };
+  }, []);
 
-  const isTradingEnabled = (): boolean => {
+  const isTradingEnabled = useCallback((): boolean => {
     return authService.isTradingEnabled();
-  };
+  }, []);
 
-  const isTwoFactorEnabled = (): boolean => {
+  const isTwoFactorEnabled = useCallback((): boolean => {
     return authService.isTwoFactorEnabled();
-  };
+  }, []);
 
-  const setupTwoFactor = async () => {
+  // 2FA methods - memoized
+  const setupTwoFactor = useCallback(async () => {
     try {
       setIsLoading(true);
-      const result = await authService.setupTwoFactor();
-      return result;
+      return await authService.setupTwoFactor();
     } catch (error) {
       console.error('2FA setup error:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const verifyTwoFactor = async (token: string, secret: string) => {
+  const verifyTwoFactor = useCallback(async (token: string, secret: string) => {
     try {
       setIsLoading(true);
       await authService.verifyTwoFactor(token, secret);
-      // Refresh profile to get updated 2FA status
-      await getProfile();
+      await getProfile(); // Refresh profile
     } catch (error) {
       console.error('2FA verification error:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [getProfile]);
 
-  const requestPasswordReset = async (email: string) => {
+  // Password methods - memoized
+  const requestPasswordReset = useCallback(async (email: string) => {
     try {
       setIsLoading(true);
       await authService.requestPasswordReset(email);
@@ -284,9 +281,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const resetPassword = async (token: string, newPassword: string) => {
+  const resetPassword = useCallback(async (token: string, newPassword: string) => {
     try {
       setIsLoading(true);
       await authService.resetPassword(token, newPassword);
@@ -296,41 +293,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const getActiveSessions = async () => {
+  // Session methods - memoized
+  const getActiveSessions = useCallback(async () => {
     try {
-      const sessions = await authService.getActiveSessions();
-      return sessions;
+      return await authService.getActiveSessions();
     } catch (error) {
       console.error('Get active sessions error:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const logoutAllSessions = async () => {
+  const logoutAllSessions = useCallback(async () => {
     try {
       setIsLoading(true);
       await authService.logoutAllSessions();
-      await logout(); // Also logout current session
+      await logout();
     } catch (error) {
       console.error('Logout all sessions error:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [logout]);
 
-  const validateToken = async (): Promise<boolean> => {
+  const validateToken = useCallback(async (): Promise<boolean> => {
     try {
       return await authService.validateToken();
     } catch (error) {
       console.error('Token validation error:', error);
       return false;
     }
-  };
+  }, []);
 
-  const contextValue: AuthContextType = {
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo<AuthContextType>(() => ({
     // User state
     user,
     isAuthenticated,
@@ -365,7 +363,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     getActiveSessions,
     logoutAllSessions,
     validateToken,
-  };
+  }), [
+    user,
+    isAuthenticated,
+    isLoading,
+    login,
+    register,
+    logout,
+    refreshToken,
+    getProfile,
+    updateProfile,
+    hasPermission,
+    isAdmin,
+    isUserType,
+    isTradingEnabled,
+    isTwoFactorEnabled,
+    setupTwoFactor,
+    verifyTwoFactor,
+    requestPasswordReset,
+    resetPassword,
+    getActiveSessions,
+    logoutAllSessions,
+    validateToken,
+  ]);
 
   return (
     <AuthContext.Provider value={contextValue}>
@@ -381,54 +401,6 @@ export const useAuth = (): AuthContextType => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
-
-// Higher-order component for protected routes
-interface ProtectedRouteProps {
-  children: ReactNode;
-  requiredPermission?: string;
-  requiredUserType?: string;
-  adminOnly?: boolean;
-  tradingRequired?: boolean;
-  fallback?: ReactNode;
-}
-
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
-  children,
-  requiredPermission,
-  requiredUserType,
-  adminOnly = false,
-  tradingRequired = false,
-  fallback = <div>Acesso negado</div>
-}) => {
-  const { isAuthenticated, user, hasPermission, isAdmin, isUserType, isTradingEnabled } = useAuth();
-
-  // Check authentication
-  if (!isAuthenticated || !user) {
-    return <div>Faça login para acessar esta página</div>;
-  }
-
-  // Check admin requirement
-  if (adminOnly && !isAdmin()) {
-    return <>{fallback}</>;
-  }
-
-  // Check user type requirement
-  if (requiredUserType && !isUserType(requiredUserType)) {
-    return <>{fallback}</>;
-  }
-
-  // Check permission requirement
-  if (requiredPermission && !hasPermission(requiredPermission)) {
-    return <>{fallback}</>;
-  }
-
-  // Check trading requirement
-  if (tradingRequired && !isTradingEnabled()) {
-    return <>{fallback}</>;
-  }
-
-  return <>{children}</>;
 };
 
 export default AuthContext;

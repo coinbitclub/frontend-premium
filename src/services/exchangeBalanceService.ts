@@ -27,13 +27,13 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Add response interceptor for error handling
+// Add response interceptor for error handling (NO AUTO-REDIRECT)
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Don't auto-redirect on 401 - let components handle errors
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/auth/login';
+      console.warn('⚠️ ExchangeBalanceService: 401 Unauthorized');
     }
     return Promise.reject(error);
   }
@@ -72,7 +72,7 @@ class ExchangeBalanceService {
   async getAllExchangeBalances(): Promise<AllExchangeBalances> {
     try {
       console.log('📊 Fetching all exchange balances from API...');
-      const response = await apiClient.get('/user/settings/all-balances');
+      const response = await apiClient.get('/user-settings/all-balances');
       
       if (response.data.success) {
         console.log('✅ Exchange balances loaded successfully:', response.data.data);
@@ -101,7 +101,7 @@ class ExchangeBalanceService {
   async getExchangeBalance(exchange: 'binance' | 'bybit'): Promise<ExchangeBalance | null> {
     try {
       console.log(`📊 Fetching ${exchange} balance from API...`);
-      const response = await apiClient.get('/user/settings/balance', {
+      const response = await apiClient.get('/user-settings/balance', {
         params: { exchange }
       });
       

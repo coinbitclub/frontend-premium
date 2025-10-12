@@ -1,5 +1,4 @@
 import type { AppProps } from "next/app";
-import Script from "next/script";
 import '../src/styles/globals.css';
 import { LanguageProvider } from '../hooks/useLanguage';
 import { AuthProvider } from '../src/contexts/AuthContext';

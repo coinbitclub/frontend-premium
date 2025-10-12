@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -6,6 +6,8 @@ import { FiUsers, FiDollarSign, FiTrendingUp, FiTarget, FiActivity, FiEye, FiArr
 import { useLanguage } from '../../hooks/useLanguage';
 import { useSocket } from '../../src/contexts/SocketContext';
 import AffiliateLayout from '../../src/components/AffiliateLayout';
+
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 // Interfaces para dados de afiliado
 interface AffiliateStats {
@@ -109,7 +111,7 @@ const AffiliateDashboard: React.FC = () => {
 
     // Listen for affiliate commission updates
     const handleAffiliateCommissionUpdate = (data: any) => {
-      console.log('💰 Real-time affiliate commission update:', data);
+      IS_DEV && console.log('💰 Real-time affiliate commission update:', data);
       setAffiliateStats(prev => ({
         ...prev,
         totalCommissions: prev.totalCommissions + data.data.amount,
@@ -119,13 +121,13 @@ const AffiliateDashboard: React.FC = () => {
       // Show notification
       if (typeof window !== 'undefined') {
         // You can add a toast notification here
-        console.log(`🎉 New commission earned: $${data.data.amount.toFixed(2)}`);
+        IS_DEV && console.log(`🎉 New commission earned: $${data.data.amount.toFixed(2)}`);
       }
     };
 
     // Listen for affiliate balance updates
     const handleAffiliateBalanceUpdate = (data: any) => {
-      console.log('💳 Real-time affiliate balance update:', data);
+      IS_DEV && console.log('💳 Real-time affiliate balance update:', data);
       setAffiliateStats(prev => ({
         ...prev,
         totalEarnings: data.data.totalEarnings,
@@ -135,7 +137,7 @@ const AffiliateDashboard: React.FC = () => {
 
     // Listen for new referral notifications
     const handleNewReferral = (data: any) => {
-      console.log('👥 New referral notification:', data);
+      IS_DEV && console.log('👥 New referral notification:', data);
       setAffiliateStats(prev => ({
         ...prev,
         totalReferrals: prev.totalReferrals + 1,
@@ -144,16 +146,16 @@ const AffiliateDashboard: React.FC = () => {
       
       // Show notification
       if (typeof window !== 'undefined') {
-        console.log(`🎉 New referral: ${data.data.referredUserName}`);
+        IS_DEV && console.log(`🎉 New referral: ${data.data.referredUserName}`);
       }
     };
 
     // Listen for commission paid notifications
     const handleCommissionPaid = (data: any) => {
-      console.log('💸 Commission paid notification:', data);
+      IS_DEV && console.log('💸 Commission paid notification:', data);
       // You can add payment confirmation UI here
       if (typeof window !== 'undefined') {
-        console.log(`✅ Commission paid: $${data.data.amount.toFixed(2)}`);
+        IS_DEV && console.log(`✅ Commission paid: $${data.data.amount.toFixed(2)}`);
       }
     };
 
@@ -172,7 +174,105 @@ const AffiliateDashboard: React.FC = () => {
     };
   }, [socket]);
 
-  const fetchAffiliateData = async () => {
+  const generateInitialData = useCallback(() => {
+    // Referências recentes
+    const referrals: Referral[] = [
+      {
+        id: '1',
+        name: 'João Silva',
+        email: 'joao@email.com',
+        joinDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+        status: 'ACTIVE',
+        totalInvested: 5000,
+        commissionGenerated: 75.00
+      },
+      {
+        id: '2',
+        name: 'Maria Santos',
+        email: 'maria@email.com',
+        joinDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+        status: 'ACTIVE',
+        totalInvested: 8500,
+        commissionGenerated: 127.50
+      },
+      {
+        id: '3',
+        name: 'Pedro Costa',
+        email: 'pedro@email.com',
+        joinDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+        status: 'PENDING',
+        totalInvested: 3200,
+        commissionGenerated: 48.00
+      },
+      {
+        id: '4',
+        name: 'Ana Oliveira',
+        email: 'ana@email.com',
+        joinDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+        status: 'ACTIVE',
+        totalInvested: 12000,
+        commissionGenerated: 180.00
+      },
+      {
+        id: '5',
+        name: 'Carlos Lima',
+        email: 'carlos@email.com',
+        joinDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        status: 'INACTIVE',
+        totalInvested: 2500,
+        commissionGenerated: 37.50
+      }
+    ];
+
+    // Comissões recentes
+    const commissions: Commission[] = [
+      {
+        id: '1',
+        referralName: 'João Silva',
+        amount: 25.00,
+        type: 'TRADING',
+        date: new Date(Date.now() - 1 * 60 * 60 * 1000),
+        status: 'PAID'
+      },
+      {
+        id: '2',
+        referralName: 'Maria Santos',
+        amount: 50.00,
+        type: 'SIGNUP',
+        date: new Date(Date.now() - 3 * 60 * 60 * 1000),
+        status: 'PAID'
+      },
+      {
+        id: '3',
+        referralName: 'Pedro Costa',
+        amount: 15.00,
+        type: 'TRADING',
+        date: new Date(Date.now() - 5 * 60 * 60 * 1000),
+        status: 'PROCESSING'
+      },
+      {
+        id: '4',
+        referralName: 'Ana Oliveira',
+        amount: 75.00,
+        type: 'MONTHLY',
+        date: new Date(Date.now() - 8 * 60 * 60 * 1000),
+        status: 'PAID'
+      },
+      {
+        id: '5',
+        referralName: 'Carlos Lima',
+        amount: 30.00,
+        type: 'TRADING',
+        date: new Date(Date.now() - 12 * 60 * 60 * 1000),
+        status: 'PENDING'
+      }
+    ];
+
+    setRecentReferrals(referrals);
+    setRecentCommissions(commissions);
+  }, []);
+
+  const fetchAffiliateData = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('auth_access_token');
@@ -183,7 +283,7 @@ const AffiliateDashboard: React.FC = () => {
         return;
       }
 
-      console.log('📊 Affiliate Dashboard: Loading real data from API...');
+      IS_DEV && console.log('📊 Affiliate Dashboard: Loading real data from API...');
 
       // Fetch affiliate stats, referrals, commissions, user profile, and trading stats in parallel
       const [statsRes, referralsRes, commissionsRes, profileRes, dailyStatsRes] = await Promise.all([
@@ -204,7 +304,7 @@ const AffiliateDashboard: React.FC = () => {
         })
       ]);
 
-      console.log('📊 Affiliate Dashboard: API responses received:', {
+      IS_DEV && console.log('📊 Affiliate Dashboard: API responses received:', {
         statsOk: statsRes.ok,
         referralsOk: referralsRes.ok,
         commissionsOk: commissionsRes.ok,
@@ -292,140 +392,42 @@ const AffiliateDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const generateInitialData = () => {
-    // Referências recentes
-    const referrals: Referral[] = [
-      {
-        id: '1',
-        name: 'João Silva',
-        email: 'joao@email.com',
-        joinDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-        status: 'ACTIVE',
-        totalInvested: 5000,
-        commissionGenerated: 75.00
-      },
-      {
-        id: '2',
-        name: 'Maria Santos',
-        email: 'maria@email.com',
-        joinDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-        status: 'ACTIVE',
-        totalInvested: 8500,
-        commissionGenerated: 127.50
-      },
-      {
-        id: '3',
-        name: 'Pedro Costa',
-        email: 'pedro@email.com',
-        joinDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-        status: 'PENDING',
-        totalInvested: 3200,
-        commissionGenerated: 48.00
-      },
-      {
-        id: '4',
-        name: 'Ana Oliveira',
-        email: 'ana@email.com',
-        joinDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-        status: 'ACTIVE',
-        totalInvested: 12000,
-        commissionGenerated: 180.00
-      },
-      {
-        id: '5',
-        name: 'Carlos Lima',
-        email: 'carlos@email.com',
-        joinDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-        status: 'INACTIVE',
-        totalInvested: 2500,
-        commissionGenerated: 37.50
-      }
-    ];
-
-    // Comissões recentes
-    const commissions: Commission[] = [
-      {
-        id: '1',
-        referralName: 'João Silva',
-        amount: 25.00,
-        type: 'TRADING',
-        date: new Date(Date.now() - 1 * 60 * 60 * 1000),
-        status: 'PAID'
-      },
-      {
-        id: '2',
-        referralName: 'Maria Santos',
-        amount: 50.00,
-        type: 'SIGNUP',
-        date: new Date(Date.now() - 3 * 60 * 60 * 1000),
-        status: 'PAID'
-      },
-      {
-        id: '3',
-        referralName: 'Pedro Costa',
-        amount: 50.00,
-        type: 'SIGNUP',
-        date: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        status: 'PROCESSING'
-      },
-      {
-        id: '4',
-        referralName: 'Ana Oliveira',
-        amount: 15.75,
-        type: 'TRADING',
-        date: new Date(Date.now() - 5 * 60 * 60 * 1000),
-        status: 'PAID'
-      },
-      {
-        id: '5',
-        referralName: 'Carlos Lima',
-        amount: 12.50,
-        type: 'MONTHLY',
-        date: new Date(Date.now() - 8 * 60 * 60 * 1000),
-        status: 'PENDING'
-      }
-    ];
-
-    setRecentReferrals(referrals);
-    setRecentCommissions(commissions);
-  };
+  }, [generateInitialData]);
 
 
-  const getStatusColor = (status: string): string => {
+  const getStatusColor = useCallback((status: string): string => {
     switch (status) {
       case 'ACTIVE': case 'PAID': return 'text-green-400';
       case 'PENDING': case 'PROCESSING': return 'text-yellow-400';
       case 'INACTIVE': return 'text-red-400';
       default: return 'text-gray-400';
     }
-  };
+  }, []);
 
-  const getStatusBg = (status: string): string => {
+  const getStatusBg = useCallback((status: string): string => {
     switch (status) {
       case 'ACTIVE': case 'PAID': return 'bg-green-500/10 border-green-500/30';
       case 'PENDING': case 'PROCESSING': return 'bg-yellow-500/10 border-yellow-500/30';
       case 'INACTIVE': return 'bg-red-500/10 border-red-500/30';
       default: return 'bg-gray-500/10 border-gray-500/30';
     }
-  };
+  }, []);
 
-  const formatPrice = (price: number): string => {
+  const formatPrice = useCallback((price: number): string => {
     return `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+  }, []);
 
-  const formatPercent = (percent: number): string => {
+  const formatPercent = useCallback((percent: number): string => {
     return `${percent >= 0 ? '+' : ''}${percent.toFixed(1)}%`;
-  };
+  }, []);
 
-  const formatDate = (date: Date): string => {
+  const formatDate = useCallback((date: Date): string => {
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  };
+  }, []);
 
-  const formatTime = (date: Date): string => {
+  const formatTime = useCallback((date: Date): string => {
     return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  };
+  }, []);
 
   if (!mounted) {
     return (

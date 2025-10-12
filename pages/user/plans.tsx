@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
@@ -8,6 +8,9 @@ import UserLayout from '../../components/UserLayout';
 import { useToast } from '../../components/Toast';
 import authService from '../../src/services/authService';
 import planService, { Plan } from '../../src/services/planService';
+// Authentication removed - ProtectedRoute disabled
+
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 const UserPlans: NextPage = () => {
   const { language, t } = useLanguage();
@@ -22,11 +25,6 @@ const UserPlans: NextPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [userPlanStatus, setUserPlanStatus] = useState<any>(null);
   const [currentPlan, setCurrentPlan] = useState<any>(null);
-
-  useEffect(() => {
-    setMounted(true);
-    initializePage();
-  }, []);
 
   // Check for URL parameters (success/cancel from Stripe)
   useEffect(() => {
@@ -55,18 +53,13 @@ const UserPlans: NextPage = () => {
       // Clean URL
       router.replace('/user/plans', undefined, { shallow: true });
     }
-  }, [router.isReady, router.query]);
+  }, [router.isReady, router.query, showToast, language, router]);
 
-  const initializePage = async () => {
+  const initializePage = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-
-      // Check if user is authenticated
-      if (!authService.isAuthenticated()) {
-        router.push('/auth/login');
-        return;
-      }
+      IS_DEV && console.log('📋 Plans: Loading plans...');
 
       // Load plans and user status in parallel
       const [plansResponse, planStatusResponse] = await Promise.allSettled([
@@ -81,6 +74,7 @@ const UserPlans: NextPage = () => {
         if (plansResponse.value.currentPlan) {
           setCurrentPlan(plansResponse.value.currentPlan);
         }
+        IS_DEV && console.log('✅ Plans: Plans loaded', plansResponse.value.plans.length);
       } else {
         console.error('Failed to load plans:', plansResponse.reason);
         setError('Failed to load plans');
@@ -99,9 +93,24 @@ const UserPlans: NextPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handlePlanSubscribe = async (plan: Plan) => {
+  useEffect(() => {
+    setMounted(true);
+    initializePage();
+  }, [initializePage]);
+
+  const formatPrice = useCallback((price: number, currency: string) => {
+    if (price === 0) {
+      return language === 'pt' ? 'GRATUITO' : 'FREE';
+    }
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency
+    }).format(price);
+  }, [language]);
+
+  const handlePlanSubscribe = useCallback(async (plan: Plan) => {
     try {
       setSubscribing(plan.code);
 
@@ -147,17 +156,7 @@ const UserPlans: NextPage = () => {
     } finally {
       setSubscribing(null);
     }
-  };
-
-  const formatPrice = (price: number, currency: string) => {
-    if (price === 0) {
-      return language === 'pt' ? 'GRATUITO' : 'FREE';
-    }
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency
-    }).format(price);
-  };
+  }, [language, showToast, initializePage]);
 
   if (!mounted) {
     return (
@@ -219,6 +218,7 @@ const UserPlans: NextPage = () => {
   }
 
   return (
+    <>
     <UserLayout
       title={`${language === 'pt' ? 'Planos' : 'Plans'} | CoinBitClub`}
       description={language === 'pt' ? 'Escolha o plano ideal para trading automatizado' : 'Choose the ideal plan for automated trading'}
@@ -493,6 +493,7 @@ const UserPlans: NextPage = () => {
         </motion.div>
       </div>
     </UserLayout>
+    </>
   );
 };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useAPIKeys } from '../../hooks/useAPIKeys';
@@ -17,6 +17,8 @@ import {
   FiClock,
   FiEdit2
 } from 'react-icons/fi';
+
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 interface APIKeyFormData {
   apiKey: string;
@@ -59,7 +61,7 @@ const APIKeysSettings: React.FC = () => {
     binance: false
   });
 
-  const handleAddKey = async (exchange: 'bybit' | 'binance') => {
+  const handleAddKey = useCallback(async (exchange: 'bybit' | 'binance') => {
     const data = formData[exchange];
 
     // Trim whitespace from inputs
@@ -104,9 +106,9 @@ const APIKeysSettings: React.FC = () => {
     } finally {
       setProcessing(prev => ({ ...prev, [exchange]: false }));
     }
-  };
+  }, [addAPIKey, editMode, formData, language, showToast]);
 
-  const handleEditKey = (exchange: 'bybit' | 'binance') => {
+  const handleEditKey = useCallback((exchange: 'bybit' | 'binance') => {
     setEditMode(prev => ({ ...prev, [exchange]: true }));
     setShowForm(prev => ({ ...prev, [exchange]: true }));
     // Clear form when entering edit mode
@@ -114,9 +116,9 @@ const APIKeysSettings: React.FC = () => {
       ...prev,
       [exchange]: { apiKey: '', apiSecret: '' }
     }));
-  };
+  }, []);
 
-  const handleVerifyKey = async (exchange: 'bybit' | 'binance') => {
+  const handleVerifyKey = useCallback(async (exchange: 'bybit' | 'binance') => {
     setProcessing(prev => ({ ...prev, [exchange]: true }));
 
     try {
@@ -140,9 +142,9 @@ const APIKeysSettings: React.FC = () => {
     } finally {
       setProcessing(prev => ({ ...prev, [exchange]: false }));
     }
-  };
+  }, [verifyAPIKey, language, showToast]);
 
-  const handleDeleteKey = async (exchange: 'bybit' | 'binance') => {
+  const handleDeleteKey = useCallback(async (exchange: 'bybit' | 'binance') => {
     if (!confirm(language === 'pt'
       ? `Tem certeza que deseja remover a API Key ${exchange}?`
       : `Are you sure you want to remove ${exchange} API Key?`
@@ -173,9 +175,9 @@ const APIKeysSettings: React.FC = () => {
     } finally {
       setProcessing(prev => ({ ...prev, [exchange]: false }));
     }
-  };
+  }, [deleteAPIKey, language, showToast]);
 
-  const renderExchangeCard = (
+  const renderExchangeCard = useCallback((
     exchange: 'bybit' | 'binance',
     status: typeof bybit | typeof binance,
     color: string
@@ -407,7 +409,7 @@ const APIKeysSettings: React.FC = () => {
         )}
       </div>
     );
-  };
+  }, [editMode, formData, handleAddKey, handleDeleteKey, handleEditKey, handleVerifyKey, language, processing, showForm]);
 
   if (loading) {
     return (

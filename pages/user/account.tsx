@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
@@ -6,6 +6,9 @@ import { FiDollarSign, FiCreditCard, FiGift, FiUsers, FiSettings, FiTrendingUp, 
 import { useLanguage } from '../../hooks/useLanguage';
 import StandardLayout from '../../components/StandardLayout';
 import authService, { User } from '../../src/services/authService';
+// Authentication removed - ProtectedRoute disabled
+
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 const UserAccount: NextPage = () => {
   const { language, t } = useLanguage();
@@ -29,27 +32,16 @@ const UserAccount: NextPage = () => {
   // Estados para processamento
   const [processing, setProcessing] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    loadUserData();
-  }, []);
-
-  const loadUserData = async () => {
+  const loadUserData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Check if user is authenticated
-      if (!authService.isAuthenticated()) {
-        router.push('/auth/login');
-        return;
-      }
-
-      // Get user profile from backend
+      IS_DEV && console.log('💳 Account: Loading user data...');
+      
       const userProfile = await authService.getProfile();
       setUser(userProfile);
 
-      // Get plan status
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
       try {
         const planResponse = await fetch(`${baseUrl}/api/plans/status`, {
@@ -63,19 +55,24 @@ const UserAccount: NextPage = () => {
           setPlanStatus(planData);
         }
       } catch (planError) {
-        console.warn('Plan status not available:', planError);
-        // Don't fail the whole page if plan status fails
+        IS_DEV && console.warn('Plan status not available:', planError);
       }
 
+      IS_DEV && console.log('✅ Account: User data loaded');
     } catch (error) {
       console.error('Error loading user data:', error);
       setError('Erro ao carregar dados do usuário');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleRecharge = async () => {
+  useEffect(() => {
+    setMounted(true);
+    loadUserData();
+  }, [loadUserData]);
+
+  const handleRecharge = useCallback(async () => {
     if (!rechargeAmount || parseFloat(rechargeAmount) < 20) {
       alert('Valor mínimo para recarga: R$ 20,00');
       return;
@@ -99,7 +96,6 @@ const UserAccount: NextPage = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Redirect to Stripe checkout
         window.location.href = data.checkout_url;
       } else {
         alert(data.error || 'Erro ao processar recarga');
@@ -110,9 +106,9 @@ const UserAccount: NextPage = () => {
     } finally {
       setProcessing(false);
     }
-  };
+  }, [rechargeAmount]);
 
-  const handleCoupon = async () => {
+  const handleCoupon = useCallback(async () => {
     if (!couponCode.trim()) {
       alert('Digite um código de cupom válido');
       return;
@@ -138,7 +134,7 @@ const UserAccount: NextPage = () => {
         alert(`Cupom aplicado com sucesso! Valor: ${data.currency === 'BRL' ? 'R$' : '$'} ${data.value}`);
         setCouponCode('');
         setShowCouponModal(false);
-        loadUserData(); // Reload user data to update balances
+        loadUserData();
       } else {
         alert(data.error || 'Cupom inválido');
       }
@@ -148,7 +144,18 @@ const UserAccount: NextPage = () => {
     } finally {
       setProcessing(false);
     }
-  };
+  }, [couponCode, loadUserData]);
+
+  // Memoize computed values
+  const totalBalance = useMemo(() => 
+    user ? (user.balances.real_brl + user.balances.admin_brl).toFixed(2) : '0.00',
+    [user]
+  );
+
+  const commissionBalance = useMemo(() => 
+    user ? user.balances.commission_brl.toFixed(2) : '0.00',
+    [user]
+  );
 
   if (!mounted || loading) {
     return (
@@ -187,6 +194,7 @@ const UserAccount: NextPage = () => {
   }
 
   return (
+    <>
     <StandardLayout title="Minha Conta">
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900">
         <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -222,7 +230,7 @@ const UserAccount: NextPage = () => {
                   <div className="w-3 h-3 bg-green-300 rounded-full animate-pulse"></div>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-4xl font-black text-white">R$ {(user.balances.real_brl + user.balances.admin_brl).toFixed(2)}</p>
+                  <p className="text-4xl font-black text-white">R$ {totalBalance}</p>
                   <p className="text-green-100 text-sm font-medium">Disponível para saque imediato</p>
                 </div>
               </div>
@@ -243,7 +251,7 @@ const UserAccount: NextPage = () => {
                   <div className="w-3 h-3 bg-blue-300 rounded-full animate-pulse"></div>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-4xl font-black text-white">R$ {user.balances.commission_brl.toFixed(2)}</p>
+                  <p className="text-4xl font-black text-white">R$ {commissionBalance}</p>
                   <p className="text-blue-100 text-sm font-medium">Comissões de afiliados</p>
                 </div>
               </div>
@@ -408,6 +416,7 @@ const UserAccount: NextPage = () => {
 
       </div>
     </StandardLayout>
+    </>
   );
 };
 

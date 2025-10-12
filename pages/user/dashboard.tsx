@@ -8,11 +8,14 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { useAPIKeys } from '../../hooks/useAPIKeys';
 import UserLayout from '../../components/UserLayout';
 import ResponsiveContainer from '../../components/ResponsiveContainer';
+// Authentication removed - ProtectedRoute disabled
 import { useToast } from '../../components/Toast';
 import { UserProfile } from '../../src/services/userService';
 import userService from '../../src/services/userService';
 import { DailyStats, operationsService } from '../../src/services/operationsService';
 import { AllExchangeBalances, exchangeBalanceService } from '../../src/services/exchangeBalanceService';
+
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 export default function UserDashboard() {
   // ALL HOOKS MUST BE AT THE TOP - NEVER USE HOOKS AFTER CONDITIONAL RETURNS
@@ -20,14 +23,13 @@ export default function UserDashboard() {
   const { language } = useLanguage();
   const { isMobile } = useResponsive();
   const { showToast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { hasAnyKeys, hasVerifiedKeys } = useAPIKeys();
   const [loading, setLoading] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [dailyStats, setDailyStats] = useState<DailyStats | null>(null);
   const [exchangeBalances, setExchangeBalances] = useState<AllExchangeBalances | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
-  const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Define all callbacks - Use real API data
@@ -36,7 +38,7 @@ export default function UserDashboard() {
       setDataLoading(true);
       setError(null);
 
-      console.log('📊 Dashboard: Loading real data from API...');
+      IS_DEV && console.log('📊 Dashboard: Loading real data from API...');
       
       // Fetch user profile, daily stats, and exchange balances in parallel
       const [userProfileResponse, dailyStatsResponse, exchangeBalancesResponse] = await Promise.all([
@@ -45,7 +47,7 @@ export default function UserDashboard() {
         exchangeBalanceService.getAllExchangeBalances()
       ]);
 
-      console.log('📊 Dashboard: API responses received:', {
+      IS_DEV && console.log('📊 Dashboard: API responses received:', {
         userProfileSuccess: userProfileResponse?.success,
         dailyStatsResponse: dailyStatsResponse ? 'received' : 'null/undefined',
         exchangeBalancesReceived: exchangeBalancesResponse ? 'received' : 'null/undefined'
@@ -70,7 +72,7 @@ export default function UserDashboard() {
           userProfile.balances.balance_commission_usd = safeNumber(userProfile.balances.balance_commission_usd);
         }
         setUserProfile(userProfile);
-        console.log('✅ Dashboard: User profile loaded successfully');
+        IS_DEV && console.log('✅ Dashboard: User profile loaded successfully');
       } else {
         console.error('❌ Dashboard: Failed to load user profile');
         throw new Error('Failed to load user profile');
@@ -103,12 +105,12 @@ export default function UserDashboard() {
         };
 
         setDailyStats(safeStats);
-        console.log('✅ Dashboard: Daily stats loaded successfully:', {
+        IS_DEV && console.log('✅ Dashboard: Daily stats loaded successfully:', {
           todayReturnPercent: safeStats.todayReturnPercent,
           successRate: safeStats.successRate
         });
       } else {
-        console.warn('⚠️ Dashboard: No daily stats available, using defaults');
+        IS_DEV && console.warn('⚠️ Dashboard: No daily stats available, using defaults');
         // Set default daily stats if none available
         setDailyStats({
           operationsToday: 0,
@@ -131,14 +133,14 @@ export default function UserDashboard() {
       // Handle exchange balances
       if (exchangeBalancesResponse) {
         setExchangeBalances(exchangeBalancesResponse);
-        console.log('✅ Dashboard: Exchange balances loaded successfully:', {
+        IS_DEV && console.log('✅ Dashboard: Exchange balances loaded successfully:', {
           binance: exchangeBalancesResponse.binance?.total_equity || 0,
           bybit: exchangeBalancesResponse.bybit?.total_equity || 0,
           total: exchangeBalancesResponse.total_usd,
           has_keys: exchangeBalancesResponse.has_keys
         });
       } else {
-        console.warn('⚠️ Dashboard: No exchange balances available');
+        IS_DEV && console.warn('⚠️ Dashboard: No exchange balances available');
         setExchangeBalances({
           binance: null,
           bybit: null,
@@ -147,7 +149,7 @@ export default function UserDashboard() {
         });
       }
       
-      console.log('✅ Dashboard: Real data loaded successfully');
+      IS_DEV && console.log('✅ Dashboard: Real data loaded successfully');
     } catch (error) {
       console.error('❌ Dashboard: Error loading real data:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -160,7 +162,7 @@ export default function UserDashboard() {
       );
       
       // Fallback to mock data on error
-      console.log('🔄 Dashboard: Falling back to mock data...');
+      IS_DEV && console.log('🔄 Dashboard: Falling back to mock data...');
       const mockUserProfile = {
         user: {
           id: 1,
@@ -296,7 +298,7 @@ export default function UserDashboard() {
     const todayReturnValue = safeNumber(dailyStats?.todayReturnPercent);
     const winRateValue = safeNumber(dailyStats?.successRate);
     
-    console.log('📊 Dashboard: Performance calculation:', {
+    IS_DEV && console.log('📊 Dashboard: Performance calculation:', {
       dailyStatsExists: !!dailyStats,
       todayReturnPercent: dailyStats?.todayReturnPercent,
       successRate: dailyStats?.successRate,
@@ -319,150 +321,13 @@ export default function UserDashboard() {
     };
   }, [userProfile, dailyStats, exchangeBalances]);
 
-  // ALL EFFECTS MUST BE DECLARED BEFORE ANY CONDITIONAL RETURNS
-  // Authentication check with enhanced redirect protection
+  // Data loading effect - Load dashboard data when authenticated
   useEffect(() => {
-    console.log('📊 Dashboard: Auth state check:', { isLoading, isAuthenticated, redirecting });
-    console.log('🔍 DEBUG: Dashboard useEffect triggered with:', {
-      isLoading,
-      isAuthenticated,
-      redirecting,
-      currentPath: router.asPath,
-      currentQuery: router.query
-    });
-
-    // FIXED: Add a delay to allow AuthContext to fully initialize
-    const checkAuth = () => {
-      console.log('🔍 DEBUG: Dashboard - Checking authentication after delay...');
-      
-      // Check if there are any auth tokens in localStorage as a double-check
-      const hasAuthTokens = localStorage.getItem('auth_access_token') || 
-                           localStorage.getItem('authToken') || 
-                           localStorage.getItem('auth-token');
-      
-      console.log('🔍 DEBUG: Dashboard - Checking localStorage for auth tokens:', {
-        auth_access_token: !!localStorage.getItem('auth_access_token'),
-        authToken: !!localStorage.getItem('authToken'),
-        'auth-token': !!localStorage.getItem('auth-token'),
-        hasAnyTokens: !!hasAuthTokens
-      });
-
-      // If we have tokens but AuthContext says not authenticated, wait a bit more
-      if (hasAuthTokens && !isAuthenticated && !isLoading) {
-        console.log('🔍 DEBUG: Dashboard - Found auth tokens but AuthContext not ready, waiting more...');
-        setTimeout(checkAuth, 500); // Wait another 500ms
-        return;
-      }
-
-      // Only redirect if we're absolutely sure the user is not authenticated
-      if (!isLoading && !isAuthenticated && !redirecting) {
-        console.log('🔍 DEBUG: Dashboard - User not authenticated, checking redirect conditions');
-        
-        // Enhanced loop prevention with multiple checks
-        const lastRedirect = sessionStorage.getItem('dashboard-redirect-timestamp');
-        const redirectCount = parseInt(sessionStorage.getItem('dashboard-redirect-count') || '0');
-        const now = Date.now();
-
-        console.log('🔄 Dashboard: Not authenticated, checking redirect protection...', { 
-          lastRedirect, 
-          redirectCount, 
-          now,
-          timeSinceLastRedirect: lastRedirect ? now - parseInt(lastRedirect) : 'N/A'
-        });
-
-        // Prevent redirect if:
-        // 1. Redirected less than 3 seconds ago
-        // 2. More than 3 redirects in the last 10 seconds
-        // 3. Already in a redirect process
-        if (
-          (lastRedirect && (now - parseInt(lastRedirect)) < 3000) ||
-          redirectCount > 3 ||
-          redirecting
-        ) {
-          console.warn('⚠️ Dashboard: Redirect loop detected, skipping redirect', {
-            timeSinceLastRedirect: lastRedirect ? now - parseInt(lastRedirect) : 'N/A',
-            redirectCount,
-            redirecting,
-            condition1: lastRedirect && (now - parseInt(lastRedirect)) < 3000,
-            condition2: redirectCount > 3,
-            condition3: redirecting
-          });
-          return;
-        }
-
-        // Increment redirect counter and set timestamp
-        const newCount = redirectCount + 1;
-        sessionStorage.setItem('dashboard-redirect-timestamp', now.toString());
-        sessionStorage.setItem('dashboard-redirect-count', newCount.toString());
-        setRedirecting(true);
-
-        console.log('🔀 Dashboard: Redirecting to login... (attempt', newCount, ')');
-        console.log('🔍 DEBUG: Dashboard - About to redirect to /auth/login');
-
-        // Add a small delay to prevent rapid redirects
-        setTimeout(() => {
-          console.log('🔍 DEBUG: Dashboard - Executing redirect now');
-          router.push('/auth/login').catch(error => {
-            console.error('❌ Dashboard: Redirect error:', error);
-            setRedirecting(false);
-            sessionStorage.removeItem('dashboard-redirect-timestamp');
-            sessionStorage.removeItem('dashboard-redirect-count');
-          });
-        }, 100);
-      } else if (isAuthenticated) {
-        console.log('✅ Dashboard: User is authenticated, staying on dashboard');
-        console.log('🔍 DEBUG: Dashboard - User authenticated, clearing redirect counters');
-        // Clear redirect counters when successfully authenticated
-        sessionStorage.removeItem('dashboard-redirect-timestamp');
-        sessionStorage.removeItem('dashboard-redirect-count');
-      } else {
-        console.log('🔍 DEBUG: Dashboard - Not redirecting because:', {
-          isLoading,
-          isAuthenticated,
-          redirecting
-        });
-      }
-    };
-
-    // Add a small delay to allow AuthContext to initialize
-    if (!isLoading) {
-      setTimeout(checkAuth, 100); // Wait 100ms for AuthContext to initialize
-    }
-  }, [isAuthenticated, isLoading, redirecting, router]);
-
-  // Data loading effect - FIXED: Load mock data once, no auto-refresh
-  useEffect(() => {
-    // Only load data if authenticated and not redirecting
-    if (isAuthenticated && !redirecting) {
-      // Clear redirect timestamp when successfully authenticated
-      sessionStorage.removeItem('dashboard-redirect-timestamp');
-
-      // Load mock data once (no auto-refresh needed for mock data)
+    if (isAuthenticated) {
+      IS_DEV && console.log('📊 Dashboard: User authenticated, loading dashboard data...');
       loadDashboardData();
     }
-  }, [isAuthenticated, redirecting, loadDashboardData]);
-
-  // NOW WE CAN USE CONDITIONAL RENDERING - ALL HOOKS HAVE BEEN CALLED
-  // Show loading while checking authentication or redirecting
-  if (isLoading || redirecting) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <span className="text-black font-bold text-xl">C</span>
-          </div>
-          <p className="text-gray-400">
-            {language === 'pt' ? 'Carregando...' : 'Loading...'}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render if not authenticated
-  if (!isAuthenticated) {
-    return null;
-  }
+  }, [isAuthenticated, loadDashboardData]);
 
   // Show error state if there's a persistent error
   if (error && !dataLoading) {

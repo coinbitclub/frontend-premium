@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiTrendingUp, 
@@ -10,6 +10,8 @@ import {
   FiXCircle,
   FiClock
 } from 'react-icons/fi';
+
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 interface RobotOperationTimelineProps {
   isActive?: boolean;
@@ -36,13 +38,13 @@ const RobotOperationTimeline: React.FC<RobotOperationTimelineProps> = ({
   const [operations, setOperations] = useState<Operation[]>([]);
   const [currentOperation, setCurrentOperation] = useState<Operation | null>(null);
 
-  const speedMap = {
+  const speedMap = useMemo(() => ({
     slow: 5000,
     normal: 3000,
     fast: 1500
-  };
+  }), []);
 
-  const generateOperation = (): Operation => {
+  const generateOperation = useCallback((): Operation => {
     const symbols = ['BTC/USDT', 'ETH/USDT', 'ADA/USDT', 'SOL/USDT', 'DOT/USDT'];
     const types: ('buy' | 'sell')[] = ['buy', 'sell'];
     const statuses: ('pending' | 'completed' | 'failed')[] = ['pending', 'completed', 'failed'];
@@ -64,7 +66,7 @@ const RobotOperationTimeline: React.FC<RobotOperationTimelineProps> = ({
       timestamp: new Date(),
       status
     };
-  };
+  }, []);
 
   useEffect(() => {
     if (!isActive) return;
@@ -80,9 +82,9 @@ const RobotOperationTimeline: React.FC<RobotOperationTimelineProps> = ({
     }, speedMap[speed]);
 
     return () => clearInterval(interval);
-  }, [isActive, speed]);
+  }, [isActive, speed, speedMap, generateOperation]);
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = useCallback((status: string) => {
     switch (status) {
       case 'completed':
         return <FiCheckCircle className="w-4 h-4 text-green-400" />;
@@ -91,22 +93,22 @@ const RobotOperationTimeline: React.FC<RobotOperationTimelineProps> = ({
       default:
         return <FiClock className="w-4 h-4 text-yellow-400" />;
     }
-  };
+  }, []);
 
-  const getTypeIcon = (type: string) => {
+  const getTypeIcon = useCallback((type: string) => {
     return type === 'buy' 
       ? <FiTrendingUp className="w-4 h-4 text-green-400" />
       : <FiTrendingDown className="w-4 h-4 text-red-400" />;
-  };
+  }, []);
 
-  const formatProfit = (profit: number) => {
+  const formatProfit = useCallback((profit: number) => {
     const isPositive = profit >= 0;
     return (
       <span className={`font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
         {isPositive ? '+' : ''}${profit.toFixed(2)}
       </span>
     );
-  };
+  }, []);
 
   if (compact) {
     return (

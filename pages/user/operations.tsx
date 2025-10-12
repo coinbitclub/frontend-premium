@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../hooks/useLanguage';
 import UserLayout from '../../components/UserLayout';
 import { useSocket } from '../../src/contexts/SocketContext';
+// Authentication removed - ProtectedRoute disabled
+
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 // Tipos para o fluxo real do MarketBot
 interface MarketIndicators {
@@ -116,17 +119,17 @@ const UserOperations: React.FC = () => {
     // Socket is now managed by SocketContext
     // No need to create or authenticate here
     if (!socket) {
-      console.log('⏳ Waiting for socket connection...');
+      IS_DEV && console.log('⏳ Waiting for socket connection...');
       return;
     }
 
-    console.log('📡 Socket available in operations page');
+    IS_DEV && console.log('📡 Socket available in operations page');
 
-    // Real-time event handlers
-
+    // Real-time event handlers - memoized for performance
+    
     // ✅ NEW: Listen for TradingView signals (PRIMARY - real-time)
-    socket.on('trading_signal', (data) => {
-      console.log('📊 TradingView Signal Received:', data);
+    const handleTradingSignal = (data: any) => {
+      IS_DEV && console.log('📊 TradingView Signal Received:', data);
 
       const newSignal: Signal = {
         id: data.data?.id || `SIGNAL_${Date.now()}`,
@@ -142,12 +145,12 @@ const UserOperations: React.FC = () => {
       // Add to top of signals list (keep last 20)
       setSignals(prev => [newSignal, ...prev.slice(0, 19)]);
 
-      console.log(`✅ Signal added to UI: ${newSignal.pair} ${newSignal.direction}`);
-    });
+      IS_DEV && console.log(`✅ Signal added to UI: ${newSignal.pair} ${newSignal.direction}`);
+    };
 
     // LEGACY: Keep for backward compatibility
-    socket.on('signal_received', (data) => {
-      console.log('📡 Operations: Signal received (legacy):', data);
+    const handleSignalReceived = (data: any) => {
+      IS_DEV && console.log('📡 Operations: Signal received (legacy):', data);
       const newSignal: Signal = {
         id: Date.now().toString(),
         pair: data.data?.symbol || 'BTC/USDT',
@@ -159,10 +162,10 @@ const UserOperations: React.FC = () => {
         reasoning: data.data?.strategy || 'Signal processamento em andamento...'
       };
       setSignals(prev => [newSignal, ...prev.slice(0, 19)]);
-    });
+    };
 
-    socket.on('ai_decision', (data) => {
-      console.log('🤖 Operations: AI decision:', data);
+    const handleAIDecision = (data: any) => {
+      IS_DEV && console.log('🤖 Operations: AI decision:', data);
       setAiDecision({
         direction: data.action || 'LONG',
         confidence: data.confidence || 75,
@@ -172,10 +175,10 @@ const UserOperations: React.FC = () => {
         timestamp: new Date(data.timestamp),
         marketSentiment: data.sentiment || (language === 'pt' ? 'ANALISANDO' : 'ANALYZING')
       });
-    });
+    };
 
-    socket.on('trade_executed', (data) => {
-      console.log('📈 Operations: Trade executed:', data);
+    const handleTradeExecuted = (data: any) => {
+      IS_DEV && console.log('📈 Operations: Trade executed:', data);
       // Update signal status to EXECUTADO
       setSignals(prev => prev.map(signal => {
         if (signal.pair === data.data?.symbol) {
@@ -183,10 +186,10 @@ const UserOperations: React.FC = () => {
         }
         return signal;
       }));
-    });
+    };
 
-    socket.on('position_update', (data) => {
-      console.log('📊 Operations: Position update:', data);
+    const handlePositionUpdate = (data: any) => {
+      IS_DEV && console.log('📊 Operations: Position update:', data);
 
       setPositions(prev => {
         const existingIndex = prev.findIndex(p => p.id === data.data.tradeId);
@@ -218,20 +221,20 @@ const UserOperations: React.FC = () => {
           return [positionData, ...prev];
         }
       });
-    });
+    };
 
-    socket.on('balance_update', (data) => {
-      console.log('💰 Operations: Balance update:', data);
+    const handleBalanceUpdate = (data: any) => {
+      IS_DEV && console.log('💰 Operations: Balance update:', data);
       // Update daily stats based on balance changes
       setDailyStats(prev => ({
         ...prev,
         todayReturnUSD: prev.todayReturnUSD + (data.data?.change || 0),
         todayReturnPercent: prev.todayReturnPercent + ((data.data?.change || 0) / prev.totalInvested * 100)
       }));
-    });
+    };
 
-    socket.on('execution_summary', (data) => {
-      console.log('📊 Operations: Execution summary:', data);
+    const handleExecutionSummary = (data: any) => {
+      IS_DEV && console.log('📊 Operations: Execution summary:', data);
       setDailyStats(prev => ({
         ...prev,
         operationsToday: data.data?.executedTrades || prev.operationsToday,
@@ -239,11 +242,11 @@ const UserOperations: React.FC = () => {
           ? (data.data.successfulTrades / data.data.executedTrades) * 100
           : prev.successRate
       }));
-    });
+    };
 
     // ✅ NEW: Listen for real-time signal updates from database
-    socket.on('signal_update', (data) => {
-      console.log('📡 Operations: Signal update received:', data);
+    const handleSignalUpdate = (data: any) => {
+      IS_DEV && console.log('📡 Operations: Signal update received:', data);
 
       const updatedSignal: Signal = {
         id: data.data?.id || `SIGNAL_${Date.now()}`,
@@ -277,8 +280,18 @@ const UserOperations: React.FC = () => {
         }
       });
 
-      console.log(`✅ Signal updated in UI: ${updatedSignal.pair} ${updatedSignal.direction} (${updatedSignal.status})`);
-    });
+      IS_DEV && console.log(`✅ Signal updated in UI: ${updatedSignal.pair} ${updatedSignal.direction} (${updatedSignal.status})`);
+    };
+
+    // Register all event handlers
+    socket.on('trading_signal', handleTradingSignal);
+    socket.on('signal_received', handleSignalReceived);
+    socket.on('ai_decision', handleAIDecision);
+    socket.on('trade_executed', handleTradeExecuted);
+    socket.on('position_update', handlePositionUpdate);
+    socket.on('balance_update', handleBalanceUpdate);
+    socket.on('execution_summary', handleExecutionSummary);
+    socket.on('signal_update', handleSignalUpdate);
 
     // Update time every minute
     const timeInterval = setInterval(() => {
@@ -295,19 +308,19 @@ const UserOperations: React.FC = () => {
       });
     }
 
-    // Cleanup - remove event listeners
+    // Cleanup - remove event listeners with their handlers
     return () => {
       clearInterval(timeInterval);
       // Clean up socket event listeners
       if (socket) {
-        socket.off('trading_signal');
-        socket.off('signal_received');
-        socket.off('ai_decision');
-        socket.off('trade_executed');
-        socket.off('position_update');
-        socket.off('balance_update');
-        socket.off('execution_summary');
-        socket.off('signal_update'); // ✅ NEW: Clean up signal_update listener
+        socket.off('trading_signal', handleTradingSignal);
+        socket.off('signal_received', handleSignalReceived);
+        socket.off('ai_decision', handleAIDecision);
+        socket.off('trade_executed', handleTradeExecuted);
+        socket.off('position_update', handlePositionUpdate);
+        socket.off('balance_update', handleBalanceUpdate);
+        socket.off('execution_summary', handleExecutionSummary);
+        socket.off('signal_update', handleSignalUpdate);
       }
     };
   }, [socket, language]);
@@ -385,7 +398,7 @@ const UserOperations: React.FC = () => {
             lastUpdate: new Date()
           });
 
-          console.log('📡 Updated Market Indicators from backend:', indicators);
+          IS_DEV && console.log('📡 Updated Market Indicators from backend:', indicators);
         }
       }
     } catch (error) {
@@ -453,8 +466,8 @@ const UserOperations: React.FC = () => {
 
       // ✅ SIGNALS NOW COME VIA WEBSOCKET ONLY
       // No API call needed - signals are broadcasted in real-time from TradingView webhook
-      console.log('📡 Signals now come via WebSocket from TradingView webhook');
-      console.log('📡 Listening to: trading_signal and signal_update events');
+      IS_DEV && console.log('📡 Signals now come via WebSocket from TradingView webhook');
+      IS_DEV && console.log('📡 Listening to: trading_signal and signal_update events');
       
       // Keep signals array empty initially - will be populated via WebSocket
       setSignals([]);
@@ -530,6 +543,7 @@ const UserOperations: React.FC = () => {
 
   if (!mounted) {
     return (
+      <>
       <UserLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
@@ -539,10 +553,12 @@ const UserOperations: React.FC = () => {
           </div>
         </div>
       </UserLayout>
+      </>
     );
   }
 
   return (
+    <>
     <UserLayout>
       <div className="p-6">
         {/* HEADER COM STATUS TEMPO REAL */}
@@ -573,6 +589,7 @@ const UserOperations: React.FC = () => {
             </div>
           </div>
         </motion.div>
+        
 
         {/* ÍNDICES SUPERIORES - Performance do Dia */}
         <motion.div
@@ -1226,6 +1243,7 @@ const UserOperations: React.FC = () => {
           )}
         </div>
       </UserLayout>
+      </>
     );
   };
 

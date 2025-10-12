@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+
+const IS_DEV = process.env.NODE_ENV === 'development';
 import { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
 import { FaPhone, FaArrowLeft, FaCheckCircle, FaLock, FaEye, FaEyeSlash, FaGlobe, FaCheck } from 'react-icons/fa';
+// Authentication removed - PublicRoute disabled
 import { useLanguage } from '../../hooks/useLanguage';
 
 const EsqueciSenhaPage: NextPage = () => {
@@ -33,14 +36,14 @@ const EsqueciSenhaPage: NextPage = () => {
     setMounted(true);
   }, []);
 
-  const handleLanguageChange = (lang: 'pt' | 'en') => {
-    console.log('Esqueci senha page - Button clicked for language:', lang);
+  const handleLanguageChange = useCallback((lang: 'pt' | 'en') => {
+    IS_DEV && console.log('Esqueci senha page - Button clicked for language:', lang);
     if (setLanguage && typeof setLanguage === 'function') {
       setLanguage(lang);
     } else {
       console.error('setLanguage function not available');
     }
-  };
+  }, [setLanguage]);
 
   if (!mounted) {
     return (
@@ -70,29 +73,29 @@ const EsqueciSenhaPage: NextPage = () => {
   ];
 
   // Função para formatar telefone
-  const formatarTelefone = (telefone: string) => {
+  const formatarTelefone = useCallback((telefone: string) => {
     const apenasNumeros = telefone.replace(/\D/g, '');
     if (apenasNumeros.length <= 10) {
       return apenasNumeros.replace(/(\d{2})(\d{4})(\d{4})/, '$1 $2-$3');
     } else {
       return apenasNumeros.replace(/(\d{2})(\d{5})(\d{4})/, '$1 $2-$3');
     }
-  };
+  }, []);
 
   // Função para calcular força da senha
-  const calcularForcaSenha = (senha: string): string => {
+  const calcularForcaSenha = useCallback((senha: string): string => {
     if (senha.length < 6) return 'Fraca';
     if (senha.length >= 8 && /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(senha)) return 'Forte';
     return 'Média';
-  };
+  }, []);
 
   // Função para lidar com mudanças nos inputs
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = useCallback((field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
-  };
+  }, [errors]);
 
   // Timer para reenvio de código
   useEffect(() => {
@@ -106,7 +109,7 @@ const EsqueciSenhaPage: NextPage = () => {
   }, [tempoRestante]);
 
   // Função para enviar código OTP
-  const enviarCodigoOtp = async () => {
+  const enviarCodigoOtp = useCallback(async () => {
     setLoadingOtp(true);
     setErrors({});
 
@@ -130,7 +133,7 @@ const EsqueciSenhaPage: NextPage = () => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Aqui você faria a chamada real para enviar o SMS
-      console.log('Enviando SMS para:', formData.codigoPais + formData.telefone);
+      IS_DEV && console.log('Enviando SMS para:', formData.codigoPais + formData.telefone);
       
       setStep(2);
       setTempoRestante(300); // 5 minutos
@@ -142,10 +145,10 @@ const EsqueciSenhaPage: NextPage = () => {
     } finally {
       setLoadingOtp(false);
     }
-  };
+  }, [formData.telefone, formData.codigoPais]);
 
   // Função para reenviar código OTP
-  const reenviarCodigoOtp = async () => {
+  const reenviarCodigoOtp = useCallback(async () => {
     setLoadingOtp(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -156,10 +159,10 @@ const EsqueciSenhaPage: NextPage = () => {
     } finally {
       setLoadingOtp(false);
     }
-  };
+  }, []);
 
   // Função para verificar código OTP
-  const verificarCodigoOtp = async () => {
+  const verificarCodigoOtp = useCallback(async () => {
     setLoadingOtp(true);
     setErrors({});
 
@@ -187,10 +190,10 @@ const EsqueciSenhaPage: NextPage = () => {
     } finally {
       setLoadingOtp(false);
     }
-  };
+  }, [formData.codigoOtp]);
 
   // Função para redefinir senha
-  const redefinirSenha = async () => {
+  const redefinirSenha = useCallback(async () => {
     const newErrors: {[key: string]: string} = {};
 
     if (!formData.novaSenha) {
@@ -237,7 +240,7 @@ const EsqueciSenhaPage: NextPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [formData.novaSenha, formData.confirmarSenha, formData.telefone, formData.codigoPais]);
 
   return (
     <>

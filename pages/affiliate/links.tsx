@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../hooks/useLanguage';
 import AffiliateLayout from '../../src/components/AffiliateLayout';
@@ -15,6 +15,8 @@ import {
   FiUserPlus,
   FiShare2
 } from 'react-icons/fi';
+
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 interface AffiliateLink {
   id: string;
@@ -51,7 +53,54 @@ const AffiliateLinks: React.FC = () => {
     fetchAffiliateLinks();
   }, []);
 
-  const fetchAffiliateLinks = async () => {
+  const generateMockLinks = useCallback(() => {
+    const mockLinks: AffiliateLink[] = [
+      {
+        id: '1',
+        name: 'Main Landing Page',
+        url: `https://coinbitclub.com/register?ref=${baseAffiliateCode}`,
+        shortCode: baseAffiliateCode,
+        clicks: 1247,
+        conversions: 85,
+        conversionRate: 6.8,
+        commissions: 1275.50,
+        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        isActive: true,
+        description: 'Link principal para landing page',
+      },
+      {
+        id: '2',
+        name: 'Instagram Campaign',
+        url: `https://coinbitclub.com/register?ref=${baseAffiliateCode}&utm_source=instagram`,
+        shortCode: `${baseAffiliateCode}-IG`,
+        clicks: 892,
+        conversions: 47,
+        conversionRate: 5.3,
+        commissions: 705.00,
+        createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+        isActive: true,
+        description: 'Campanha do Instagram Stories',
+        customParams: 'utm_source=instagram&utm_medium=social'
+      },
+      {
+        id: '3',
+        name: 'YouTube Description',
+        url: `https://coinbitclub.com/register?ref=${baseAffiliateCode}&utm_source=youtube`,
+        shortCode: `${baseAffiliateCode}-YT`,
+        clicks: 2134,
+        conversions: 156,
+        conversionRate: 7.3,
+        commissions: 2340.00,
+        createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+        isActive: true,
+        description: 'Link na descrição dos vídeos',
+        customParams: 'utm_source=youtube&utm_medium=video'
+      }
+    ];
+    setLinks(mockLinks);
+  }, [baseAffiliateCode]);
+
+  const fetchAffiliateLinks = useCallback(async () => {
     try {
       const token = localStorage.getItem('auth_access_token');
       if (!token) {
@@ -96,70 +145,9 @@ const AffiliateLinks: React.FC = () => {
       console.error('Error fetching affiliate links:', error);
       generateMockLinks(); // Fallback to mock data on error
     }
-  };
+  }, [generateMockLinks]);
 
-  const generateMockLinks = () => {
-    const mockLinks: AffiliateLink[] = [
-      {
-        id: '1',
-        name: 'Link Principal',
-        url: `https://coinbitclub.com/register?ref=${baseAffiliateCode}`,
-        shortCode: baseAffiliateCode,
-        clicks: 234,
-        conversions: 47,
-        conversionRate: 20.1,
-        commissions: 2847.50,
-        createdAt: new Date('2024-01-15'),
-        isActive: true,
-        description: 'Link principal de indicação para novos usuários'
-      },
-      {
-        id: '2',
-        name: 'Promoção Black Friday',
-        url: `https://coinbitclub.com/register?ref=${baseAffiliateCode}&promo=blackfriday`,
-        shortCode: `${baseAffiliateCode}-BF`,
-        clicks: 89,
-        conversions: 23,
-        conversionRate: 25.8,
-        commissions: 1345.20,
-        createdAt: new Date('2024-11-01'),
-        isActive: true,
-        description: 'Link especial para promoção de Black Friday',
-        customParams: 'promo=blackfriday'
-      },
-      {
-        id: '3',
-        name: 'YouTube - Vídeo Tutorial',
-        url: `https://coinbitclub.com/register?ref=${baseAffiliateCode}&source=youtube`,
-        shortCode: `${baseAffiliateCode}-YT`,
-        clicks: 156,
-        conversions: 18,
-        conversionRate: 11.5,
-        commissions: 976.40,
-        createdAt: new Date('2024-10-20'),
-        isActive: true,
-        description: 'Link específico para campanhas no YouTube',
-        customParams: 'source=youtube'
-      },
-      {
-        id: '4',
-        name: 'Instagram Stories',
-        url: `https://coinbitclub.com/register?ref=${baseAffiliateCode}&source=instagram`,
-        shortCode: `${baseAffiliateCode}-IG`,
-        clicks: 67,
-        conversions: 8,
-        conversionRate: 11.9,
-        commissions: 432.10,
-        createdAt: new Date('2024-11-10'),
-        isActive: false,
-        description: 'Link para stories do Instagram (pausado)',
-        customParams: 'source=instagram'
-      }
-    ];
-    setLinks(mockLinks);
-  };
-
-  const copyToClipboard = async (text: string, linkId: string) => {
+  const copyToClipboard = useCallback(async (text: string, linkId: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopySuccess(linkId);
@@ -167,15 +155,15 @@ const AffiliateLinks: React.FC = () => {
     } catch (err) {
       console.error('Failed to copy:', err);
     }
-  };
+  }, []);
 
-  const handleCreateLink = async () => {
+  const handleCreateLink = useCallback(async () => {
     if (!newLink.name.trim()) return;
 
     try {
       const token = localStorage.getItem('auth_access_token');
       if (!token) {
-        console.error('No auth token found');
+        IS_DEV && console.error('No auth token found');
         return;
       }
 
@@ -204,7 +192,7 @@ const AffiliateLinks: React.FC = () => {
     } catch (error) {
       console.error('Error creating affiliate link:', error);
     }
-  };
+  }, []);
 
   const handleToggleLink = (id: string) => {
     setLinks(prev => 
