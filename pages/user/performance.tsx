@@ -75,27 +75,7 @@ const UserPerformance: React.FC = () => {
     fetchPerformanceData();
   }, [fetchPerformanceData]);
 
-  if (!mounted || loading) {
-    return (
-      <>
-      <UserLayout>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-400 mb-4 mx-auto"></div>
-            <h2 className="text-2xl font-bold text-white mb-2">CoinBitClub</h2>
-            <p className="text-gray-400">{language === 'pt' ? 'Carregando dados de performance...' : 'Loading performance data...'}</p>
-          </div>
-        </div>
-      </UserLayout>
-      </>
-    );
-  }
-
-  // Show mock data if there are auth issues but don't redirect
-  if (authError) {
-    IS_DEV && console.log('Authentication error detected, showing demo data instead of redirecting');
-  }
-
+  // ✅ MOVE ALL HOOKS BEFORE ANY EARLY RETURNS
   // Memoize distribution display data
   const distributionDisplay = useMemo(() => 
     distributionData.length > 0 ? distributionData : [
@@ -121,6 +101,28 @@ const UserPerformance: React.FC = () => {
     ],
     [recentOperations]
   );
+
+  // ✅ ALL HOOKS CALLED - NOW SAFE FOR EARLY RETURNS
+  if (!mounted || loading) {
+    return (
+      <>
+      <UserLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-400 mb-4 mx-auto"></div>
+            <h2 className="text-2xl font-bold text-white mb-2">CoinBitClub</h2>
+            <p className="text-gray-400">{language === 'pt' ? 'Carregando dados de performance...' : 'Loading performance data...'}</p>
+          </div>
+        </div>
+      </UserLayout>
+      </>
+    );
+  }
+
+  // Show mock data if there are auth issues but don't redirect
+  if (authError) {
+    IS_DEV && console.log('Authentication error detected, showing demo data instead of redirecting');
+  }
 
   return (
     <UserLayout>
