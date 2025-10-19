@@ -77,13 +77,15 @@ const UserSettings: React.FC = () => {
       apiKey: '',
       secretKey: '',
       connected: false,
-      lastConnection: null
+      lastConnection: null,
+      tradingEnabled: false
     },
     bybit: {
       apiKey: '',
       secretKey: '',
       connected: false,
-      lastConnection: null
+      lastConnection: null,
+      tradingEnabled: false
     }
   });
 
@@ -163,13 +165,15 @@ const UserSettings: React.FC = () => {
                     ...prev.binance,
                     apiKey: binanceData?.masked_key || '',
                     connected: binanceData?.has_key || false,
-                    lastConnection: binanceData?.verified_at || null
+                    lastConnection: binanceData?.verified_at || null,
+                    tradingEnabled: binanceData?.trading_enabled || false
                   },
                   bybit: {
                     ...prev.bybit,
                     apiKey: bybitData?.masked_key || '',
                     connected: bybitData?.has_key || false,
-                    lastConnection: bybitData?.verified_at || null
+                    lastConnection: bybitData?.verified_at || null,
+                    tradingEnabled: bybitData?.trading_enabled || false
                   }
                 }));
               }
@@ -288,7 +292,8 @@ const UserSettings: React.FC = () => {
         apiKey: '',
         secretKey: '',
         connected: false,
-        lastConnection: null
+        lastConnection: null,
+        tradingEnabled: false
       }
     }));
     showToast(
@@ -298,6 +303,71 @@ const UserSettings: React.FC = () => {
       'info'
     );
   }, [language, showToast]);
+
+  const handleToggleTrading = useCallback(async (exchange: 'binance' | 'bybit') => {
+    setSaving(true);
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+      const token = localStorage.getItem('auth_access_token'); // Fixed: use correct token key
+      
+      if (!token) {
+        showToast(
+          language === 'pt' 
+            ? 'Token de autenticação não encontrado. Por favor, faça login novamente.' 
+            : 'Authentication token not found. Please login again.',
+          'error'
+        );
+        return;
+      }
+      
+      const response = await fetch(`${baseUrl}/api/user-api-keys/toggle-trading`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          exchange: exchange,
+          trading_enabled: !apiKeys[exchange].tradingEnabled
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setApiKeys(prev => ({
+          ...prev,
+          [exchange]: {
+            ...prev[exchange],
+            tradingEnabled: !prev[exchange].tradingEnabled
+          }
+        }));
+        showToast(
+          language === 'pt'
+            ? `Trading ${!apiKeys[exchange].tradingEnabled ? 'ativado' : 'desativado'} para ${exchange}`
+            : `Trading ${!apiKeys[exchange].tradingEnabled ? 'enabled' : 'disabled'} for ${exchange}`,
+          'success'
+        );
+      } else {
+        showToast(
+          language === 'pt'
+            ? `Erro ao alterar configuração de trading: ${data.error || 'Erro desconhecido'}`
+            : `Error changing trading setting: ${data.error || 'Unknown error'}`,
+          'error'
+        );
+      }
+    } catch (error) {
+      console.error('Error toggling trading:', error);
+      showToast(
+        language === 'pt'
+          ? 'Erro ao alterar configuração de trading'
+          : 'Error changing trading setting',
+        'error'
+      );
+    } finally {
+      setSaving(false);
+    }
+  }, [apiKeys, language, showToast]);
 
   const handleSaveSettings = useCallback(async () => {
     setSaving(true);
@@ -961,6 +1031,34 @@ const UserSettings: React.FC = () => {
                         {apiKeys.binance.lastConnection && new Date(apiKeys.binance.lastConnection).toLocaleString()}
                       </div>
                     </div>
+                    {/* Trading Toggle */}
+                    <div className="p-3 bg-black/20 rounded-lg border border-yellow-500/30">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-medium mb-1">
+                            {language === 'pt' ? 'Futures Trading Ativo' : 'Futures Trading Enabled'}
+                          </div>
+                          <div className="text-gray-400 text-xs">
+                            {language === 'pt' 
+                              ? 'Permitir trading de Futures nesta exchange' 
+                              : 'Allow Futures trading on this exchange'}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleToggleTrading('binance')}
+                          disabled={saving}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            apiKeys.binance.tradingEnabled ? 'bg-green-500' : 'bg-gray-600'
+                          } ${saving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              apiKeys.binance.tradingEnabled ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 ) : showApiForm.binance ? (
                   <div className="space-y-4">
@@ -1062,6 +1160,34 @@ const UserSettings: React.FC = () => {
                       </div>
                       <div className="text-green-400">
                         {apiKeys.bybit.lastConnection && new Date(apiKeys.bybit.lastConnection).toLocaleString()}
+                      </div>
+                    </div>
+                    {/* Trading Toggle */}
+                    <div className="p-3 bg-black/20 rounded-lg border border-blue-500/30">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-medium mb-1">
+                            {language === 'pt' ? 'Futures Trading Ativo' : 'Futures Trading Enabled'}
+                          </div>
+                          <div className="text-gray-400 text-xs">
+                            {language === 'pt' 
+                              ? 'Permitir trading de Futures nesta exchange' 
+                              : 'Allow Futures trading on this exchange'}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleToggleTrading('bybit')}
+                          disabled={saving}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            apiKeys.bybit.tradingEnabled ? 'bg-green-500' : 'bg-gray-600'
+                          } ${saving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              apiKeys.bybit.tradingEnabled ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
                       </div>
                     </div>
                   </div>

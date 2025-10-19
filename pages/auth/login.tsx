@@ -359,7 +359,7 @@ const LoginPage: NextPage = () => {
                 <p className="text-gray-400">
                   {language === 'pt' ? 'Não tem uma conta?' : "Don't have an account?"}{' '}
                   <Link
-                    href="/cadastro-new"
+                    href="/auth/register"
                     className="text-orange-400 hover:text-orange-300 font-semibold transition-colors"
                   >
                     {language === 'pt' ? 'Cadastre-se agora' : 'Sign up now'}

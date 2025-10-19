@@ -52,45 +52,12 @@ const CadastroNewPage: NextPage = () => {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [couponValidated, setCouponValidated] = useState<null | { valid: boolean; discount?: number; message: string }>(null);
 
+  // Mount effect
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleLanguageChange = useCallback((lang: 'pt' | 'en') => {
-    IS_DEV && console.log('Register page - Button clicked for language:', lang);
-    if (changeLanguage && typeof changeLanguage === 'function') {
-      changeLanguage(lang);
-      IS_DEV && console.log('Language changed to:', lang);
-    } else {
-      console.error('changeLanguage function not available');
-    }
-  }, [changeLanguage]);
-
-  if (!mounted || !isLoaded) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-black font-bold text-xl">₿</span>
-          </div>
-          <p className="text-slate-400">{language === 'pt' ? 'Carregando...' : 'Loading...'}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  }, [errors]);
-
+  // Available countries data
   const availableCountries = [
     { code: '+55', flag: '🇧🇷', name: 'Brasil', country: 'Brasil' },
     { code: '+1', flag: '🇺🇸', name: 'Estados Unidos', country: 'Estados Unidos' },
@@ -103,6 +70,29 @@ const CadastroNewPage: NextPage = () => {
     { code: '+33', flag: '🇫🇷', name: 'França', country: 'França' },
     { code: '+65', flag: '🇸🇬', name: 'Singapura', country: 'Singapura' }
   ];
+
+  // Define all callbacks and hooks BEFORE any conditional returns
+  const handleLanguageChange = useCallback((lang: 'pt' | 'en') => {
+    IS_DEV && console.log('Register page - Button clicked for language:', lang);
+    if (changeLanguage && typeof changeLanguage === 'function') {
+      changeLanguage(lang);
+      IS_DEV && console.log('Language changed to:', lang);
+    } else {
+      console.error('changeLanguage function not available');
+    }
+  }, [changeLanguage]);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  }, [errors]);
 
   const validateCoupon = useCallback(async () => {
     if (!formData.discountCoupon.trim()) return;
@@ -283,6 +273,20 @@ const CadastroNewPage: NextPage = () => {
       setLoading(false);
     }
   }, [validateStep2, formData, register, router, language]);
+
+  // Show loading state after all hooks are defined
+  if (!mounted || !isLoaded) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-black font-bold text-xl">₿</span>
+          </div>
+          <p className="text-slate-400">{language === 'pt' ? 'Carregando...' : 'Loading...'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

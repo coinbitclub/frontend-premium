@@ -412,8 +412,8 @@ export default function UserDashboard() {
                     </h3>
                     <p className="text-gray-300 text-sm mb-3">
                       {language === 'pt'
-                        ? 'Para começar a operar, você precisa conectar suas API keys da Bybit ou Binance. Seus fundos ficam seguros na sua própria exchange!'
-                        : 'To start trading, you need to connect your Bybit or Binance API keys. Your funds stay safe in your own exchange!'}
+                        ? 'Para começar a operar Futures, você precisa conectar suas API keys da Bybit ou Binance. Seus fundos ficam seguros na sua própria exchange!'
+                        : 'To start Futures trading, you need to connect your Bybit or Binance API keys. Your funds stay safe in your own exchange!'}
                     </p>
                     <button
                       onClick={() => router.push('/settings/api-keys')}
@@ -445,8 +445,8 @@ export default function UserDashboard() {
                     </h3>
                     <p className="text-gray-300 text-sm mb-3">
                       {language === 'pt'
-                        ? 'Suas API keys precisam ser verificadas antes de começar a operar.'
-                        : 'Your API keys need to be verified before you can start trading.'}
+                        ? 'Suas API keys precisam ser verificadas antes de começar a operar Futures.'
+                        : 'Your API keys need to be verified before you can start Futures trading.'}
                     </p>
                     <button
                       onClick={() => router.push('/settings/api-keys')}

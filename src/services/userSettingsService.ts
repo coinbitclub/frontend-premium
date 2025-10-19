@@ -91,14 +91,14 @@ class UserSettingsService {
    * Get user's preferred exchange
    */
   async getPreferredExchange(): Promise<ExchangePreference> {
-    return this.makeRequest<ExchangePreference>('/user-settings/exchange');
+    return this.makeRequest<ExchangePreference>('/user/settings/exchange');
   }
 
   /**
    * Update user's preferred exchange
    */
   async updatePreferredExchange(exchange: string): Promise<ExchangePreference> {
-    return this.makeRequest<ExchangePreference>('/user-settings/exchange', {
+    return this.makeRequest<ExchangePreference>('/user/settings/exchange', {
       method: 'PUT',
       body: JSON.stringify({ preferred_exchange: exchange })
     });
@@ -112,21 +112,21 @@ class UserSettingsService {
     exchanges: ExchangeInfo[];
     total: number;
   }> {
-    return this.makeRequest('/user-settings/exchanges');
+    return this.makeRequest('/user/settings/exchanges');
   }
 
   /**
    * Get user's real-time balance from preferred exchange
    */
   async getMainnetBalance(): Promise<UserBalance> {
-    return this.makeRequest<UserBalance>('/user-settings/balance');
+    return this.makeRequest<UserBalance>('/user/settings/balance');
   }
 
   /**
    * Get user's trading settings
    */
   async getTradingSettings(): Promise<TradingSettings> {
-    return this.makeRequest<TradingSettings>('/user-settings/trading');
+    return this.makeRequest<TradingSettings>('/user/settings/trading');
   }
 
   /**
@@ -137,7 +137,7 @@ class UserSettingsService {
     max_open_positions?: number;
     default_leverage?: number;
   }): Promise<TradingSettings> {
-    return this.makeRequest<TradingSettings>('/user-settings/trading', {
+    return this.makeRequest<TradingSettings>('/user/settings/trading', {
       method: 'PUT',
       body: JSON.stringify(settings)
     });

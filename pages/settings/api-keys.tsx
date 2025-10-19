@@ -61,6 +61,11 @@ const APIKeysSettings: React.FC = () => {
     binance: false
   });
 
+  const [exchangeSettings, setExchangeSettings] = useState<{ bybit: boolean; binance: boolean }>({
+    bybit: true,
+    binance: true
+  });
+
   const handleAddKey = useCallback(async (exchange: 'bybit' | 'binance') => {
     const data = formData[exchange];
 
@@ -177,6 +182,53 @@ const APIKeysSettings: React.FC = () => {
     }
   }, [deleteAPIKey, language, showToast]);
 
+  const handleToggleExchange = useCallback(async (exchange: 'bybit' | 'binance') => {
+    setProcessing(prev => ({ ...prev, [exchange]: true }));
+
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+      const token = localStorage.getItem('auth_access_token'); // Fixed: use correct token key
+      
+      if (!token) {
+        showToast(language === 'pt' ? 'Token de autenticação não encontrado. Por favor, faça login novamente.' : 'Authentication token not found. Please login again.', 'error');
+        return;
+      }
+      
+      const response = await fetch(`${baseUrl}/api/user-api-keys/toggle-trading`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          exchange: exchange,
+          trading_enabled: !exchangeSettings[exchange]
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setExchangeSettings(prev => ({ ...prev, [exchange]: !prev[exchange] }));
+        showToast(
+          language === 'pt'
+            ? `Exchange ${exchange} ${!exchangeSettings[exchange] ? 'ativada' : 'desativada'} para trading`
+            : `${exchange} exchange ${!exchangeSettings[exchange] ? 'enabled' : 'disabled'} for trading`,
+          'success'
+        );
+      } else {
+        showToast(data.error || 'Error updating exchange settings', 'error');
+      }
+    } catch (error) {
+      showToast(
+        language === 'pt' ? 'Erro ao atualizar configurações' : 'Error updating settings',
+        'error'
+      );
+    } finally {
+      setProcessing(prev => ({ ...prev, [exchange]: false }));
+    }
+  }, [exchangeSettings, language, showToast]);
+
   const renderExchangeCard = useCallback((
     exchange: 'bybit' | 'binance',
     status: typeof bybit | typeof binance,
@@ -242,6 +294,36 @@ const APIKeysSettings: React.FC = () => {
                 </span>
               </div>
               <div className="text-white font-mono text-sm">{status?.masked_key || '****...****'}</div>
+            </div>
+
+            {/* Trading Toggle */}
+            <div className="p-4 bg-black/20 rounded-lg border border-gray-700/30">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-gray-300 text-sm font-medium">
+                    {language === 'pt' ? 'Futures Trading Ativo' : 'Futures Trading Active'}
+                  </span>
+                  <p className="text-gray-500 text-xs">
+                    {language === 'pt' 
+                      ? 'Permitir operações de Futures nesta exchange'
+                      : 'Allow Futures trading on this exchange'
+                    }
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleToggleExchange(exchange)}
+                  disabled={processing[exchange]}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    exchangeSettings[exchange] ? 'bg-green-500' : 'bg-gray-600'
+                  } ${processing[exchange] ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      exchangeSettings[exchange] ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
 
             {/* Verification Status */}
