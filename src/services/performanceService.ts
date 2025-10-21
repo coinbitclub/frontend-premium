@@ -1,4 +1,5 @@
 import axios from 'axios';
+import positionsService, { AnalyticsSummary, HistoricalTrade } from './positionsService';
 
 // Types and interfaces for performance data
 export interface TodayGain {
@@ -276,6 +277,31 @@ class PerformanceService {
     } catch (error) {
       console.error('Error fetching performance metrics:', error);
       return null;
+    }
+  }
+
+  // ✅ NEW: Get historical analytics from hybrid positions API
+  async getHistoricalAnalytics(period: '7d' | '30d' | '90d' | '1y' | 'all' = '30d'): Promise<AnalyticsSummary | null> {
+    try {
+      return await positionsService.getAnalyticsSummary(period);
+    } catch (error) {
+      console.error('Error fetching historical analytics:', error);
+      return null;
+    }
+  }
+
+  // ✅ NEW: Get historical trades from hybrid positions API
+  async getHistoricalTrades(options?: {
+    limit?: number;
+    status?: 'OPEN' | 'CLOSED';
+    exchange?: 'bybit' | 'binance';
+    symbol?: string;
+  }): Promise<HistoricalTrade[]> {
+    try {
+      return await positionsService.getHistoricalTrades(options);
+    } catch (error) {
+      console.error('Error fetching historical trades:', error);
+      return [];
     }
   }
 

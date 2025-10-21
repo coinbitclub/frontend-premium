@@ -192,11 +192,39 @@ class OperationsService {
     }
   }
 
-  // Get open positions
+  // Get open positions (UPDATED: Now uses real-time hybrid API)
   async getPositions(): Promise<Position[]> {
     try {
-      const response = await apiClient.get('/operations/positions');
-      return response.data;
+      // Use new hybrid positions endpoint for real-time data
+      const response = await apiClient.get('/positions/current');
+
+      if (response.data.success && response.data.positions) {
+        // Transform real-time positions to match Position interface
+        return response.data.positions.map((pos: any) => ({
+          id: pos.id || pos.operation_id,
+          symbol: pos.pair || pos.symbol,
+          type: pos.type || pos.side,
+          entryPrice: pos.entryPrice || pos.entry_price,
+          currentPrice: pos.currentPrice || pos.markPrice,
+          amount: pos.quantity || pos.size,
+          leverage: pos.leverage || 1,
+          unrealizedPnL: pos.pnl || pos.unrealizedPnl || 0,
+          realizedPnL: 0,
+          pnl: pos.pnl || pos.unrealizedPnl || 0,
+          pnlPercentage: pos.pnlPercent || pos.pnl_percent || 0,
+          percentage: pos.pnlPercent || pos.pnl_percent || 0,
+          openTime: pos.entry_time || pos.timestamp || new Date().toISOString(),
+          status: pos.status === 'OPEN' ? 'OPEN' : 'CLOSED',
+          stopLoss: pos.stopLoss || pos.stop_loss,
+          takeProfit: pos.takeProfit || pos.take_profit,
+          margin: pos.positionValue ? pos.positionValue / (pos.leverage || 1) : 0,
+          marginRatio: 0.5
+        }));
+      }
+
+      // Fallback to legacy endpoint if new endpoint fails
+      const legacyResponse = await apiClient.get('/operations/positions');
+      return legacyResponse.data;
     } catch (error) {
       console.error('Error fetching positions:', error);
       return this.getMockPositions();

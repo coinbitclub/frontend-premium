@@ -12,12 +12,58 @@ export default function PaymentSuccess() {
   const router = useRouter();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [paymentStatus, setPaymentStatus] = useState<'processing' | 'success' | 'error'>('processing');
+  const [planCode, setPlanCode] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const { session_id } = router.query;
     if (session_id && typeof session_id === 'string') {
       setSessionId(session_id);
+      
+      // Call backend to confirm payment and update database
+      const confirmPayment = async () => {
+        try {
+          console.log('🔄 Confirming payment with session ID:', session_id);
+          
+          const response = await fetch(`/api/stripe/success/${session_id}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            console.log('✅ Payment confirmed and database updated:', result);
+            setPaymentStatus('success');
+            setPlanCode(result.planCode);
+            
+            // Show success message
+            setTimeout(() => {
+              // You can add a toast notification here if you have a toast system
+              console.log(`🎉 Plan ${result.planCode} activated successfully!`);
+            }, 1000);
+          } else {
+            console.error('❌ Payment confirmation failed:', result);
+            setPaymentStatus('error');
+            setErrorMessage(result.error || 'Payment confirmation failed');
+          }
+        } catch (error) {
+          console.error('❌ Error confirming payment:', error);
+          setPaymentStatus('error');
+          setErrorMessage('Failed to confirm payment. Please contact support.');
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      confirmPayment();
+    } else {
       setLoading(false);
+      setPaymentStatus('error');
+      setErrorMessage('No session ID provided');
     }
   }, [router.query]);
 
@@ -27,8 +73,57 @@ export default function PaymentSuccess() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">
+            Processando Pagamento...
+          </h1>
+          <p className="text-gray-600">
+            Aguarde enquanto confirmamos seu pagamento e ativamos seu plano.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (paymentStatus === 'error') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+          {/* Error Icon */}
+          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
+            <svg className="h-10 w-10 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+
+          {/* Error Message */}
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Erro no Pagamento
+          </h1>
+
+          <p className="text-gray-600 mb-6">
+            {errorMessage || 'Ocorreu um erro ao processar seu pagamento. Tente novamente.'}
+          </p>
+
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={() => router.push('/user/plans')}
+              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            >
+              Tentar Novamente
+            </button>
+
+            <button
+              onClick={handleReturnToAccount}
+              className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+            >
+              Voltar à Minha Conta
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -52,8 +147,19 @@ export default function PaymentSuccess() {
             Pagamento Confirmado!
           </h1>
 
+          {planCode && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+              <p className="text-green-800 font-medium">
+                🎉 Plano {planCode} ativado com sucesso!
+              </p>
+              <p className="text-green-600 text-sm mt-1">
+                Seu plano está ativo e você já pode começar a usar todas as funcionalidades.
+              </p>
+            </div>
+          )}
+
           <p className="text-gray-600 mb-6">
-            Seu pagamento foi processado com sucesso. O saldo será creditado em sua conta em alguns minutos.
+            Seu pagamento foi processado com sucesso e seu plano foi ativado imediatamente.
           </p>
 
           {/* Session ID (for debugging) */}
@@ -72,7 +178,7 @@ export default function PaymentSuccess() {
               onClick={handleReturnToAccount}
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
             >
-              Voltar à Minha Conta
+              Ver Meu Plano Ativo
             </button>
 
             <button

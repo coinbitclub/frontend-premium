@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../hooks/useLanguage';
 import UserLayout from '../../components/UserLayout';
+import RealTimeIndicator from '../../components/RealTimeIndicator';
 import performanceService from '../../src/services/performanceService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { 
@@ -131,14 +132,19 @@ const UserPerformance: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-8 flex items-center justify-between"
         >
-          <h1 className="text-3xl font-bold text-white mb-2">
-            {language === 'pt' ? 'Performance' : 'Performance'}
-          </h1>
-          <p className="text-gray-400">
-            {language === 'pt' ? 'Acompanhe seu desempenho de investimentos' : 'Track your investment performance'}
-          </p>
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">
+              {language === 'pt' ? 'Performance' : 'Performance'}
+            </h1>
+            <p className="text-gray-400">
+              {language === 'pt' ? 'Acompanhe seu desempenho de investimentos' : 'Track your investment performance'}
+            </p>
+          </div>
+
+          {/* Historical data indicator */}
+          <RealTimeIndicator dataSource="database" isLive={false} size="md" />
         </motion.div>
 
         {/* Performance Cards */}

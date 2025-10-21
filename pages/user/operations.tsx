@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../hooks/useLanguage';
 import UserLayout from '../../components/UserLayout';
 import { useSocket } from '../../src/contexts/SocketContext';
+import RealTimeIndicator from '../../components/RealTimeIndicator';
+import positionsService from '../../src/services/positionsService';
 // Authentication removed - ProtectedRoute disabled
 
 const IS_DEV = process.env.NODE_ENV === 'development';
@@ -325,6 +327,58 @@ const UserOperations: React.FC = () => {
     };
   }, [socket, language]);
 
+  // 🔄 REAL-TIME POSITIONS AUTO-REFRESH (Every 5 seconds)
+  useEffect(() => {
+    if (!mounted) return;
+
+    const fetchRealTimePositions = async () => {
+      try {
+        // Check if user is authenticated before making API call
+        const authToken = localStorage.getItem('auth_access_token');
+        if (!authToken || authToken === '') {
+          if (IS_DEV) {
+            console.log('⚠️ Skipping position fetch - user not authenticated');
+          }
+          return; // Skip fetch if no valid token
+        }
+
+        const realTimePositions = await positionsService.getCurrentPositions();
+
+        // Transform to match Position interface
+        const transformedPositions = realTimePositions.map(pos => ({
+          id: pos.id || pos.operation_id || `pos_${Date.now()}`,
+          pair: pos.pair || pos.symbol,
+          type: pos.type || pos.side,
+          entryPrice: pos.entryPrice,
+          currentPrice: pos.currentPrice || pos.markPrice,
+          quantity: pos.quantity || pos.size,
+          pnl: pos.pnl || pos.unrealizedPnl || 0,
+          pnlPercent: pos.pnlPercent || 0,
+          status: pos.status,
+          timestamp: new Date(pos.entry_time || Date.now()),
+          stopLoss: pos.stopLoss || pos.stop_loss,
+          takeProfit: pos.takeProfit || pos.take_profit,
+        }));
+
+        setPositions(transformedPositions);
+
+        if (IS_DEV && realTimePositions.length > 0) {
+          console.log(`🔄 Refreshed ${realTimePositions.length} real-time positions from exchange`);
+        }
+      } catch (error) {
+        console.error('Error fetching real-time positions:', error);
+      }
+    };
+
+    // Initial fetch
+    fetchRealTimePositions();
+
+    // Auto-refresh every 5 seconds
+    const refreshInterval = setInterval(fetchRealTimePositions, 5000);
+
+    return () => clearInterval(refreshInterval);
+  }, [mounted]);
+
   // Fallback data loading removed - all data now comes from real-time API
 
   // Market indicators will be updated via WebSocket or API calls
@@ -349,16 +403,33 @@ const UserOperations: React.FC = () => {
     return 'GANÂNCIA EXTREMA';
   };
 
-  const formatPrice = (price: number): string => {
+  const formatPrice = (price: number | null | undefined): string => {
+    if (price === null || price === undefined || isNaN(price)) {
+      return '$0.00';
+    }
     return `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const formatPercent = (percent: number): string => {
+  const formatPercent = (percent: number | null | undefined): string => {
+    if (percent === null || percent === undefined || isNaN(percent)) {
+      return '0.00%';
+    }
     return `${percent >= 0 ? '+' : ''}${percent.toFixed(2)}%`;
   };
 
-  const formatTime = (date: Date): string => {
-    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const formatTime = (date: Date | string | null | undefined): string => {
+    if (!date) {
+      return '--:--';
+    }
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) {
+        return '--:--';
+      }
+      return dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } catch (error) {
+      return '--:--';
+    }
   };
 
   // Market indicators API integration - USE BACKEND ENDPOINT
@@ -424,7 +495,8 @@ const UserOperations: React.FC = () => {
 
       // Get auth token from localStorage
       const token = localStorage.getItem('auth_access_token');
-      if (!token) {
+      // Treat empty string as invalid token
+      if (!token || token === '') {
         console.warn('No auth token found');
         return;
       }
@@ -1068,28 +1140,33 @@ const UserOperations: React.FC = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-teal-500/20 to-emerald-500/10 animate-pulse"></div>
               )}
               
-              <div className="flex items-center gap-3 mb-6 relative z-10">
-                <motion.div 
-                  animate={{ 
-                    y: isProcessing ? [0, -5, 0] : 0
-                  }}
-                  transition={{ 
-                    duration: 2, 
-                    repeat: isProcessing ? Infinity : 0,
-                    ease: "easeInOut"
-                  }}
-                  className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center"
-                >
-                  <span className="text-2xl">📈</span>
-                </motion.div>
-                <div>
-                  <h2 className="text-2xl font-bold text-emerald-400">
-                    4. {language === 'pt' ? 'Operações em Andamento' : 'Operations in Progress'}
-                  </h2>
-                  <p className="text-gray-400">
-                    {language === 'pt' ? 'Máximo 2 operações simultâneas por usuário' : 'Maximum 2 simultaneous operations per user'}
-                  </p>
+              <div className="flex items-center justify-between mb-6 relative z-10">
+                <div className="flex items-center gap-3">
+                  <motion.div
+                    animate={{
+                      y: isProcessing ? [0, -5, 0] : 0
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: isProcessing ? Infinity : 0,
+                      ease: "easeInOut"
+                    }}
+                    className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center"
+                  >
+                    <span className="text-2xl">📈</span>
+                  </motion.div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-emerald-400">
+                      4. {language === 'pt' ? 'Operações em Andamento' : 'Operations in Progress'}
+                    </h2>
+                    <p className="text-gray-400">
+                      {language === 'pt' ? 'Máximo 3 operações simultâneas' : 'Maximum 3 simultaneous operations'}
+                    </p>
+                  </div>
                 </div>
+
+                {/* Real-time indicator */}
+                <RealTimeIndicator dataSource="exchange" isLive={true} size="md" />
               </div>
 
               <div className="space-y-4 relative z-10">
@@ -1143,10 +1220,10 @@ const UserOperations: React.FC = () => {
                             initial={{ scale: 1.2, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             className={`text-lg ${
-                              position.pnl >= 0 ? 'text-green-400' : 'text-red-400'
+                              (position.pnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'
                             }`}
                           >
-                            ${position.pnl.toFixed(2)}
+                            ${(position.pnl || 0).toFixed(2)}
                           </motion.div>
                         </div>
                       </div>

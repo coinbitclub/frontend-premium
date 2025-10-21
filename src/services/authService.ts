@@ -462,15 +462,19 @@ class AuthService {
   private loadTokensFromStorage(): void {
     if (typeof window !== 'undefined') {
       console.log('🔍 DEBUG: Loading tokens from localStorage...');
-      
+
       this.accessToken = localStorage.getItem('auth_access_token');
       this.refreshToken = localStorage.getItem('auth_refresh_token');
-      
+
+      // Treat empty strings as null
+      if (this.accessToken === '') this.accessToken = null;
+      if (this.refreshToken === '') this.refreshToken = null;
+
       console.log('🔍 DEBUG: Token loading results:', {
         accessToken: this.accessToken ? 'EXISTS' : 'NULL',
         refreshToken: this.refreshToken ? 'EXISTS' : 'NULL'
       });
-      
+
       const userStr = localStorage.getItem('auth_user');
       if (userStr) {
         try {
@@ -483,13 +487,21 @@ class AuthService {
       } else {
         console.log('🔍 DEBUG: No user data found in localStorage');
       }
-      
+
       console.log('🔍 DEBUG: Final auth state after loading:', {
         hasAccessToken: !!this.accessToken,
         hasRefreshToken: !!this.refreshToken,
         hasUser: !!this.user,
         isAuthenticated: this.isAuthenticated()
       });
+
+      // Auto-refresh token if we have refresh token but no access token
+      if (!this.accessToken && this.refreshToken) {
+        console.log('🔄 Auto-refreshing access token on initialization...');
+        this.refreshAccessToken().catch(error => {
+          console.error('❌ Auto-refresh failed:', error);
+        });
+      }
     }
   }
 

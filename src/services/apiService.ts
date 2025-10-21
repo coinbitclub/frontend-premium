@@ -55,7 +55,9 @@ class ApiService {
    */
   private getAuthToken(): string | null {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('auth_access_token');
+      const token = localStorage.getItem('auth_access_token');
+      // Treat empty string as null
+      return (token && token !== '') ? token : null;
     }
     return null;
   }
