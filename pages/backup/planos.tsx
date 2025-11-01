@@ -3,7 +3,7 @@ import { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { useLanguage } from '../hooks/useLanguage';
+import { useLanguage } from '../../hooks/useLanguage';
 import { FaCheck, FaRocket, FaStar, FaGlobe, FaBars, FaTimes, FaUser, FaPercent, FaGift } from 'react-icons/fa';
 
 interface Plan {
