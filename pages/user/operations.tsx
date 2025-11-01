@@ -356,8 +356,8 @@ const UserOperations: React.FC = () => {
           pnlPercent: pos.pnlPercent || 0,
           status: pos.status,
           timestamp: new Date(pos.entry_time || Date.now()),
-          stopLoss: pos.stopLoss || pos.stop_loss,
-          takeProfit: pos.takeProfit || pos.take_profit,
+          stopLoss: pos.stopLoss,
+          takeProfit: pos.takeProfit,
         }));
 
         setPositions(transformedPositions);
