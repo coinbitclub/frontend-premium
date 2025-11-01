@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
-import RobotDemoLanding from '../components/RobotDemoLanding';
+import RobotDemoLanding from '../../components/RobotDemoLanding';
 
 export default function Home() {
   const [currentLanguage, setCurrentLanguage] = useState<'pt' | 'en'>('pt');
