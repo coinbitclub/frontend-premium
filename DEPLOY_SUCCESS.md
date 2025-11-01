@@ -1,10 +1,23 @@
 # 🚀 DEPLOY REALIZADO COM SUCESSO!
 
-## ✅ Status do Deploy
-- **Data**: 12 de setembro de 2025, 22:33:27 GMT-0300
-- **Status**: ● Ready (Pronto)
-- **Duração do Build**: ~4 minutos
-- **Duração do Deploy**: ~1 minuto
+## ✅ Status do Deploy - ATUALIZAÇÃO
+- **Data Inicial**: 12 de setembro de 2025, 22:33:27 GMT-0300
+- **Última Atualização**: 13 de setembro de 2025, 09:29:29 GMT-0300
+- **Status**: ● Ready (Pronto) 
+- **Deploy ID Atual**: dpl_E8JXxsrjhuD1rErWGp5qYp1vkN2U
+
+## 🔧 CORREÇÕES IMPLEMENTADAS HOJE
+
+### **🐛 Login Page - Parte Branca Mobile CORRIGIDA**
+- ✅ Adicionado `w-full` ao container principal
+- ✅ Background effects responsivos (w-64 h-64 → w-96 h-96 em telas maiores)  
+- ✅ `overflow-hidden` no background overlay
+- ✅ Posicionamento mobile otimizado para botões de voltar e idioma
+
+### **🔗 Botão CTA Mobile CORRIGIDO**
+- ✅ Botão "Comece Agora" no menu mobile agora redireciona corretamente
+- ✅ Função `handleCTAClick` atualizada para incluir `router.push('/cadastro-new')`
+- ✅ Mantém tracking de analytics + navegação funcional
 
 ## 🌐 URLs de Acesso
 
