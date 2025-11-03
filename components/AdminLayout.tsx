@@ -52,11 +52,7 @@ export default function AdminLayout({
       href: '/admin/users', 
       icon: FiUsers 
     },
-    { 
-      name: language === 'pt' ? 'Afiliados' : 'Affiliates', 
-      href: '/admin/affiliates', 
-      icon: FiUserPlus 
-    },
+
     { 
       name: language === 'pt' ? 'Analytics' : 'Analytics', 
       href: '/admin/analytics', 

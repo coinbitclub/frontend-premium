@@ -252,7 +252,7 @@ const UserAccount: NextPage = () => {
                 </div>
                 <div className="space-y-2">
                   <p className="text-4xl font-black text-white">R$ {commissionBalance}</p>
-                  <p className="text-blue-100 text-sm font-medium">Comissões de afiliados</p>
+                  <p className="text-blue-100 text-sm font-medium">Comissões</p>
                 </div>
               </div>
             </div>

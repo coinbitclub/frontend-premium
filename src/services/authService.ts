@@ -9,9 +9,8 @@ interface User {
   email: string;
   username: string;
   full_name: string;
-  user_type: 'ADMIN' | 'GESTOR' | 'OPERADOR' | 'AFFILIATE_VIP' | 'AFFILIATE' | 'USER';
-  affiliate_type: 'none' | 'normal' | 'vip';
-  affiliate_code?: string;
+  user_type: 'ADMIN' | 'GESTOR' | 'OPERADOR' | 'USER';
+
   is_admin: boolean;
   trading_enabled: boolean;
   two_factor_enabled: boolean;

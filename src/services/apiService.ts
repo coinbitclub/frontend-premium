@@ -306,35 +306,7 @@ class ApiService {
     return this.request('/api/financial/exchange-rates');
   }
 
-  /**
-   * Affiliate API calls
-   */
-  async getAffiliateStats() {
-    return this.request('/api/affiliate/stats');
-  }
 
-  async getCommissions() {
-    return this.request('/api/affiliate/commissions');
-  }
-
-  async getReferrals() {
-    return this.request('/api/affiliate/referrals');
-  }
-
-  async registerAffiliate(data: any) {
-    return this.request('/api/affiliate/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async getAffiliateLinks() {
-    return this.request('/api/affiliate/links');
-  }
-
-  async getPerformance() {
-    return this.request('/api/affiliate/performance');
-  }
 
   /**
    * Admin API calls
@@ -362,9 +334,7 @@ class ApiService {
     });
   }
 
-  async getAffiliates() {
-    return this.request('/api/admin/affiliates');
-  }
+
 
   async getReports() {
     return this.request('/api/admin/reports');

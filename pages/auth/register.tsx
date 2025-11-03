@@ -18,7 +18,7 @@ interface FormData {
   phone: string;
   countryCode: string;
   country: string;
-  affiliateCode: string;
+
   discountCoupon: string;
   password: string;
   confirmPassword: string;
@@ -42,7 +42,7 @@ const CadastroNewPage: NextPage = () => {
     phone: '',
     countryCode: '+55',
     country: 'Brasil',
-    affiliateCode: '',
+
     discountCoupon: '',
     password: '',
     confirmPassword: '',
@@ -253,7 +253,7 @@ const CadastroNewPage: NextPage = () => {
         full_name: `${formData.firstName} ${formData.lastName}`,
         phone: `${formData.countryCode} ${formData.phone}`,
         country: formData.country,
-        affiliate_code: formData.affiliateCode,
+
         discount_coupon: formData.discountCoupon,
         accept_terms: formData.acceptTerms,
         accept_marketing: formData.acceptMarketing
@@ -538,26 +538,7 @@ const CadastroNewPage: NextPage = () => {
                       </div>
                     </div>
 
-                    <div>
-                      <label htmlFor="affiliateCode" className="block text-sm font-medium text-slate-300 mb-2">
-                        {language === 'pt' ? 'Código do Afiliado (opcional)' : 'Affiliate Code (optional)'}
-                      </label>
-                      <div className="relative">
-                        <FaUsers className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-                        <input
-                          id="affiliateCode"
-                          name="affiliateCode"
-                          type="text"
-                          value={formData.affiliateCode}
-                          onChange={(e) => setFormData(prev => ({ ...prev, affiliateCode: e.target.value.toUpperCase() }))}
-                          className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:border-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/50"
-                          placeholder={language === 'pt' ? 'Código de quem indicou' : 'Referrer code'}
-                        />
-                      </div>
-                      <p className="text-xs text-slate-400 mt-1">
-                        {language === 'pt' ? 'Digite o código do afiliado que indicou você para ganhar benefícios' : 'Enter the affiliate code of who referred you to earn benefits'}
-                      </p>
-                    </div>
+
 
                     <div>
                       <label htmlFor="discountCoupon" className="block text-sm font-medium text-slate-300 mb-2">

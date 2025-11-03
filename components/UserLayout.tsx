@@ -48,12 +48,7 @@ export default function UserLayout({
       href: '/user/account', 
       icon: FiUser 
     },
-    { 
-      name: language === 'pt' ? 'Área do Afiliado' : 'Affiliate Area', 
-      href: '/affiliate/dashboard', 
-      icon: FiUsers,
-      isSpecial: true
-    },
+
     { 
       name: language === 'pt' ? 'Configurações' : 'Settings', 
       href: '/user/settings', 
@@ -133,17 +128,6 @@ export default function UserLayout({
               
               {/* Right side items */}
               <div className="flex items-center space-x-3">
-                {/* Affiliate Area Access */}
-                <Link
-                  href="/affiliate/dashboard"
-                  className="hidden lg:flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-orange-500/20 to-yellow-500/20 rounded-lg text-orange-400 hover:from-orange-500/30 hover:to-yellow-500/30 transition-all border border-orange-500/30"
-                >
-                  <FiUsers size={16} />
-                  <span className="text-xs font-medium">
-                    {language === 'pt' ? 'Área Afiliados' : 'Affiliate Area'}
-                  </span>
-                </Link>
-
                 {/* Language Toggle */}
                 <div className="flex items-center space-x-2 bg-slate-800/50 rounded-lg p-1">
                   <button

@@ -18,7 +18,7 @@ export interface User {
   phone?: string;
   country: string;
   language: string;
-  user_type: 'ADMIN' | 'GESTOR' | 'OPERADOR' | 'AFFILIATE_VIP' | 'AFFILIATE' | 'USER';
+  user_type: 'ADMIN' | 'GESTOR' | 'OPERADOR' | 'USER';
   is_admin: boolean;
   is_active: boolean;
   email_verified: boolean;
@@ -300,8 +300,7 @@ class UserService {
       'ADMIN': 'Administrador',
       'GESTOR': 'Gestor',
       'OPERADOR': 'Operador',
-      'AFFILIATE_VIP': 'Afiliado VIP',
-      'AFFILIATE': 'Afiliado',
+
       'USER': 'Usuário'
     };
     return types[userType] || userType;
