@@ -58,11 +58,6 @@ export default function AdminLayout({
       icon: FiBarChart 
     },
     { 
-      name: language === 'pt' ? 'Relatórios' : 'Reports', 
-      href: '/admin/reports', 
-      icon: FiFileText 
-    },
-    { 
       name: language === 'pt' ? 'Financeiro' : 'Financial', 
       href: '/admin/financial', 
       icon: FiDollarSign 

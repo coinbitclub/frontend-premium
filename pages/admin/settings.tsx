@@ -5,7 +5,6 @@ import AdminLayout from '../../components/AdminLayout';
 import { 
   FiSettings, 
   FiShield,
-  FiBell,
   FiDatabase,
   FiKey,
   FiGlobe,
@@ -19,14 +18,6 @@ const AdminSettings: React.FC = () => {
   const { language, setLanguage } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const [settings, setSettings] = useState({
-    notifications: {
-      email: true,
-      sms: false,
-      push: true,
-      newUsers: true,
-      transactions: true,
-      systemAlerts: true
-    },
     security: {
       twoFactor: true,
       passwordExpiry: 90,
@@ -105,61 +96,11 @@ const AdminSettings: React.FC = () => {
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Notification Settings */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-gradient-to-br from-slate-900/40 to-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-500/30 p-6"
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <FiBell className="w-6 h-6 text-blue-400" />
-              <h2 className="text-xl font-bold text-white">
-                {language === 'pt' ? 'Notificações' : 'Notifications'}
-              </h2>
-            </div>
-
-            <div className="space-y-4">
-              {Object.entries(settings.notifications).map(([key, value]) => (
-                <div key={key} className="flex items-center justify-between p-3 bg-black/20 rounded-lg">
-                  <div>
-                    <div className="text-white font-medium capitalize">
-                      {key === 'email' ? 'Email' :
-                       key === 'sms' ? 'SMS' :
-                       key === 'push' ? 'Push' :
-                       key === 'newUsers' ? (language === 'pt' ? 'Novos Usuários' : 'New Users') :
-                       key === 'transactions' ? (language === 'pt' ? 'Transações' : 'Transactions') :
-                       language === 'pt' ? 'Alertas do Sistema' : 'System Alerts'}
-                    </div>
-                    <div className="text-gray-400 text-sm">
-                      {key === 'email' ? (language === 'pt' ? 'Notificações por email' : 'Email notifications') :
-                       key === 'sms' ? (language === 'pt' ? 'Mensagens SMS' : 'SMS messages') :
-                       key === 'push' ? (language === 'pt' ? 'Notificações push' : 'Push notifications') :
-                       key === 'newUsers' ? (language === 'pt' ? 'Alertas de novos usuários' : 'New user alerts') :
-                       key === 'transactions' ? (language === 'pt' ? 'Alertas de transações' : 'Transaction alerts') :
-                       language === 'pt' ? 'Alertas críticos do sistema' : 'Critical system alerts'}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleToggle('notifications', key)}
-                    className={`w-12 h-6 rounded-full relative transition-colors ${
-                      value ? 'bg-blue-500' : 'bg-gray-600'
-                    }`}
-                  >
-                    <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${
-                      value ? 'translate-x-7' : 'translate-x-1'
-                    }`}></div>
-                  </button>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
           {/* Security Settings */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.1 }}
             className="bg-gradient-to-br from-red-900/40 to-red-800/30 backdrop-blur-sm rounded-xl border border-red-500/30 p-6"
           >
             <div className="flex items-center gap-3 mb-6">
@@ -238,7 +179,7 @@ const AdminSettings: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.2 }}
             className="bg-gradient-to-br from-green-900/40 to-green-800/30 backdrop-blur-sm rounded-xl border border-green-500/30 p-6"
           >
             <div className="flex items-center gap-3 mb-6">
@@ -342,7 +283,7 @@ const AdminSettings: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.3 }}
             className="bg-gradient-to-br from-purple-900/40 to-purple-800/30 backdrop-blur-sm rounded-xl border border-purple-500/30 p-6"
           >
             <div className="flex items-center gap-3 mb-6">
@@ -411,7 +352,7 @@ const AdminSettings: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.4 }}
             className="bg-gradient-to-br from-yellow-900/40 to-yellow-800/30 backdrop-blur-sm rounded-xl border border-yellow-500/30 p-6"
           >
             <div className="flex items-center gap-3 mb-6">
@@ -468,7 +409,7 @@ const AdminSettings: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay: 0.5 }}
             className="bg-gradient-to-br from-slate-900/40 to-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-500/30 p-6"
           >
             <div className="flex items-center gap-3 mb-6">
@@ -518,7 +459,7 @@ const AdminSettings: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
+          transition={{ delay: 0.6 }}
           className="mt-8 flex justify-center"
         >
           <button className="px-8 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white font-bold rounded-lg hover:from-red-600 hover:to-pink-700 transition-all">

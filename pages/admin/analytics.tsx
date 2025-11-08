@@ -56,8 +56,6 @@ interface KPIData {
   activeUsers: number;
   totalRevenue: number;
   revenueGrowthRate: number;
-  totalAffiliates: number;
-  affiliateGrowthRate: number;
   conversionRate: number;
   avgSessionTime: string;
   bounceRate: number;
@@ -96,8 +94,6 @@ const AdminAnalytics: NextPage = () => {
     activeUsers: 3847,
     totalRevenue: 112000,
     revenueGrowthRate: 18.5,
-    totalAffiliates: 1184,
-    affiliateGrowthRate: 14.2,
     conversionRate: 23.7,
     avgSessionTime: '4m 32s',
     bounceRate: 31.2
@@ -146,53 +142,7 @@ const AdminAnalytics: NextPage = () => {
     ]
   };
 
-  const mockAffiliateData: ChartData = {
-    labels: ['Iniciante', 'Intermediário', 'Avançado', 'Expert', 'Master'],
-    datasets: [
-      {
-        data: [35, 25, 20, 15, 5],
-        backgroundColor: [
-          'rgba(255, 215, 0, 0.8)',
-          'rgba(255, 105, 180, 0.8)',
-          'rgba(0, 191, 255, 0.8)',
-          'rgba(255, 165, 0, 0.8)',
-          'rgba(255, 20, 147, 0.8)'
-        ],
-        borderColor: [
-          '#FFD700',
-          '#FF69B4',
-          '#00BFFF',
-          '#FFA500',
-          '#FF1493'
-        ],
-        borderWidth: 2
-      }
-    ]
-  };
 
-  const mockSatisfactionData: ChartData = {
-    labels: ['Muito Satisfeito', 'Satisfeito', 'Neutro', 'Insatisfeito', 'Muito Insatisfeito'],
-    datasets: [
-      {
-        data: [45, 35, 12, 6, 2],
-        backgroundColor: [
-          'rgba(255, 215, 0, 0.8)',
-          'rgba(255, 105, 180, 0.8)',
-          'rgba(0, 191, 255, 0.8)',
-          'rgba(255, 165, 0, 0.8)',
-          'rgba(220, 20, 60, 0.8)'
-        ],
-        borderColor: [
-          '#FFD700',
-          '#FF69B4',
-          '#00BFFF',
-          '#FFA500',
-          '#DC143C'
-        ],
-        borderWidth: 2
-      }
-    ]
-  };
 
   const mockDeviceData: DeviceData = {
     desktop: 45,
@@ -354,7 +304,7 @@ const AdminAnalytics: NextPage = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {/* Users Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -411,33 +361,7 @@ const AdminAnalytics: NextPage = () => {
           </div>
         </motion.div>
 
-        {/* Affiliates Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-gradient-to-br from-blue-500/20 to-cyan-600/20 rounded-xl p-6 border border-blue-400/30 shadow-lg shadow-blue-500/10"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-500/20 rounded-lg">
-              <FiTarget className="w-6 h-6 text-blue-400" />
-            </div>
-            <div className="text-right">
-              <div className="flex items-center gap-1 text-blue-400 text-sm font-medium">
-                <FiArrowUpRight className="w-4 h-4" />
-                +{mockKPIs.affiliateGrowthRate}%
-              </div>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="text-2xl font-bold text-white">{formatNumber(mockKPIs.totalAffiliates)}</div>
-            <div className="text-sm text-gray-400">Afiliados Ativos</div>
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-400">Taxa:</span>
-              <span className="text-blue-400">{mockKPIs.conversionRate}%</span>
-            </div>
-          </div>
-        </motion.div>
+
 
         {/* Performance Card */}
         <motion.div
@@ -452,17 +376,17 @@ const AdminAnalytics: NextPage = () => {
             </div>
             <div className="text-right">
               <div className="flex items-center gap-1 text-green-400 text-sm font-medium">
-                <FiArrowDownRight className="w-4 h-4" />
-                -{mockKPIs.bounceRate}%
+                <FiArrowUpRight className="w-4 h-4" />
+                +{mockKPIs.conversionRate}%
               </div>
             </div>
           </div>
           <div className="space-y-2">
-            <div className="text-2xl font-bold text-white">{mockKPIs.avgSessionTime}</div>
-            <div className="text-sm text-gray-400">Tempo Médio</div>
+            <div className="text-2xl font-bold text-white">{mockKPIs.conversionRate}%</div>
+            <div className="text-sm text-gray-400">Performance Geral</div>
             <div className="flex justify-between text-xs">
-              <span className="text-gray-400">Bounce:</span>
-              <span className="text-green-400">{mockKPIs.bounceRate}%</span>
+              <span className="text-gray-400">Taxa Conv.:</span>
+              <span className="text-green-400">{mockKPIs.conversionRate}%</span>
             </div>
           </div>
         </motion.div>
@@ -502,61 +426,9 @@ const AdminAnalytics: NextPage = () => {
           </div>
         </motion.div>
 
-        {/* Affiliate Performance */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50"
-        >
-          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-3">
-            <FiTarget className="text-blue-400" />
-            Performance de Afiliados
-          </h3>
-          <div className="h-80">
-            <Doughnut data={mockAffiliateData} options={{
-              ...chartOptions,
-              plugins: {
-                ...chartOptions.plugins,
-                legend: {
-                  position: 'bottom' as const,
-                  labels: {
-                    color: '#ffffff',
-                    font: { size: 10 }
-                  }
-                }
-              }
-            }} />
-          </div>
-        </motion.div>
 
-        {/* User Satisfaction */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50"
-        >
-          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-3">
-            <FiUsers className="text-green-400" />
-            Satisfação do Usuário
-          </h3>
-          <div className="h-80">
-            <Doughnut data={mockSatisfactionData} options={{
-              ...chartOptions,
-              plugins: {
-                ...chartOptions.plugins,
-                legend: {
-                  position: 'bottom' as const,
-                  labels: {
-                    color: '#ffffff',
-                    font: { size: 10 }
-                  }
-                }
-              }
-            }} />
-          </div>
-        </motion.div>
+
+
       </div>
 
       {/* Additional Analytics */}

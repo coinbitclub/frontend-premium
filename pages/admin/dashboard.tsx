@@ -22,7 +22,12 @@ import {
   FiZap,
   FiPieChart,
   FiFilter,
-  FiCalendar
+  FiCalendar,
+  FiSend,
+  FiX,
+  FiCheck,
+  FiUser,
+  FiClock
 } from 'react-icons/fi';
 import { useLanguage } from '../../hooks/useLanguage';
 import AdminLayout from '../../components/AdminLayout';
@@ -65,13 +70,33 @@ interface RecentActivity {
   severity: 'info' | 'warning' | 'error' | 'success';
 }
 
+interface UserRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  subject: string;
+  message: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'pending' | 'in_progress' | 'resolved' | 'closed';
+  category: 'technical' | 'financial' | 'account' | 'trading' | 'general';
+  timestamp: Date;
+  assignedTo?: string;
+  responseCount: number;
+}
+
 const AdminDashboard: NextPage = () => {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+  const [userRequests, setUserRequests] = useState<UserRequest[]>([]);
   const [periodFilter, setPeriodFilter] = useState<'today' | 'week' | 'month' | 'quarter' | 'year'>('month');
+  const [selectedRequest, setSelectedRequest] = useState<UserRequest | null>(null);
+  const [isResponseModalOpen, setIsResponseModalOpen] = useState(false);
+  const [responseText, setResponseText] = useState('');
+  const [isSubmittingResponse, setIsSubmittingResponse] = useState(false);
   const { language } = useLanguage();
 
   // Mock data
@@ -135,6 +160,76 @@ const AdminDashboard: NextPage = () => {
     }
   ];
 
+  const mockUserRequests: UserRequest[] = [
+    {
+      id: 'req_1',
+      userId: 'user_123',
+      userName: 'João Silva',
+      userEmail: 'joao.silva@email.com',
+      subject: 'Problema com saque',
+      message: 'Olá, estou tentando fazer um saque há 3 dias mas o valor não foi processado. Podem me ajudar?',
+      priority: 'high',
+      status: 'pending',
+      category: 'financial',
+      timestamp: new Date('2024-03-15T09:30:00'),
+      responseCount: 0
+    },
+    {
+      id: 'req_2',
+      userId: 'user_456',
+      userName: 'Maria Santos',
+      userEmail: 'maria.santos@email.com',
+      subject: 'Dúvida sobre comissões',
+      message: 'Como funciona o sistema de comissões? Gostaria de entender melhor os percentuais.',
+      priority: 'medium',
+      status: 'in_progress',
+      category: 'general',
+      timestamp: new Date('2024-03-15T08:45:00'),
+      assignedTo: 'Admin Carlos',
+      responseCount: 1
+    },
+    {
+      id: 'req_3',
+      userId: 'user_789',
+      userName: 'Pedro Costa',
+      userEmail: 'pedro.costa@email.com',
+      subject: 'Erro na plataforma',
+      message: 'A plataforma não está carregando corretamente no meu navegador. Já tentei limpar o cache.',
+      priority: 'urgent',
+      status: 'pending',
+      category: 'technical',
+      timestamp: new Date('2024-03-15T07:20:00'),
+      responseCount: 0
+    },
+    {
+      id: 'req_4',
+      userId: 'user_101',
+      userName: 'Ana Oliveira',
+      userEmail: 'ana.oliveira@email.com',
+      subject: 'Alteração de dados',
+      message: 'Preciso alterar meu email cadastrado na plataforma. Como posso fazer isso?',
+      priority: 'low',
+      status: 'resolved',
+      category: 'account',
+      timestamp: new Date('2024-03-14T16:15:00'),
+      assignedTo: 'Admin Sofia',
+      responseCount: 3
+    },
+    {
+      id: 'req_5',
+      userId: 'user_202',
+      userName: 'Carlos Ferreira',
+      userEmail: 'carlos.ferreira@email.com',
+      subject: 'Estratégias de trading',
+      message: 'Vocês oferecem consultoria ou orientação sobre estratégias de trading?',
+      priority: 'medium',
+      status: 'pending',
+      category: 'trading',
+      timestamp: new Date('2024-03-14T14:30:00'),
+      responseCount: 0
+    }
+  ];
+
   useEffect(() => {
     setMounted(true);
     loadDashboardData();
@@ -147,6 +242,7 @@ const AdminDashboard: NextPage = () => {
         setGlobalStats(mockStats);
         setSystemStatus(mockSystemStatus);
         setRecentActivity(mockActivity);
+        setUserRequests(mockUserRequests);
         setLoading(false);
       }, 1000);
     } catch (error) {
@@ -191,6 +287,110 @@ const AdminDashboard: NextPage = () => {
       case 'warning': return 'text-yellow-400';
       case 'error': return 'text-red-400';
       default: return 'text-gray-400';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-red-500/20 text-red-400 border-red-500/50';
+      case 'high': return 'bg-orange-500/20 text-orange-400 border-orange-500/50';
+      case 'medium': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
+      case 'low': return 'bg-blue-500/20 text-blue-400 border-blue-500/50';
+      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/50';
+    }
+  };
+
+  const getRequestStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-red-500/20 text-red-400';
+      case 'in_progress': return 'bg-yellow-500/20 text-yellow-400';
+      case 'resolved': return 'bg-green-500/20 text-green-400';
+      case 'closed': return 'bg-gray-500/20 text-gray-400';
+      default: return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'technical': return <FiSettings className="w-4 h-4" />;
+      case 'financial': return <FiDollarSign className="w-4 h-4" />;
+      case 'account': return <FiUsers className="w-4 h-4" />;
+      case 'trading': return <FiTrendingUp className="w-4 h-4" />;
+      case 'general': return <FiMessageSquare className="w-4 h-4" />;
+      default: return <FiMessageSquare className="w-4 h-4" />;
+    }
+  };
+
+  const handleOpenResponseModal = (request: UserRequest) => {
+    setSelectedRequest(request);
+    setResponseText('');
+    setIsResponseModalOpen(true);
+  };
+
+  const handleCloseResponseModal = () => {
+    setIsResponseModalOpen(false);
+    setSelectedRequest(null);
+    setResponseText('');
+  };
+
+  const handleSendResponse = async () => {
+    if (!selectedRequest || !responseText.trim()) return;
+
+    setIsSubmittingResponse(true);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Update the request in the list
+      setUserRequests(prev => prev.map(req => 
+        req.id === selectedRequest.id 
+          ? { 
+              ...req, 
+              status: 'in_progress' as const,
+              responseCount: req.responseCount + 1,
+              assignedTo: 'Admin Sistema'
+            }
+          : req
+      ));
+
+      handleCloseResponseModal();
+    } catch (error) {
+      console.error('Error sending response:', error);
+    } finally {
+      setIsSubmittingResponse(false);
+    }
+  };
+
+  const handleCloseRequest = async (requestId: string) => {
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Update the request status to resolved
+      setUserRequests(prev => prev.map(req => 
+        req.id === requestId 
+          ? { ...req, status: 'resolved' as const }
+          : req
+      ));
+    } catch (error) {
+      console.error('Error closing request:', error);
+    }
+  };
+
+  const handleReopenRequest = async (requestId: string) => {
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Update the request status to pending
+      setUserRequests(prev => prev.map(req => 
+        req.id === requestId 
+          ? { ...req, status: 'pending' as const }
+          : req
+      ));
+    } catch (error) {
+      console.error('Error reopening request:', error);
     }
   };
 
@@ -314,70 +514,12 @@ const AdminDashboard: NextPage = () => {
             </div>
           )}
 
-          {/* Revenue Breakdown */}
-          {globalStats && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-gradient-to-br from-red-900/50 to-pink-900/50 backdrop-blur-md rounded-xl p-6 border border-red-500/20"
-            >
-              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
-                <FiPieChart className="text-red-400" />
-                Breakdown de Receita
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gray-800/50 rounded-lg p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <h4 className="text-white font-medium">Comissões de Recarga</h4>
-                  </div>
-                  <div className="text-2xl font-bold text-white mb-1">{formatCurrency(globalStats.commissionRevenue)}</div>
-                  <div className="text-sm text-gray-400">
-                    {((globalStats.commissionRevenue / globalStats.totalRevenue) * 100).toFixed(1)}% do total
-                  </div>
-                  <div className="text-xs text-blue-400 mt-2">
-                    Pendentes: {formatCurrency(globalStats.pendingCommissions)}
-                  </div>
-                </div>
-
-                <div className="bg-gray-800/50 rounded-lg p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                    <h4 className="text-white font-medium">Venda de Cupons</h4>
-                  </div>
-                  <div className="text-2xl font-bold text-white mb-1">{formatCurrency(globalStats.couponRevenue)}</div>
-                  <div className="text-sm text-gray-400">
-                    {((globalStats.couponRevenue / globalStats.totalRevenue) * 100).toFixed(1)}% do total
-                  </div>
-                  <div className="text-xs text-purple-400 mt-2">
-                    {globalStats.activeCoupons} cupons ativos
-                  </div>
-                </div>
-
-                <div className="bg-gray-800/50 rounded-lg p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <h4 className="text-white font-medium">Despesas</h4>
-                  </div>
-                  <div className="text-2xl font-bold text-white mb-1">{formatCurrency(globalStats.totalExpenses)}</div>
-                  <div className="text-sm text-gray-400">
-                    Lucro líquido: {formatCurrency(globalStats.totalRevenue - globalStats.totalExpenses)}
-                  </div>
-                  <div className="text-xs text-green-400 mt-2">
-                    Margem: {(((globalStats.totalRevenue - globalStats.totalExpenses) / globalStats.totalRevenue) * 100).toFixed(1)}%
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
           {/* System Status */}
           {systemStatus && (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
+              transition={{ delay: 0.5 }}
               className="bg-gradient-to-br from-red-900/50 to-pink-900/50 backdrop-blur-md rounded-xl p-6 border border-red-500/20"
             >
               <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
@@ -406,7 +548,7 @@ const AdminDashboard: NextPage = () => {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
+            transition={{ delay: 0.6 }}
             className="bg-gradient-to-br from-red-900/50 to-pink-900/50 backdrop-blur-md rounded-xl p-6 border border-red-500/20"
           >
             <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
@@ -436,7 +578,266 @@ const AdminDashboard: NextPage = () => {
               ))}
             </div>
           </motion.div>
+
+          {/* User Requests/Tasks */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 backdrop-blur-md rounded-xl p-6 border border-indigo-500/20"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                <FiMessageSquare className="text-indigo-400" />
+                {language === 'pt' ? 'Solicitações de Usuários' : 'User Requests'}
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">
+                  {userRequests.filter(r => r.status === 'pending').length} pendentes
+                </span>
+                <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+
+            {/* Request Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gray-800/50 rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-red-400">{userRequests.filter(r => r.status === 'pending').length}</div>
+                <div className="text-xs text-gray-400">Pendentes</div>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-yellow-400">{userRequests.filter(r => r.status === 'in_progress').length}</div>
+                <div className="text-xs text-gray-400">Em Progresso</div>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-red-400">{userRequests.filter(r => r.priority === 'urgent').length}</div>
+                <div className="text-xs text-gray-400">Urgentes</div>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-green-400">{userRequests.filter(r => r.status === 'resolved').length}</div>
+                <div className="text-xs text-gray-400">Resolvidas</div>
+              </div>
+            </div>
+
+            {/* Recent Requests */}
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold text-white mb-4">
+                {language === 'pt' ? 'Solicitações Recentes' : 'Recent Requests'}
+              </h4>
+              {userRequests.slice(0, 5).map((request, index) => (
+                <motion.div
+                  key={request.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-gray-800/50 rounded-lg p-4 hover:bg-gray-800/70 transition-all cursor-pointer border border-gray-700/50"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="text-indigo-400">
+                        {getCategoryIcon(request.category)}
+                      </div>
+                      <div>
+                        <h5 className="text-white font-medium">{request.subject}</h5>
+                        <p className="text-gray-400 text-sm">
+                          {request.userName} • {request.userEmail}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-1 rounded-full border ${getPriorityColor(request.priority)}`}>
+                        {request.priority.toUpperCase()}
+                      </span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${getRequestStatusColor(request.status)}`}>
+                        {request.status.replace('_', ' ').toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <p className="text-gray-300 text-sm mb-3 line-clamp-2">
+                    {request.message}
+                  </p>
+                  
+                  <div className="flex items-center justify-between text-xs text-gray-400">
+                    <div className="flex items-center gap-4">
+                      <span>{request.timestamp.toLocaleString('pt-BR')}</span>
+                      {request.assignedTo && (
+                        <span className="text-blue-400">
+                          Atribuído a: {request.assignedTo}
+                        </span>
+                      )}
+                      {request.responseCount > 0 && (
+                        <span className="text-green-400">
+                          {request.responseCount} resposta{request.responseCount > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => handleOpenResponseModal(request)}
+                        className="flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                      >
+                        <FiSend className="w-3 h-3" />
+                        {language === 'pt' ? 'Responder' : 'Reply'}
+                      </button>
+                      {request.status === 'resolved' || request.status === 'closed' ? (
+                        <button 
+                          onClick={() => handleReopenRequest(request.id)}
+                          className="flex items-center gap-1 px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded transition-colors"
+                        >
+                          <FiRefreshCw className="w-3 h-3" />
+                          {language === 'pt' ? 'Reabrir' : 'Reopen'}
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => handleCloseRequest(request.id)}
+                          className="flex items-center gap-1 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
+                        >
+                          <FiCheck className="w-3 h-3" />
+                          {language === 'pt' ? 'Resolver' : 'Resolve'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+              
+              {userRequests.length > 5 && (
+                <div className="text-center pt-4">
+                  <button className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all">
+                    {language === 'pt' ? 'Ver Todas as Solicitações' : 'View All Requests'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
         </div>
+
+        {/* Response Modal */}
+        <AnimatePresence>
+          {isResponseModalOpen && selectedRequest && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              onClick={handleCloseResponseModal}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-gray-700 p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-white">
+                      {language === 'pt' ? 'Responder Solicitação' : 'Reply to Request'}
+                    </h3>
+                    <p className="text-gray-400 text-sm">
+                      {selectedRequest.subject}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleCloseResponseModal}
+                    className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <FiX className="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
+
+                {/* User Info */}
+                <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <FiUser className="w-5 h-5 text-blue-400" />
+                    <div>
+                      <div className="text-white font-medium">{selectedRequest.userName}</div>
+                      <div className="text-gray-400 text-sm">{selectedRequest.userEmail}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-1">
+                      <FiClock className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-400">
+                        {selectedRequest.timestamp.toLocaleString('pt-BR')}
+                      </span>
+                    </div>
+                    <span className={`px-2 py-1 rounded-full border text-xs ${getPriorityColor(selectedRequest.priority)}`}>
+                      {selectedRequest.priority.toUpperCase()}
+                    </span>
+                    <span className={`px-2 py-1 rounded-full text-xs ${getRequestStatusColor(selectedRequest.status)}`}>
+                      {selectedRequest.status.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Original Message */}
+                <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
+                  <h4 className="text-white font-medium mb-2">
+                    {language === 'pt' ? 'Mensagem Original:' : 'Original Message:'}
+                  </h4>
+                  <p className="text-gray-300 text-sm whitespace-pre-wrap">
+                    {selectedRequest.message}
+                  </p>
+                </div>
+
+                {/* Response Section */}
+                <div className="mb-6">
+                  <label className="block text-white font-medium mb-2">
+                    {language === 'pt' ? 'Sua Resposta:' : 'Your Response:'}
+                  </label>
+                  <textarea
+                    value={responseText}
+                    onChange={(e) => setResponseText(e.target.value)}
+                    placeholder={language === 'pt' 
+                      ? 'Digite sua resposta aqui...' 
+                      : 'Type your response here...'
+                    }
+                    rows={6}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 resize-none"
+                  />
+                  <div className="text-xs text-gray-400 mt-1">
+                    {responseText.length}/1000 caracteres
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    onClick={handleCloseResponseModal}
+                    className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                  >
+                    {language === 'pt' ? 'Cancelar' : 'Cancel'}
+                  </button>
+                  <button
+                    onClick={() => handleCloseRequest(selectedRequest.id)}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    <FiCheck className="w-4 h-4" />
+                    {language === 'pt' ? 'Resolver sem Resposta' : 'Resolve without Reply'}
+                  </button>
+                  <button
+                    onClick={handleSendResponse}
+                    disabled={!responseText.trim() || isSubmittingResponse}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    {isSubmittingResponse ? (
+                      <FiRefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <FiSend className="w-4 h-4" />
+                    )}
+                    {isSubmittingResponse 
+                      ? (language === 'pt' ? 'Enviando...' : 'Sending...') 
+                      : (language === 'pt' ? 'Enviar Resposta' : 'Send Reply')
+                    }
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </AdminLayout>
     </>
   );

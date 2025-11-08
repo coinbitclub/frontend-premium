@@ -433,7 +433,7 @@ const AdminFinancial: NextPage = () => {
 
         <div className="max-w-7xl mx-auto p-6 space-y-6">
           {/* Financial Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -466,21 +466,7 @@ const AdminFinancial: NextPage = () => {
               </div>
             </motion.div>
 
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-gradient-to-br from-blue-900/50 to-indigo-900/50 backdrop-blur-md rounded-xl p-6 border border-blue-500/20"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <FiTarget className="text-blue-400 text-xl" />
-                <h3 className="text-white font-semibold">Comissões</h3>
-              </div>
-              <div className="text-3xl font-bold text-white mb-2">{formatCurrency(stats?.totalCommissions || 0)}</div>
-              <div className="text-sm text-yellow-400">
-                {formatCurrency(stats?.pendingCommissions || 0)} pendentes
-              </div>
-            </motion.div>
+
 
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
@@ -499,50 +485,7 @@ const AdminFinancial: NextPage = () => {
             </motion.div>
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-md rounded-xl p-6 border border-purple-500/20"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <FiCreditCard className="text-purple-400 text-xl" />
-                <h3 className="text-white font-semibold">Ticket Médio</h3>
-              </div>
-              <div className="text-2xl font-bold text-white mb-2">{formatCurrency(stats?.averageTicket || 0)}</div>
-              <div className="text-sm text-gray-400">Por transação</div>
-            </motion.div>
 
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-md rounded-xl p-6 border border-purple-500/20"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <FiUsers className="text-blue-400 text-xl" />
-                <h3 className="text-white font-semibold">Assinantes Ativos</h3>
-              </div>
-              <div className="text-2xl font-bold text-white mb-2">{stats?.activeSubscriptions.toLocaleString()}</div>
-              <div className="text-sm text-gray-400">Pagantes mensais</div>
-            </motion.div>
-
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-md rounded-xl p-6 border border-purple-500/20"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <FiPercent className="text-green-400 text-xl" />
-                <h3 className="text-white font-semibold">Taxa de Conversão</h3>
-              </div>
-              <div className="text-2xl font-bold text-white mb-2">23.5%</div>
-              <div className="text-sm text-gray-400">Free para pago</div>
-            </motion.div>
-          </div>
 
           {/* Revenue Chart */}
           <motion.div 
@@ -570,152 +513,7 @@ const AdminFinancial: NextPage = () => {
               </div>
             </div>
 
-            {/* Enhanced Financial Overview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              {/* Receitas Card */}
-              <div className="bg-gradient-to-br from-green-500/20 to-emerald-600/20 rounded-xl p-6 border border-green-500/30">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-500/20 rounded-lg">
-                      <FiTrendingUp className="w-5 h-5 text-green-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">Receitas</h3>
-                      <p className="text-sm text-gray-400">Este mês</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-1 text-green-400 text-sm font-medium">
-                      <FiArrowUpRight className="w-4 h-4" />
-                      +15.3%
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="text-2xl font-bold text-white">
-                    {formatCurrency(stats?.totalRevenue || 0)}
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Mês anterior:</span>
-                    <span className="text-gray-300">{formatCurrency((stats?.totalRevenue || 0) / 1.153)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Meta mensal:</span>
-                    <span className="text-green-400">{formatCurrency(50000)}</span>
-                  </div>
-                  
-                  {/* Progress Bar */}
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(((stats?.totalRevenue || 0) / 50000) * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                  <div className="text-xs text-gray-400 text-center">
-                    {Math.round(((stats?.totalRevenue || 0) / 50000) * 100)}% da meta atingida
-                  </div>
-                </div>
-              </div>
 
-              {/* Despesas Card */}
-              <div className="bg-gradient-to-br from-red-500/20 to-rose-600/20 rounded-xl p-6 border border-red-500/30">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-red-500/20 rounded-lg">
-                      <FiTrendingDown className="w-5 h-5 text-red-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">Despesas</h3>
-                      <p className="text-sm text-gray-400">Este mês</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-1 text-red-400 text-sm font-medium">
-                      <FiArrowDownLeft className="w-4 h-4" />
-                      -2.1%
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="text-2xl font-bold text-white">
-                    {formatCurrency(stats?.totalExpenses || 0)}
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Mês anterior:</span>
-                    <span className="text-gray-300">{formatCurrency((stats?.totalExpenses || 0) / 0.979)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Orçamento:</span>
-                    <span className="text-orange-400">{formatCurrency(15000)}</span>
-                  </div>
-                  
-                  {/* Progress Bar */}
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-red-500 to-rose-500 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(((stats?.totalExpenses || 0) / 15000) * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                  <div className="text-xs text-gray-400 text-center">
-                    {Math.round(((stats?.totalExpenses || 0) / 15000) * 100)}% do orçamento usado
-                  </div>
-                </div>
-              </div>
-
-              {/* Comissões Card */}
-              <div className="bg-gradient-to-br from-blue-500/20 to-cyan-600/20 rounded-xl p-6 border border-blue-500/30">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-500/20 rounded-lg">
-                      <FiUsers className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">Comissões</h3>
-                      <p className="text-sm text-gray-400">Este mês</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-1 text-blue-400 text-sm font-medium">
-                      <FiArrowUpRight className="w-4 h-4" />
-                      +8.7%
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="text-2xl font-bold text-white">
-                    {formatCurrency(stats?.totalCommissions || 0)}
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Pendentes:</span>
-                    <span className="text-yellow-400">{formatCurrency(stats?.pendingCommissions || 0)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Taxa média:</span>
-                    <span className="text-blue-400">12.5%</span>
-                  </div>
-                  
-                  {/* Progress Bar for Commission Goal */}
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(((stats?.totalCommissions || 0) / 10000) * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                  <div className="text-xs text-gray-400 text-center">
-                    {Math.round(((stats?.totalCommissions || 0) / 10000) * 100)}% da meta de comissões
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* Financial Summary Card */}
             <div className="bg-gradient-to-br from-purple-500/20 to-indigo-600/20 rounded-xl p-6 border border-purple-500/30 mb-6">
@@ -761,7 +559,7 @@ const AdminFinancial: NextPage = () => {
                 <div className="bg-gray-800/30 rounded-lg p-4 text-center">
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <FiUsers className="w-4 h-4 text-green-400" />
-                    <span className="text-sm text-gray-400">Assinantes</span>
+                    <span className="text-sm text-gray-400">Usuários Ativos</span>
                   </div>
                   <div className="text-lg font-bold text-white">
                     {stats?.activeSubscriptions || 0}
@@ -780,7 +578,7 @@ const AdminFinancial: NextPage = () => {
               </div>
 
               {/* ROI and Performance Indicators */}
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-1 gap-4">
                 <div className="bg-gray-800/30 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-sm text-gray-400">ROI (Return on Investment)</span>
@@ -793,67 +591,10 @@ const AdminFinancial: NextPage = () => {
                     Retorno sobre investimento
                   </div>
                 </div>
-
-                <div className="bg-gray-800/30 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm text-gray-400">Eficiência Operacional</span>
-                    <FiBarChart className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="text-xl font-bold text-blue-400">
-                    {(100 - ((stats?.totalExpenses || 0) / (stats?.totalRevenue || 1)) * 100).toFixed(1)}%
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Eficiência nos custos
-                  </div>
-                </div>
               </div>
             </div>
 
-            {/* Enhanced Category Breakdown */}
-            <div className="mb-6">
-              <div className="flex items-center gap-3 mb-4">
-                <FiPieChart className="w-5 h-5 text-purple-400" />
-                <h3 className="text-lg font-semibold text-white">Distribuição por Categoria</h3>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {chartData?.categories.map((category, index) => (
-                  <div key={category.name} className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-5 border border-gray-700/50 hover:border-purple-500/30 transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div 
-                        className="w-4 h-4 rounded-full shadow-lg" 
-                        style={{ backgroundColor: category.color }}
-                      ></div>
-                      <div className="text-sm font-medium text-gray-300">{category.name}</div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="text-xl font-bold text-white">
-                        {formatCurrency(category.amount)}
-                      </div>
-                      
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-400">Participação:</span>
-                        <span className="text-purple-400 font-medium">
-                          {((category.amount / (chartData?.categories.reduce((sum, cat) => sum + cat.amount, 0) || 1)) * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                      
-                      {/* Progress bar showing category percentage */}
-                      <div className="w-full bg-gray-700/50 rounded-full h-1.5">
-                        <div 
-                          className="h-1.5 rounded-full transition-all duration-500"
-                          style={{ 
-                            backgroundColor: category.color,
-                            width: `${(category.amount / (chartData?.categories.reduce((sum, cat) => sum + cat.amount, 0) || 1)) * 100}%` 
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+
           </motion.div>
 
           {/* Financial Evolution Charts */}
@@ -945,97 +686,6 @@ const AdminFinancial: NextPage = () => {
                         display: true,
                         labels: { color: '#9CA3AF' }
                       },
-                    },
-                    scales: {
-                      x: {
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                        ticks: { color: '#9CA3AF' },
-                      },
-                      y: {
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                        ticks: { color: '#9CA3AF' },
-                      },
-                    },
-                  }}
-                />
-              </div>
-            </motion.div>
-
-            {/* Categories Distribution */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-              className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-md rounded-xl p-6 border border-purple-500/20"
-            >
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <FiSettings className="text-purple-400" />
-                {language === 'pt' ? 'Distribuição por Categoria' : 'Category Distribution'}
-              </h3>
-              <div className="h-64 flex items-center justify-center">
-                <div className="w-full max-w-xs">
-                  <Doughnut
-                    data={{
-                      labels: chartData?.categories.map(c => c.name) || [],
-                      datasets: [
-                        {
-                          data: chartData?.categories.map(c => c.amount) || [],
-                          backgroundColor: chartData?.categories.map(c => c.color) || [],
-                          borderColor: chartData?.categories.map(c => c.color) || [],
-                          borderWidth: 2,
-                        },
-                      ],
-                    }}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          position: 'bottom',
-                          labels: { 
-                            color: '#9CA3AF',
-                            usePointStyle: true,
-                            padding: 15,
-                          }
-                        },
-                      },
-                    }}
-                  />
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Commission Evolution */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9 }}
-              className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-md rounded-xl p-6 border border-purple-500/20"
-            >
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <FiUsers className="text-blue-400" />
-                {language === 'pt' ? 'Evolução de Comissões' : 'Commission Evolution'}
-              </h3>
-              <div className="h-64">
-                <Line
-                  data={{
-                    labels: chartData?.commissions.map(c => c.month) || [],
-                    datasets: [
-                      {
-                        label: language === 'pt' ? 'Comissões' : 'Commissions',
-                        data: chartData?.commissions.map(c => c.amount) || [],
-                        borderColor: '#3B82F6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        tension: 0.4,
-                        fill: true,
-                      },
-                    ],
-                  }}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: { display: false },
                     },
                     scales: {
                       x: {
