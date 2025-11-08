@@ -31,10 +31,9 @@ import AdminLayout from '../../components/AdminLayout';
 interface GlobalStats {
   totalUsers: number;
   activeUsers: number;
-  totalAffiliates: number;
-  vipAffiliates: number;
   totalRevenue: number;
   monthlyRevenue: number;
+  totalCommissions: number;
   pendingCommissions: number;
   totalExpenses: number;
   systemUptime: number;
@@ -75,10 +74,9 @@ const AdminDashboard: NextPage = () => {
   const mockStats: GlobalStats = {
     totalUsers: 15847,
     activeUsers: 12394,
-    totalAffiliates: 2156,
-    vipAffiliates: 89,
     totalRevenue: 2847593.45,
     monthlyRevenue: 156847.23,
+    totalCommissions: 89156.34,
     pendingCommissions: 45891.12,
     totalExpenses: 234567.89,
     systemUptime: 99.7,
@@ -282,14 +280,14 @@ const AdminDashboard: NextPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="col-span-1 md:col-span-1 lg:col-span-2 bg-gradient-to-br from-red-900/50 to-pink-900/50 backdrop-blur-md rounded-xl p-6 border border-red-500/20"
+                className="col-span-1 md:col-span-1 lg:col-span-2 bg-gradient-to-br from-orange-900/50 to-amber-900/50 backdrop-blur-md rounded-xl p-6 border border-orange-500/20"
               >
                 <div className="flex items-center gap-3 mb-4">
-                  <FiTrendingUp className="text-yellow-400 text-xl" />
-                  <h3 className="text-white font-semibold">Afiliados</h3>
+                  <FiDollarSign className="text-orange-400 text-xl" />
+                  <h3 className="text-white font-semibold">Comissões</h3>
                 </div>
-                <div className="text-3xl font-bold text-white mb-2">{globalStats.totalAffiliates}</div>
-                <div className="text-sm text-gray-400">{globalStats.vipAffiliates} VIP</div>
+                <div className="text-3xl font-bold text-white mb-2">${globalStats.totalCommissions.toLocaleString()}</div>
+                <div className="text-sm text-gray-400">Pendentes: ${globalStats.pendingCommissions.toLocaleString()}</div>
               </motion.div>
 
               <motion.div 

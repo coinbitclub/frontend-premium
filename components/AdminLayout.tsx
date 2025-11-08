@@ -52,7 +52,6 @@ export default function AdminLayout({
       href: '/admin/users', 
       icon: FiUsers 
     },
-
     { 
       name: language === 'pt' ? 'Analytics' : 'Analytics', 
       href: '/admin/analytics', 
@@ -72,11 +71,6 @@ export default function AdminLayout({
       name: language === 'pt' ? 'Transações' : 'Transactions', 
       href: '/admin/transactions', 
       icon: FiActivity 
-    },
-    { 
-      name: language === 'pt' ? 'Cupons' : 'Coupons', 
-      href: '/admin/coupons', 
-      icon: FiGift 
     },
     { 
       name: language === 'pt' ? 'Tempo Real' : 'Realtime', 

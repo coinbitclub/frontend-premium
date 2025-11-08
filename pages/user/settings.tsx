@@ -41,10 +41,7 @@ const UserSettings: React.FC = () => {
   // Trading Settings - Default values
   const [tradingSettings, setTradingSettings] = useState({
     maxLeverage: 5,
-    takeProfit: 15,
-    stopLoss: 10,
-    orderValue: 30,
-    riskLevel: 'medium',
+    orderValue: 20, // Limited to 20%
     autoTrade: true,
     dailyLossLimit: 10
   });
@@ -54,9 +51,7 @@ const UserSettings: React.FC = () => {
     fullName: '',
     email: '',
     phone: '',
-    cpf: '',
-    birthDate: '',
-    country: 'BR'
+    country: 'US'
   });
 
   // Banking Data
@@ -115,10 +110,7 @@ const UserSettings: React.FC = () => {
               setTradingSettings(prev => ({
                 ...prev,
                 maxLeverage: settings.trading.max_leverage || prev.maxLeverage,
-                takeProfit: settings.trading.take_profit_percentage || prev.takeProfit,
-                stopLoss: settings.trading.stop_loss_percentage || prev.stopLoss,
-                orderValue: settings.trading.position_size_percentage || prev.orderValue,
-                riskLevel: settings.trading.risk_level || prev.riskLevel,
+                orderValue: Math.min(settings.trading.position_size_percentage || prev.orderValue, 20), // Limit to 20%
                 autoTrade: settings.trading.auto_trade_enabled !== undefined ? settings.trading.auto_trade_enabled : prev.autoTrade,
                 dailyLossLimit: settings.trading.daily_loss_limit_percentage || prev.dailyLossLimit
               }));
@@ -131,25 +123,7 @@ const UserSettings: React.FC = () => {
                 fullName: settings.personal.full_name || prev.fullName,
                 email: settings.personal.email || prev.email,
                 phone: settings.personal.phone || prev.phone,
-                cpf: settings.personal.bank_document || prev.cpf,
-                country: settings.personal.country || prev.country,
-                // birthDate: settings.personal.birth_date || prev.birthDate, // Field not available in user table
-              }));
-            }
-
-            // Update banking data if available - now from personal data too
-            if (settings.personal || settings.banking) {
-              setBankingData(prev => ({
-                ...prev,
-                pixKey: (settings.personal && settings.personal.pix_key) || (settings.banking && settings.banking.pix_key) || prev.pixKey,
-                pixType: settings.banking ? settings.banking.pix_type || prev.pixType : prev.pixType,
-                bankAccount: {
-                  ...prev.bankAccount,
-                  bank: (settings.personal && settings.personal.bank_name) || (settings.banking && settings.banking.bank_name) || prev.bankAccount.bank,
-                  agency: (settings.personal && settings.personal.bank_agency) || (settings.banking && settings.banking.bank_agency) || prev.bankAccount.agency,
-                  account: (settings.personal && settings.personal.bank_account) || (settings.banking && settings.banking.bank_account) || prev.bankAccount.account,
-                  accountType: prev.bankAccount.accountType // Backend doesn't provide this field
-                }
+                country: settings.personal.country || prev.country
               }));
             }
 
@@ -181,16 +155,13 @@ const UserSettings: React.FC = () => {
               console.log('No API keys found or error loading them:', error);
             }
 
-            // Update notifications if available
-            if (settings.notifications) {
-              setNotifications(prev => ({
-                ...prev,
-                email: settings.notifications.email_notifications !== undefined ? settings.notifications.email_notifications : prev.email,
-                sms: settings.notifications.sms_notifications !== undefined ? settings.notifications.sms_notifications : prev.sms,
-                push: settings.notifications.push_notifications !== undefined ? settings.notifications.push_notifications : prev.push,
-                trades: settings.notifications.trade_alerts !== undefined ? settings.notifications.trade_alerts : prev.trades
-              }));
-            }
+          } else {
+            showToast(
+              language === 'pt'
+                ? 'Erro ao carregar configurações'
+                : 'Error loading settings',
+              'error'
+            );
           }
         } catch (error) {
           console.error('Error loading settings:', error);
@@ -213,22 +184,9 @@ const UserSettings: React.FC = () => {
     setTradingSettings(prev => {
       const newSettings = { ...prev, [field]: value };
 
-      // Apply business rules when leverage changes
-      if (field === 'maxLeverage') {
-        const leverage = value;
-
-        // Adjust Take Profit to be within limit (up to 5x leverage)
-        const maxTakeProfit = leverage * 5;
-        if (newSettings.takeProfit > maxTakeProfit) {
-          newSettings.takeProfit = leverage * 3; // Default: 3x leverage
-        }
-
-        // Adjust Stop Loss to be within limit (2x to 4x leverage)
-        const minStopLoss = leverage * 2;
-        const maxStopLoss = leverage * 4;
-        if (newSettings.stopLoss < minStopLoss || newSettings.stopLoss > maxStopLoss) {
-          newSettings.stopLoss = leverage * 2; // Default: 2x leverage
-        }
+      // Apply business rules - ensure position size doesn't exceed 20%
+      if (field === 'orderValue' && value > 20) {
+        newSettings.orderValue = 20;
       }
 
       return newSettings;
@@ -379,10 +337,7 @@ const UserSettings: React.FC = () => {
         case 'trading':
           response = await apiService.updateTradingSettings({
             max_leverage: tradingSettings.maxLeverage,
-            take_profit_percentage: tradingSettings.takeProfit,
-            stop_loss_percentage: tradingSettings.stopLoss,
             position_size_percentage: tradingSettings.orderValue,
-            risk_level: tradingSettings.riskLevel,
             auto_trade_enabled: tradingSettings.autoTrade,
             daily_loss_limit_percentage: tradingSettings.dailyLossLimit
           });
@@ -393,30 +348,19 @@ const UserSettings: React.FC = () => {
             full_name: personalData.fullName,
             email: personalData.email,
             phone: personalData.phone,
-            cpf: personalData.cpf,
-            // birth_date: personalData.birthDate, // Not supported by backend
             country: personalData.country
           });
           break;
 
-        case 'banking':
-          response = await apiService.updateBankingSettings({
-            pix_key: bankingData.pixKey,
-            pix_type: bankingData.pixType,
-            bank_name: bankingData.bankAccount.bank,
-            bank_agency: bankingData.bankAccount.agency,
-            bank_account: bankingData.bankAccount.account,
-            account_type: bankingData.bankAccount.accountType
-          });
-          break;
-
         case 'notifications':
-          response = await apiService.updateNotificationSettings({
-            email_notifications: notifications.email,
-            sms_notifications: notifications.sms,
-            push_notifications: notifications.push,
-            trade_alerts: notifications.trades
-          });
+          // For MVP, just show success message without actual API call
+          response = { success: true };
+          showToast(
+            language === 'pt'
+              ? 'Mensagem será implementada em versões futuras. Use os canais de contato direto.'
+              : 'Messaging will be implemented in future versions. Use direct contact channels.',
+            'info'
+          );
           break;
 
         default:
@@ -424,10 +368,7 @@ const UserSettings: React.FC = () => {
           response = await apiService.updateAllUserSettings({
             trading: {
               max_leverage: tradingSettings.maxLeverage,
-              take_profit_percentage: tradingSettings.takeProfit,
-              stop_loss_percentage: tradingSettings.stopLoss,
               position_size_percentage: tradingSettings.orderValue,
-              risk_level: tradingSettings.riskLevel,
               auto_trade_enabled: tradingSettings.autoTrade,
               daily_loss_limit_percentage: tradingSettings.dailyLossLimit
             },
@@ -435,27 +376,7 @@ const UserSettings: React.FC = () => {
               full_name: personalData.fullName,
               email: personalData.email,
               phone: personalData.phone,
-              bank_document: personalData.cpf,
-              country: personalData.country,
-              // Add additional banking fields from banking data
-              bank_name: bankingData.bankAccount.bank,
-              bank_account: bankingData.bankAccount.account,
-              bank_agency: bankingData.bankAccount.agency,
-              pix_key: bankingData.pixKey
-            },
-            banking: {
-              pix_key: bankingData.pixKey,
-              pix_type: bankingData.pixType,
-              bank_name: bankingData.bankAccount.bank,
-              bank_agency: bankingData.bankAccount.agency,
-              bank_account: bankingData.bankAccount.account,
-              account_type: bankingData.bankAccount.accountType
-            },
-            notifications: {
-              email_notifications: notifications.email,
-              sms_notifications: notifications.sms,
-              push_notifications: notifications.push,
-              trade_alerts: notifications.trades
+              country: personalData.country
             }
           });
       }
@@ -486,12 +407,11 @@ const UserSettings: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  }, [activeTab, tradingSettings, personalData, bankingData, notifications, language, showToast]);
+  }, [activeTab, tradingSettings, personalData, language, showToast]);
 
   const tabs = useMemo(() => [
     { id: 'trading', label: language === 'pt' ? 'Trading' : 'Trading', icon: FiTrendingUp },
     { id: 'personal', label: language === 'pt' ? 'Dados Pessoais' : 'Personal Data', icon: FiUser },
-    { id: 'banking', label: language === 'pt' ? 'Dados Bancários' : 'Banking Data', icon: FiCreditCard },
     { id: 'apis', label: 'API Keys', icon: FiKey },
     { id: 'notifications', label: language === 'pt' ? 'Notificações' : 'Notifications', icon: FiBell }
   ], [language]);
@@ -590,80 +510,22 @@ const UserSettings: React.FC = () => {
 
                     <div>
                       <label className="block text-gray-300 text-sm mb-2">
-                        {language === 'pt' ? 'Take Profit (%)' : 'Take Profit (%)'}
-                      </label>
-                      <div className="flex items-center gap-4">
-                        <input
-                          type="range"
-                          min="5"
-                          max={tradingSettings.maxLeverage * 5}
-                          step="1"
-                          value={tradingSettings.takeProfit}
-                          onChange={(e) => handleTradingChange('takeProfit', parseFloat(e.target.value))}
-                          className="flex-1 accent-green-500"
-                        />
-                        <span className="text-green-400 font-bold text-lg w-12">{tradingSettings.takeProfit}%</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-300 text-sm mb-2">
-                        {language === 'pt' ? 'Stop Loss (%)' : 'Stop Loss (%)'}
-                      </label>
-                      <div className="flex items-center gap-4">
-                        <input
-                          type="range"
-                          min={tradingSettings.maxLeverage * 2}
-                          max={tradingSettings.maxLeverage * 4}
-                          step="1"
-                          value={tradingSettings.stopLoss}
-                          onChange={(e) => handleTradingChange('stopLoss', parseFloat(e.target.value))}
-                          className="flex-1 accent-red-500"
-                        />
-                        <span className="text-red-400 font-bold text-lg w-12">{tradingSettings.stopLoss}%</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-300 text-sm mb-2">
                         {language === 'pt' ? 'Tamanho da Posição (% do Saldo)' : 'Position Size (% of Balance)'}
                       </label>
                       <div className="flex items-center gap-4">
                         <input
                           type="range"
-                          min="10"
-                          max="50"
+                          min="5"
+                          max="20"
                           value={tradingSettings.orderValue}
                           onChange={(e) => handleTradingChange('orderValue', parseInt(e.target.value))}
                           className="flex-1 accent-blue-500"
                         />
                         <span className="text-blue-400 font-bold text-lg w-12">{tradingSettings.orderValue}%</span>
                       </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-300 text-sm mb-2">
-                        {language === 'pt' ? 'Nível de Risco' : 'Risk Level'}
-                      </label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {['low', 'medium', 'high'].map((level) => (
-                          <button
-                            key={level}
-                            onClick={() => handleTradingChange('riskLevel', level)}
-                            className={`p-3 rounded-lg font-medium transition-all ${
-                              tradingSettings.riskLevel === level
-                                ? level === 'low' ? 'bg-green-500/20 text-green-400 border border-green-500/50'
-                                : level === 'medium' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
-                                : 'bg-red-500/20 text-red-400 border border-red-500/50'
-                                : 'bg-gray-700/50 text-gray-400 border border-gray-600/50 hover:bg-gray-600/50'
-                            }`}
-                          >
-                            {level === 'low' ? (language === 'pt' ? 'Baixo' : 'Low') :
-                             level === 'medium' ? (language === 'pt' ? 'Médio' : 'Medium') :
-                             (language === 'pt' ? 'Alto' : 'High')}
-                          </button>
-                        ))}
-                      </div>
+                      <p className="text-yellow-400 text-xs mt-1">
+                        {language === 'pt' ? 'Máximo permitido: 20%' : 'Maximum allowed: 20%'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -690,38 +552,6 @@ const UserSettings: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Take Profit */}
-                    <div className="p-4 bg-black/20 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-gray-300 text-sm">Take Profit</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-green-400 font-bold text-sm">
-                            {(tradingSettings.takeProfit / tradingSettings.maxLeverage).toFixed(1)}x
-                          </span>
-                          <span className="text-gray-500">|</span>
-                          <span className="text-green-400 font-bold text-lg">
-                            {tradingSettings.takeProfit}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Stop Loss */}
-                    <div className="p-4 bg-black/20 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-gray-300 text-sm">Stop Loss</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-red-400 font-bold text-sm">
-                            {(tradingSettings.stopLoss / tradingSettings.maxLeverage).toFixed(1)}x
-                          </span>
-                          <span className="text-gray-500">|</span>
-                          <span className="text-red-400 font-bold text-lg">
-                            {tradingSettings.stopLoss}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
                     {/* Position Size */}
                     <div className="p-4 bg-black/20 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
@@ -739,8 +569,8 @@ const UserSettings: React.FC = () => {
                     <p className="text-blue-300 text-sm">
                       <strong>{language === 'pt' ? 'Nota:' : 'Note:'}</strong> {' '}
                       {language === 'pt'
-                        ? 'Configurações dentro dos limites permitidos pelo sistema.'
-                        : 'Settings within system allowed limits.'
+                        ? 'Configurações otimizadas para gestão de risco.'
+                        : 'Settings optimized for risk management.'
                       }
                     </p>
                   </div>
@@ -761,6 +591,16 @@ const UserSettings: React.FC = () => {
                 <h3 className="text-xl font-bold text-white">
                   {language === 'pt' ? 'Dados Pessoais' : 'Personal Data'}
                 </h3>
+              </div>
+
+              <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <p className="text-blue-300 text-sm">
+                  <strong>{language === 'pt' ? 'Importante:' : 'Important:'}</strong> {' '}
+                  {language === 'pt'
+                    ? 'Estes dados devem ser idênticos aos informados durante o registro na autenticação. Alterações podem afetar a verificação da sua conta.'
+                    : 'This data must be identical to the information provided during authentication registration. Changes may affect your account verification.'
+                  }
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -799,29 +639,6 @@ const UserSettings: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 text-sm mb-2">CPF</label>
-                  <input
-                    type="text"
-                    value={personalData.cpf}
-                    onChange={(e) => setPersonalData(prev => ({ ...prev, cpf: e.target.value }))}
-                    className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-400 focus:outline-none"
-                    placeholder="000.000.000-00"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-gray-300 text-sm mb-2">
-                    {language === 'pt' ? 'Data de Nascimento' : 'Birth Date'}
-                  </label>
-                  <input
-                    type="date"
-                    value={personalData.birthDate}
-                    onChange={(e) => setPersonalData(prev => ({ ...prev, birthDate: e.target.value }))}
-                    className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-400 focus:outline-none"
-                  />
-                </div>
-
-                <div>
                   <label className="block text-gray-300 text-sm mb-2">
                     {language === 'pt' ? 'País' : 'Country'}
                   </label>
@@ -830,147 +647,17 @@ const UserSettings: React.FC = () => {
                     onChange={(e) => setPersonalData(prev => ({ ...prev, country: e.target.value }))}
                     className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-400 focus:outline-none"
                   >
-                    <option value="BR">Brasil</option>
-                    <option value="US">United States</option>
-                    <option value="EU">Europe</option>
+                    <option value="US">🇺🇸 United States</option>
+                    <option value="JP">🇯🇵 Japan</option>
+                    <option value="KR">🇰🇷 South Korea</option>
+                    <option value="CN">🇨🇳 China</option>
+                    <option value="SG">🇸🇬 Singapore</option>
+                    <option value="BR">🇧🇷 Brazil</option>
+                    <option value="DE">🇩🇪 Germany</option>
+                    <option value="GB">🇬🇧 United Kingdom</option>
+                    <option value="CA">🇨🇦 Canada</option>
+                    <option value="AU">🇦🇺 Australia</option>
                   </select>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Banking Data Tab */}
-          {activeTab === 'banking' && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="space-y-6"
-            >
-              {/* PIX Configuration */}
-              <div className="bg-gradient-to-br from-green-900/30 to-emerald-900/30 backdrop-blur-sm rounded-xl border border-green-500/30 p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <FiDollarSign className="w-6 h-6 text-green-400" />
-                  <h3 className="text-xl font-bold text-white">
-                    {language === 'pt' ? 'Configuração PIX' : 'PIX Configuration'}
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-gray-300 text-sm mb-2">
-                      {language === 'pt' ? 'Tipo de Chave PIX' : 'PIX Key Type'}
-                    </label>
-                    <select
-                      value={bankingData.pixType}
-                      onChange={(e) => setBankingData(prev => ({ ...prev, pixType: e.target.value }))}
-                      className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-green-400 focus:outline-none"
-                    >
-                      <option value="email">Email</option>
-                      <option value="phone">Telefone</option>
-                      <option value="cpf">CPF</option>
-                      <option value="random">Chave Aleatória</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-300 text-sm mb-2">
-                      {language === 'pt' ? 'Chave PIX' : 'PIX Key'}
-                    </label>
-                    <input
-                      type="text"
-                      value={bankingData.pixKey}
-                      onChange={(e) => setBankingData(prev => ({ ...prev, pixKey: e.target.value }))}
-                      className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-green-400 focus:outline-none"
-                      placeholder={
-                        bankingData.pixType === 'email' ? 'email@exemplo.com' :
-                        bankingData.pixType === 'phone' ? '+55 11 99999-9999' :
-                        bankingData.pixType === 'cpf' ? '000.000.000-00' :
-                        '00000000-0000-0000-0000-000000000000'
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Bank Account */}
-              <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-sm rounded-xl border border-purple-500/30 p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <FiCreditCard className="w-6 h-6 text-purple-400" />
-                  <h3 className="text-xl font-bold text-white">
-                    {language === 'pt' ? 'Conta Bancária' : 'Bank Account'}
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="md:col-span-2">
-                    <label className="block text-gray-300 text-sm mb-2">
-                      {language === 'pt' ? 'Banco' : 'Bank'}
-                    </label>
-                    <select
-                      value={bankingData.bankAccount.bank}
-                      onChange={(e) => setBankingData(prev => ({
-                        ...prev,
-                        bankAccount: { ...prev.bankAccount, bank: e.target.value }
-                      }))}
-                      className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-purple-400 focus:outline-none"
-                    >
-                      <option value="001 - Banco do Brasil">001 - Banco do Brasil</option>
-                      <option value="033 - Santander">033 - Santander</option>
-                      <option value="104 - Caixa Econômica">104 - Caixa Econômica</option>
-                      <option value="237 - Bradesco">237 - Bradesco</option>
-                      <option value="341 - Itaú">341 - Itaú</option>
-                      <option value="260 - Nu Pagamentos">260 - Nu Pagamentos</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-300 text-sm mb-2">
-                      {language === 'pt' ? 'Agência' : 'Agency'}
-                    </label>
-                    <input
-                      type="text"
-                      value={bankingData.bankAccount.agency}
-                      onChange={(e) => setBankingData(prev => ({
-                        ...prev,
-                        bankAccount: { ...prev.bankAccount, agency: e.target.value }
-                      }))}
-                      className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-purple-400 focus:outline-none"
-                      placeholder="0000-0"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-300 text-sm mb-2">
-                      {language === 'pt' ? 'Conta' : 'Account'}
-                    </label>
-                    <input
-                      type="text"
-                      value={bankingData.bankAccount.account}
-                      onChange={(e) => setBankingData(prev => ({
-                        ...prev,
-                        bankAccount: { ...prev.bankAccount, account: e.target.value }
-                      }))}
-                      className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-purple-400 focus:outline-none"
-                      placeholder="00000-0"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-300 text-sm mb-2">
-                      {language === 'pt' ? 'Tipo de Conta' : 'Account Type'}
-                    </label>
-                    <select
-                      value={bankingData.bankAccount.accountType}
-                      onChange={(e) => setBankingData(prev => ({
-                        ...prev,
-                        bankAccount: { ...prev.bankAccount, accountType: e.target.value }
-                      }))}
-                      className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-purple-400 focus:outline-none"
-                    >
-                      <option value="corrente">{language === 'pt' ? 'Conta Corrente' : 'Checking Account'}</option>
-                      <option value="poupanca">{language === 'pt' ? 'Poupança' : 'Savings Account'}</option>
-                    </select>
-                  </div>
                 </div>
               </div>
             </motion.div>
@@ -983,6 +670,21 @@ const UserSettings: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               className="space-y-6"
             >
+              {/* Important Notice */}
+              <div className="bg-gradient-to-br from-amber-900/30 to-orange-900/30 backdrop-blur-sm rounded-xl border border-amber-500/30 p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <FiTarget className="w-5 h-5 text-amber-400" />
+                  <h4 className="text-amber-400 font-bold">
+                    {language === 'pt' ? 'Importante' : 'Important'}
+                  </h4>
+                </div>
+                <p className="text-amber-200 text-sm">
+                  {language === 'pt' 
+                    ? 'Você pode conectar apenas 1 exchange por conta (Binance OU Bybit), com até 2 API keys por exchange. Escolha a exchange que preferir para começar a operar.'
+                    : 'You can connect only 1 exchange per account (Binance OR Bybit), with up to 2 API keys per exchange. Choose your preferred exchange to start trading.'
+                  }
+                </p>
+              </div>
               {/* Binance API */}
               <div className="bg-gradient-to-br from-yellow-900/30 to-orange-900/30 backdrop-blur-sm rounded-xl border border-yellow-500/30 p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -1252,76 +954,76 @@ const UserSettings: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="bg-gradient-to-br from-indigo-900/30 to-purple-900/30 backdrop-blur-sm rounded-xl border border-indigo-500/30 p-6"
+              className="space-y-6"
             >
-              <div className="flex items-center gap-3 mb-6">
-                <FiBell className="w-6 h-6 text-indigo-400" />
-                <h3 className="text-xl font-bold text-white">
-                  {language === 'pt' ? 'Preferências de Notificação' : 'Notification Preferences'}
-                </h3>
-              </div>
+              {/* Admin Contact */}
+              <div className="bg-gradient-to-br from-indigo-900/30 to-purple-900/30 backdrop-blur-sm rounded-xl border border-indigo-500/30 p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <FiBell className="w-6 h-6 text-indigo-400" />
+                  <h3 className="text-xl font-bold text-white">
+                    {language === 'pt' ? 'Contato com Administração' : 'Contact Administration'}
+                  </h3>
+                </div>
 
-              <div className="space-y-4">
-                {Object.entries(notifications).map(([key, value]) => (
-                  <div key={key} className="flex items-center justify-between p-4 bg-black/20 rounded-lg border border-gray-600/30">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${value ? 'bg-green-400' : 'bg-gray-600'}`}></div>
+                <div className="space-y-4">
+                  <div className="p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-lg">
+                    <h4 className="text-indigo-300 font-medium mb-2">
+                      {language === 'pt' ? 'Enviar Mensagem ao Administrador' : 'Send Message to Administrator'}
+                    </h4>
+                    <p className="text-gray-300 text-sm mb-4">
+                      {language === 'pt' 
+                        ? 'Precisa de ajuda ou tem alguma dúvida? Entre em contato conosco:'
+                        : 'Need help or have any questions? Contact us:'
+                      }
+                    </p>
+                    
+                    <div className="space-y-3">
                       <div>
-                        <div className="text-white font-medium">
-                          {key === 'email' ? 'Email' :
-                           key === 'sms' ? 'SMS/WhatsApp' :
-                           key === 'push' ? 'Push Notifications' :
-                           language === 'pt' ? 'Alertas de Operações' : 'Trade Alerts'}
-                        </div>
-                        <div className="text-gray-400 text-sm">
-                          {key === 'email' ? (language === 'pt' ? 'Relatórios e atualizações por email' : 'Reports and updates via email') :
-                           key === 'sms' ? (language === 'pt' ? 'Alertas importantes via SMS' : 'Important alerts via SMS') :
-                           key === 'push' ? (language === 'pt' ? 'Notificações no navegador' : 'Browser notifications') :
-                           language === 'pt' ? 'Resultado de operações em tempo real' : 'Real-time operation results'}
-                        </div>
+                        <label className="block text-gray-300 text-sm mb-2">
+                          {language === 'pt' ? 'Assunto' : 'Subject'}
+                        </label>
+                        <select className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-indigo-400 focus:outline-none">
+                          <option value="support">{language === 'pt' ? 'Suporte Técnico' : 'Technical Support'}</option>
+                          <option value="trading">{language === 'pt' ? 'Questão sobre Trading' : 'Trading Question'}</option>
+                          <option value="account">{language === 'pt' ? 'Problema na Conta' : 'Account Issue'}</option>
+                          <option value="api">{language === 'pt' ? 'Problema com API' : 'API Issue'}</option>
+                          <option value="other">{language === 'pt' ? 'Outros' : 'Other'}</option>
+                        </select>
                       </div>
-                    </div>
-                    <button
-                      onClick={() => setNotifications(prev => ({ ...prev, [key]: !value }))}
-                      className={`w-12 h-6 rounded-full relative transition-all duration-300 ${
-                        value ? 'bg-indigo-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform duration-300 ${
-                        value ? 'translate-x-7' : 'translate-x-1'
-                      }`}></div>
-                    </button>
-                  </div>
-                ))}
-
-                <div className="mt-6 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-lg">
-                  <h4 className="text-indigo-300 font-medium mb-2">
-                    {language === 'pt' ? 'Configurações Avançadas' : 'Advanced Settings'}
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-300 text-sm">
-                        {language === 'pt' ? 'Frequência de relatórios' : 'Report frequency'}
-                      </span>
-                      <select className="bg-black/20 border border-gray-600 rounded px-3 py-1 text-white text-sm">
-                        <option value="daily">{language === 'pt' ? 'Diário' : 'Daily'}</option>
-                        <option value="weekly">{language === 'pt' ? 'Semanal' : 'Weekly'}</option>
-                        <option value="monthly">{language === 'pt' ? 'Mensal' : 'Monthly'}</option>
-                      </select>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-300 text-sm">
-                        {language === 'pt' ? 'Notificar apenas lucros acima de' : 'Notify only profits above'}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          defaultValue="5"
-                          className="w-16 bg-black/20 border border-gray-600 rounded px-2 py-1 text-white text-sm"
+                      
+                      <div>
+                        <label className="block text-gray-300 text-sm mb-2">
+                          {language === 'pt' ? 'Mensagem' : 'Message'}
+                        </label>
+                        <textarea 
+                          rows={4}
+                          className="w-full bg-black/20 border border-gray-600 rounded-lg p-3 text-white focus:border-indigo-400 focus:outline-none resize-none"
+                          placeholder={language === 'pt' ? 'Descreva sua dúvida ou problema...' : 'Describe your question or issue...'}
                         />
-                        <span className="text-gray-400 text-sm">%</span>
                       </div>
+                      
+                      <button className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold py-3 px-4 rounded-lg transition-all">
+                        {language === 'pt' ? 'Enviar Mensagem' : 'Send Message'}
+                      </button>
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
+                      <div className="flex items-center gap-3 mb-2">
+                        <FiBell className="w-5 h-5 text-green-400" />
+                        <h5 className="text-green-400 font-medium">
+                          {language === 'pt' ? 'WhatsApp' : 'WhatsApp'}
+                        </h5>
+                      </div>
+                      <p className="text-gray-300 text-sm mb-3">
+                        {language === 'pt' ? 'Canal oficial de suporte direto' : 'Official direct support channel'}
+                      </p>
+                      <button className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                        {language === 'pt' ? 'Abrir WhatsApp' : 'Open WhatsApp'}
+                      </button>
+                    </div>
+
                   </div>
                 </div>
               </div>

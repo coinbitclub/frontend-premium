@@ -32,8 +32,6 @@ export interface UserBalances {
   balance_real_usd: number;
   balance_admin_brl: number;
   balance_admin_usd: number;
-  balance_commission_brl: number;
-  balance_commission_usd: number;
 }
 
 export interface UserProfile {
