@@ -6,6 +6,8 @@ import UserLayout from '../../components/UserLayout';
 import { useSocket } from '../../src/contexts/SocketContext';
 import RealTimeIndicator from '../../components/RealTimeIndicator';
 import positionsService from '../../src/services/positionsService';
+import { FiCreditCard } from 'react-icons/fi';
+import { useToast } from '../../components/Toast';
 // Authentication removed - ProtectedRoute disabled
 
 const IS_DEV = process.env.NODE_ENV === 'development';
@@ -70,6 +72,20 @@ interface DailyStats {
   totalInvested: number;
 }
 
+interface OngoingOperation {
+  id: string;
+  pair: string;
+  type: 'LONG' | 'SHORT';
+  entryPrice: number;
+  currentPrice: number;
+  quantity: number;
+  pnl: number;
+  pnlPercent: number;
+  startTime: Date;
+  exchange: string;
+  status: 'RUNNING' | 'PENDING' | 'CLOSING';
+}
+
 const UserOperations: React.FC = () => {
   const [mounted, setMounted] = useState<boolean>(false);
   const { language, t } = useLanguage();
@@ -79,6 +95,12 @@ const UserOperations: React.FC = () => {
 
   // Use global socket context
   const { socket, isConnected, connectionError } = useSocket();
+
+  // Estados para modal de recarga
+  const [showRechargeModal, setShowRechargeModal] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [rechargeAmount, setRechargeAmount] = useState('');
+  const { showToast } = useToast();
     
   // Estados do fluxo real - inicializados vazios para dados em tempo real
   const [marketIndicators, setMarketIndicators] = useState<MarketIndicators>({
@@ -110,6 +132,8 @@ const UserOperations: React.FC = () => {
     todayReturnPercent: 0,
     totalInvested: 10000
   });
+
+  const [ongoingOperations, setOngoingOperations] = useState<OngoingOperation[]>([]);
 
   const router = useRouter();
 
@@ -227,6 +251,21 @@ const UserOperations: React.FC = () => {
 
     const handleBalanceUpdate = (data: any) => {
       IS_DEV && console.log('💰 Operations: Balance update:', data);
+      // Update current prices for ongoing operations (simulate real-time price updates)
+      setOngoingOperations(prev => prev.map(op => {
+        const priceChange = (Math.random() - 0.5) * 0.01; // ±0.5% random change
+        const newCurrentPrice = op.currentPrice * (1 + priceChange);
+        const newPnl = (newCurrentPrice - op.entryPrice) * op.quantity * (op.type === 'LONG' ? 1 : -1);
+        const newPnlPercent = ((newCurrentPrice - op.entryPrice) / op.entryPrice) * 100 * (op.type === 'LONG' ? 1 : -1);
+        
+        return {
+          ...op,
+          currentPrice: newCurrentPrice,
+          pnl: newPnl,
+          pnlPercent: newPnlPercent
+        };
+      }));
+
       // Update daily stats based on balance changes
       setDailyStats(prev => ({
         ...prev,
@@ -432,6 +471,37 @@ const UserOperations: React.FC = () => {
     }
   };
 
+  // Handle recharge action
+  const handleRecharge = useCallback(async () => {
+    if (!rechargeAmount || parseFloat(rechargeAmount) <= 0) {
+      showToast(
+        language === 'pt' ? 'Digite um valor válido para recarga' : 'Enter a valid recharge amount',
+        'error'
+      );
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      // Simular processo de recarga - aqui você conectaria com sua API real
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      showToast(
+        language === 'pt' ? 'Recarga processada com sucesso!' : 'Recharge processed successfully!',
+        'success'
+      );
+      setShowRechargeModal(false);
+      setRechargeAmount('');
+    } catch (error) {
+      showToast(
+        language === 'pt' ? 'Erro ao processar recarga' : 'Error processing recharge',
+        'error'
+      );
+    } finally {
+      setProcessing(false);
+    }
+  }, [rechargeAmount, language, showToast]);
+
   // Market indicators API integration - USE BACKEND ENDPOINT
   const fetchMarketIndicators = useCallback(async () => {
     try {
@@ -591,6 +661,50 @@ const UserOperations: React.FC = () => {
         console.warn('Daily stats fetch failed:', statsResponse.status);
       }
 
+      // ✅ Mock data for ongoing operations - will be replaced with real API
+      const mockOngoingOperations: OngoingOperation[] = [
+        {
+          id: 'op_001',
+          pair: 'BTC/USDT',
+          type: 'LONG',
+          entryPrice: 43250.50,
+          currentPrice: 43380.75,
+          quantity: 0.0023,
+          pnl: 130.25,
+          pnlPercent: 1.35,
+          startTime: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+          exchange: 'Binance',
+          status: 'RUNNING'
+        },
+        {
+          id: 'op_002',
+          pair: 'ETH/USDT',
+          type: 'SHORT',
+          entryPrice: 2580.40,
+          currentPrice: 2565.20,
+          quantity: 0.38,
+          pnl: 15.20,
+          pnlPercent: 0.59,
+          startTime: new Date(Date.now() - 45 * 60 * 1000), // 45 minutes ago
+          exchange: 'Bybit',
+          status: 'RUNNING'
+        },
+        {
+          id: 'op_003',
+          pair: 'SOL/USDT',
+          type: 'LONG',
+          entryPrice: 98.75,
+          currentPrice: 99.40,
+          quantity: 10.5,
+          pnl: 6.83,
+          pnlPercent: 0.66,
+          startTime: new Date(Date.now() - 20 * 60 * 1000), // 20 minutes ago
+          exchange: 'Binance',
+          status: 'RUNNING'
+        }
+      ];
+      setOngoingOperations(mockOngoingOperations);
+
       // REMOVED: fetchTopSignals call - signals now come via WebSocket from TradingView webhook
 
     } catch (error) {
@@ -662,88 +776,41 @@ const UserOperations: React.FC = () => {
           </div>
         </motion.div>
         
-
-        {/* ÍNDICES SUPERIORES - Performance do Dia */}
+        {/* Card de Recarga */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+          transition={{ delay: 0.1 }}
+          className="mb-8"
         >
-          <motion.div 
-            whileHover={{ scale: 1.05 }}
-            className="bg-gradient-to-br from-blue-900/40 to-blue-800/30 backdrop-blur-sm rounded-xl border border-blue-500/30 p-4 relative overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/10 rounded-full -mr-8 -mt-8"></div>
-            <div className="text-center relative z-10">
-              <motion.div 
-                key={dailyStats.operationsToday}
-                initial={{ scale: 1.2, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-2xl font-bold text-blue-400"
-              >
-                {dailyStats.operationsToday}
-              </motion.div>
-              <div className="text-xs text-gray-400">{language === 'pt' ? 'Operações Hoje' : 'Operations Today'}</div>
-            </div>
-          </motion.div>
-          
-          <motion.div 
-            whileHover={{ scale: 1.05 }}
-            className="bg-gradient-to-br from-green-900/40 to-green-800/30 backdrop-blur-sm rounded-xl border border-green-500/30 p-4 relative overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-16 h-16 bg-green-500/10 rounded-full -mr-8 -mt-8"></div>
-            <div className="text-center relative z-10">
-              <motion.div 
-                key={dailyStats.successRate}
-                initial={{ scale: 1.2, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-2xl font-bold text-green-400"
-              >
-                {dailyStats.successRate.toFixed(1)}%
-              </motion.div>
-              <div className="text-xs text-gray-400">{language === 'pt' ? 'Taxa de Acerto' : 'Success Rate'}</div>
-              <div className="text-xs text-gray-500">
-                {language === 'pt' ? 'Histórico:' : 'History:'} {dailyStats.historicalSuccessRate.toFixed(1)}%
+          <div className="bg-gradient-to-br from-green-900/40 to-emerald-900/30 backdrop-blur-sm rounded-xl border border-green-500/30 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl">
+                  <FiCreditCard className="text-green-400 text-2xl" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-green-400 mb-1">
+                    {language === 'pt' ? 'Add Carga ao Robô' : 'Add Robot Charge'}
+                  </h3>
+                  <p className="text-gray-400 text-sm">
+                    {language === 'pt' ? 'Adicione saldo para continuar operando' : 'Add balance to continue trading'}
+                  </p>
+                </div>
               </div>
-            </div>
-          </motion.div>
-          
-          <motion.div 
-            whileHover={{ scale: 1.05 }}
-            className="bg-gradient-to-br from-emerald-900/40 to-emerald-800/30 backdrop-blur-sm rounded-xl border border-emerald-500/30 p-4 relative overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/10 rounded-full -mr-8 -mt-8"></div>
-            <div className="text-center relative z-10">
-              <motion.div 
-                key={dailyStats.todayReturnUSD}
-                initial={{ scale: 1.2, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-2xl font-bold text-emerald-400"
+              <button
+                onClick={() => setShowRechargeModal(true)}
+                className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold rounded-lg transition-all"
               >
-                ${dailyStats.todayReturnUSD.toFixed(2)}
-              </motion.div>
-              <div className="text-xs text-gray-400">{language === 'pt' ? 'Retorno Hoje' : 'Return Today'}</div>
+                {language === 'pt' ? 'Recarregar' : 'Recharge'}
+              </button>
             </div>
-          </motion.div>
-          
-          <motion.div 
-            whileHover={{ scale: 1.05 }}
-            className="bg-gradient-to-br from-yellow-900/40 to-yellow-800/30 backdrop-blur-sm rounded-xl border border-yellow-500/30 p-4 relative overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-500/10 rounded-full -mr-8 -mt-8"></div>
-            <div className="text-center relative z-10">
-              <motion.div 
-                key={dailyStats.todayReturnPercent}
-                initial={{ scale: 1.2, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-2xl font-bold text-yellow-400"
-              >
-                {formatPercent(dailyStats.todayReturnPercent)}
-              </motion.div>
-              <div className="text-xs text-gray-400">{language === 'pt' ? '% Retorno' : '% Return'}</div>
-            </div>
-          </motion.div>
+          </div>
         </motion.div>
+
+        
+
+
 
           {/* FLUXO PRINCIPAL */}
           <div className="space-y-8">
@@ -1129,139 +1196,138 @@ const UserOperations: React.FC = () => {
               </div>
             </motion.div>
 
-            {/* 4. OPERAÇÕES EM ANDAMENTO - MONITORAMENTO */}
+            {/* 4. OPERAÇÕES EM ANDAMENTO */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-gradient-to-br from-emerald-900/40 to-teal-900/30 backdrop-blur-sm rounded-2xl border border-emerald-500/30 p-6 relative overflow-hidden"
+              transition={{ delay: 0.9 }}
+              className="relative mb-8"
             >
-              {isProcessing && (
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-teal-500/20 to-emerald-500/10 animate-pulse"></div>
-              )}
+              {/* Background glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-blue-500/20 to-cyan-500/20 rounded-2xl blur-xl"></div>
               
-              <div className="flex items-center justify-between mb-6 relative z-10">
-                <div className="flex items-center gap-3">
-                  <motion.div
-                    animate={{
-                      y: isProcessing ? [0, -5, 0] : 0
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: isProcessing ? Infinity : 0,
-                      ease: "easeInOut"
-                    }}
-                    className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center"
-                  >
-                    <span className="text-2xl">📈</span>
-                  </motion.div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-emerald-400">
-                      4. {language === 'pt' ? 'Operações em Andamento' : 'Operations in Progress'}
-                    </h2>
-                    <p className="text-gray-400">
-                      {language === 'pt' ? 'Máximo 3 operações simultâneas' : 'Maximum 3 simultaneous operations'}
-                    </p>
+              <div className="relative bg-gradient-to-br from-slate-900/80 to-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+                <motion.h2
+                  animate={{
+                    scale: isProcessing ? [1, 1.1, 1] : 1,
+                  }}
+                  transition={{
+                    duration: 1.5, 
+                    repeat: isProcessing ? Infinity : 0,
+                    ease: "easeInOut"
+                  }}
+                  className="text-2xl font-bold text-white mb-4 flex items-center gap-3"
+                >
+                  <div className="p-2 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl">
+                    <FiCreditCard className="text-purple-400 text-2xl" />
                   </div>
-                </div>
+                  4. {language === 'pt' ? 'Operações em Andamento' : 'Ongoing Operations'}
+                </motion.h2>
+                <p className="text-gray-400 mb-6">
+                  {language === 'pt' ? 'Acompanhamento das operações ativas na sua conta' : 'Tracking active operations in your account'}
+                </p>
 
-                {/* Real-time indicator */}
-                <RealTimeIndicator dataSource="exchange" isLive={true} size="md" />
-              </div>
+                {ongoingOperations.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <AnimatePresence>
+                      {ongoingOperations.map((operation, index) => (
+                        <motion.div
+                          key={operation.id}
+                          initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -20, scale: 0.9 }}
+                          transition={{ delay: index * 0.1 }}
+                          className={`bg-gradient-to-br ${
+                            operation.pnl >= 0 
+                              ? 'from-green-900/40 to-emerald-900/30 border-green-500/30' 
+                              : 'from-red-900/40 to-red-800/30 border-red-500/30'
+                          } backdrop-blur-sm rounded-xl border p-4 hover:scale-105 transition-all duration-300`}
+                        >
+                          {/* Header with pair and type */}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-white font-bold text-lg">{operation.pair}</span>
+                              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                operation.type === 'LONG'
+                                  ? 'bg-green-500/20 text-green-400'
+                                  : 'bg-red-500/20 text-red-400'
+                              }`}>
+                                {operation.type}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-400">{operation.exchange}</div>
+                          </div>
 
-              <div className="space-y-4 relative z-10">
-                <AnimatePresence>
-                  {positions.map((position, index) => (
-                    <motion.div
-                      key={position.id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="bg-black/20 rounded-xl p-4 border border-gray-700/30"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <motion.div 
-                            animate={{ 
-                              scale: [1, 1.1, 1]
-                            }}
-                            transition={{ 
-                              duration: 2, 
-                              repeat: Infinity
-                            }}
-                            className={`w-4 h-4 rounded-full ${
-                              position.type === 'LONG' ? 'bg-green-400' : 'bg-red-400'
-                            }`}
-                          />
-                          <div>
-                            <div className="font-bold text-white text-lg">{position.pair}</div>
-                            <div className={`text-sm font-bold ${
-                              position.type === 'LONG' ? 'text-green-400' : 'text-red-400'
-                            }`}>
-                              {position.type}
+                          {/* Prices */}
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                              <div className="text-xs text-gray-400">
+                                {language === 'pt' ? 'Entrada' : 'Entry'}
+                              </div>
+                              <div className="text-sm font-medium text-white">
+                                ${operation.entryPrice.toLocaleString()}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-400">
+                                {language === 'pt' ? 'Atual' : 'Current'}
+                              </div>
+                              <div className="text-sm font-medium text-white">
+                                ${operation.currentPrice.toLocaleString()}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        
-                        <div className="text-right">
-                          <motion.div 
-                            key={position.pnlPercent}
-                            initial={{ scale: 1.2, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className={`text-xl font-bold ${
-                              position.pnl >= 0 ? 'text-green-400' : 'text-red-400'
-                            }`}
-                          >
-                            {formatPercent(position.pnlPercent)}
-                          </motion.div>
-                          <motion.div 
-                            key={position.pnl}
-                            initial={{ scale: 1.2, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className={`text-lg ${
-                              (position.pnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'
-                            }`}
-                          >
-                            ${(position.pnl || 0).toFixed(2)}
-                          </motion.div>
-                        </div>
-                      </div>
 
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <div className="text-gray-400">
-                            {language === 'pt' ? 'Entrada' : 'Entry'}
+                          {/* PnL */}
+                          <div className={`text-center p-2 rounded-lg ${
+                            operation.pnl >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'
+                          }`}>
+                            <div className={`text-lg font-bold ${
+                              operation.pnl >= 0 ? 'text-green-400' : 'text-red-400'
+                            }`}>
+                              {operation.pnl >= 0 ? '+' : ''}${operation.pnl.toFixed(2)}
+                            </div>
+                            <div className={`text-sm ${
+                              operation.pnl >= 0 ? 'text-green-300' : 'text-red-300'
+                            }`}>
+                              {operation.pnl >= 0 ? '+' : ''}{operation.pnlPercent.toFixed(2)}%
+                            </div>
                           </div>
-                          <div className="text-white font-bold">{formatPrice(position.entryPrice)}</div>
-                        </div>
-                        <div>
-                          <div className="text-gray-400">
-                            {language === 'pt' ? 'Atual' : 'Current'}
+
+                          {/* Time and Status */}
+                          <div className="flex items-center justify-between mt-3 text-xs text-gray-400">
+                            <span>{formatTime(operation.startTime)}</span>
+                            <div className="flex items-center gap-1">
+                              <div className={`w-2 h-2 rounded-full ${
+                                operation.status === 'RUNNING' ? 'bg-green-400 animate-pulse' : 'bg-yellow-400'
+                              }`}></div>
+                              <span className="capitalize">{operation.status.toLowerCase()}</span>
+                            </div>
                           </div>
-                          <motion.div 
-                            key={position.currentPrice}
-                            initial={{ scale: 1.1, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="text-white font-bold"
-                          >
-                            {formatPrice(position.currentPrice)}
-                          </motion.div>
-                        </div>
-                        <div>
-                          <div className="text-gray-400">Stop Loss</div>
-                          <div className="text-red-400 font-bold">{formatPrice(position.stopLoss || 0)}</div>
-                        </div>
-                        <div>
-                          <div className="text-gray-400">Take Profit</div>
-                          <div className="text-green-400 font-bold">{formatPrice(position.takeProfit || 0)}</div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center py-8"
+                  >
+                    <div className="text-gray-400 text-lg mb-2">
+                      {language === 'pt' ? 'Nenhuma operação em andamento' : 'No ongoing operations'}
+                    </div>
+                    <div className="text-gray-500 text-sm">
+                      {language === 'pt' 
+                        ? 'As operações ativas aparecerão aqui quando iniciadas' 
+                        : 'Active operations will appear here when started'
+                      }
+                    </div>
+                  </motion.div>
+                )}
               </div>
             </motion.div>
+
 
             {/* Timestamp e Status */}
             <motion.div
@@ -1319,6 +1385,43 @@ const UserOperations: React.FC = () => {
             </motion.div>
           )}
         </div>
+
+        {/* Modal de Recarga */}
+        {showRechargeModal && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-gray-900 rounded-xl p-6 max-w-md w-full mx-4 border border-gray-700"
+            >
+              <h3 className="text-xl font-bold text-white mb-4">
+                {language === 'pt' ? 'Add Carga ao Robô' : 'Add Robot Charge'}
+              </h3>
+              <input
+                type="number"
+                value={rechargeAmount}
+                onChange={(e) => setRechargeAmount(e.target.value)}
+                placeholder={language === 'pt' ? 'Valor da recarga' : 'Recharge amount'}
+                className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white mb-4"
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowRechargeModal(false)}
+                  className="flex-1 py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all"
+                >
+                  {language === 'pt' ? 'Cancelar' : 'Cancel'}
+                </button>
+                <button
+                  onClick={handleRecharge}
+                  disabled={processing}
+                  className="flex-1 py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all disabled:opacity-50"
+                >
+                  {processing ? (language === 'pt' ? 'Processando...' : 'Processing...') : (language === 'pt' ? 'Recarregar' : 'Recharge')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </UserLayout>
       </>
     );

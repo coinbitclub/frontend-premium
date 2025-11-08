@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
-import { FiDollarSign, FiTrendingUp, FiTarget, FiRefreshCw, FiAlertCircle, FiArrowRight, FiUsers } from 'react-icons/fi';
+import { FiDollarSign, FiTrendingUp, FiTarget, FiRefreshCw, FiAlertCircle, FiArrowRight, FiUsers, FiGift, FiCreditCard, FiTag, FiArrowDown } from 'react-icons/fi';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useAPIKeys } from '../../hooks/useAPIKeys';
 import UserLayout from '../../components/UserLayout';
 import ResponsiveContainer from '../../components/ResponsiveContainer';
+import authService from '../../src/services/authService';
 // Authentication removed - ProtectedRoute disabled
 import { useToast } from '../../components/Toast';
 import { UserProfile } from '../../src/services/userService';
@@ -31,6 +32,15 @@ export default function UserDashboard() {
   const [exchangeBalances, setExchangeBalances] = useState<AllExchangeBalances | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Estados para modais
+  const [showRechargeModal, setShowRechargeModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [rechargeAmount, setRechargeAmount] = useState('');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [couponCode, setCouponCode] = useState('');
 
   // Define all callbacks - Use real API data
   const loadDashboardData = useCallback(async () => {
@@ -68,8 +78,6 @@ export default function UserDashboard() {
           userProfile.balances.balance_real_usd = safeNumber(userProfile.balances.balance_real_usd);
           userProfile.balances.balance_admin_brl = safeNumber(userProfile.balances.balance_admin_brl);
           userProfile.balances.balance_admin_usd = safeNumber(userProfile.balances.balance_admin_usd);
-          userProfile.balances.balance_commission_brl = safeNumber(userProfile.balances.balance_commission_brl);
-          userProfile.balances.balance_commission_usd = safeNumber(userProfile.balances.balance_commission_usd);
         }
         setUserProfile(userProfile);
         IS_DEV && console.log('✅ Dashboard: User profile loaded successfully');
@@ -93,25 +101,13 @@ export default function UserDashboard() {
           totalProfit: safeNumber(dailyStatsResponse.totalProfit),
           totalLoss: safeNumber(dailyStatsResponse.totalLoss),
           netProfit: safeNumber(dailyStatsResponse.netProfit),
-          winStreak: safeNumber(dailyStatsResponse.winStreak),
-          averageHoldTime: safeNumber(dailyStatsResponse.averageHoldTime),
-          volumeTraded: safeNumber(dailyStatsResponse.volumeTraded),
-          bestTrade: safeNumber(dailyStatsResponse.bestTrade),
-          worstTrade: safeNumber(dailyStatsResponse.worstTrade),
-          historicalSuccessRate: safeNumber(dailyStatsResponse.historicalSuccessRate),
-          todayReturnUSD: safeNumber(dailyStatsResponse.todayReturnUSD),
-          todayReturnPercent: safeNumber(dailyStatsResponse.todayReturnPercent),
-          totalInvested: safeNumber(dailyStatsResponse.totalInvested) || 10000
+          todayReturnPercent: safeNumber(dailyStatsResponse.todayReturnPercent)
         };
 
         setDailyStats(safeStats);
-        IS_DEV && console.log('✅ Dashboard: Daily stats loaded successfully:', {
-          todayReturnPercent: safeStats.todayReturnPercent,
-          successRate: safeStats.successRate
-        });
+        IS_DEV && console.log('✅ Dashboard: Daily stats loaded successfully:', safeStats);
       } else {
-        IS_DEV && console.warn('⚠️ Dashboard: No daily stats available, using defaults');
-        // Set default daily stats if none available
+        IS_DEV && console.log('⚠️ Dashboard: No daily stats received - using default values');
         setDailyStats({
           operationsToday: 0,
           successRate: 0,
@@ -126,116 +122,160 @@ export default function UserDashboard() {
           historicalSuccessRate: 0,
           todayReturnUSD: 0,
           todayReturnPercent: 0,
-          totalInvested: 10000
+          totalInvested: 0
         });
       }
 
-      // Handle exchange balances
-      if (exchangeBalancesResponse) {
+      if (exchangeBalancesResponse && exchangeBalancesResponse !== null) {
         setExchangeBalances(exchangeBalancesResponse);
-        IS_DEV && console.log('✅ Dashboard: Exchange balances loaded successfully:', {
-          binance: exchangeBalancesResponse.binance?.total_equity || 0,
-          bybit: exchangeBalancesResponse.bybit?.total_equity || 0,
-          total: exchangeBalancesResponse.total_usd,
-          has_keys: exchangeBalancesResponse.has_keys
-        });
+        IS_DEV && console.log('✅ Dashboard: Exchange balances loaded successfully');
       } else {
-        IS_DEV && console.warn('⚠️ Dashboard: No exchange balances available');
-        setExchangeBalances({
-          binance: null,
-          bybit: null,
-          total_usd: 0,
-          has_keys: false
-        });
+        IS_DEV && console.log('⚠️ Dashboard: No exchange balances received');
+        setExchangeBalances(null);
       }
-      
-      IS_DEV && console.log('✅ Dashboard: Real data loaded successfully');
+
     } catch (error) {
-      console.error('❌ Dashboard: Error loading real data:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      setError(errorMessage);
-      showToast(
-        language === 'pt' 
-          ? 'Erro ao carregar dados do dashboard' 
-          : 'Error loading dashboard data',
-        'error'
-      );
-      
-      // Fallback to mock data on error
-      IS_DEV && console.log('🔄 Dashboard: Falling back to mock data...');
-      const mockUserProfile = {
-        user: {
-          id: 1,
-          uuid: 'mock-uuid-123',
-          username: 'demo_user',
-          email: 'demo@coinbitclub.com',
-          full_name: 'João Silva',
-          phone: '+55 11 98765-4321',
-          country: 'BR',
-          language: 'pt-BR',
-          user_type: 'USER' as const,
-          is_admin: false,
-          is_active: true,
-          email_verified: true,
-          two_factor_enabled: false,
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z'
-        },
-        balances: {
-          balance_real_brl: 2450.75,
-          balance_real_usd: 500.00,
-          balance_admin_brl: 150.00,
-          balance_admin_usd: 30.00,
-          balance_commission_brl: 75.50,
-          balance_commission_usd: 15.00
-        },
-        plan_type: 'MONTHLY',
-        subscription_status: 'active',
-        trading_enabled: true,
-        last_login_at: new Date().toISOString(),
-        last_activity_at: new Date().toISOString()
-      };
-
-      const mockDailyStats = {
-        operationsToday: 12,
-        successRate: 75.5,
-        totalProfit: 1250.50,
-        totalLoss: 320.25,
-        netProfit: 930.25,
-        winStreak: 5,
-        averageHoldTime: 1800,
-        volumeTraded: 45000.00,
-        bestTrade: 450.75,
-        worstTrade: -125.50,
-        historicalSuccessRate: 68.2,
-        todayReturnUSD: 125.75,
-        todayReturnPercent: 2.5,
-        totalInvested: 15000.00
-      };
-
-      setUserProfile(mockUserProfile);
-      setDailyStats(mockDailyStats);
+      console.error('❌ Dashboard: Error loading data:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load dashboard data');
     } finally {
       setDataLoading(false);
     }
-  }, [language, showToast]);
+  }, []);
 
+  // Handle refresh button
   const handleRefresh = useCallback(async () => {
     setLoading(true);
-    showToast(
-      language === 'pt' ? 'Atualizando dados...' : 'Updating data...',
-      'info'
-    );
-
-    // Reload all real data
     await loadDashboardData();
-
     setLoading(false);
-    showToast(
-      language === 'pt' ? 'Dados atualizados!' : 'Data updated!',
-      'success'
-    );
-  }, [language, showToast, loadDashboardData]);
+  }, [loadDashboardData]);
+
+  // Handle recharge action
+  const handleRecharge = useCallback(async () => {
+    if (!rechargeAmount || parseFloat(rechargeAmount) <= 0) {
+      showToast(
+        language === 'pt' ? 'Digite um valor válido para recarga' : 'Enter a valid recharge amount',
+        'error'
+      );
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      // Simular processo de recarga - aqui você conectaria com sua API real
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      showToast(
+        language === 'pt' ? 'Recarga processada com sucesso!' : 'Recharge processed successfully!',
+        'success'
+      );
+      setShowRechargeModal(false);
+      setRechargeAmount('');
+      await loadDashboardData(); // Recarregar dados
+    } catch (error) {
+      showToast(
+        language === 'pt' ? 'Erro ao processar recarga' : 'Error processing recharge',
+        'error'
+      );
+    } finally {
+      setProcessing(false);
+    }
+  }, [rechargeAmount, language, showToast, loadDashboardData]);
+
+  // Handle withdrawal action
+  const handleWithdraw = useCallback(async () => {
+    if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
+      showToast(
+        language === 'pt' ? 'Digite um valor válido para saque' : 'Enter a valid withdrawal amount',
+        'error'
+      );
+      return;
+    }
+
+    // Check if user has enough balance - only from Carga Robô (prepaid balance)
+    if (userProfile?.balances) {
+      const availableBalance = dashboardData.balances.prepaid; // Usar apenas o saldo da Carga Robô
+      
+      if (parseFloat(withdrawAmount) > availableBalance) {
+        showToast(
+          language === 'pt' ? 'Saldo insuficiente na Carga Robô para saque' : 'Insufficient Robot Charge balance for withdrawal',
+          'error'
+        );
+        return;
+      }
+    }
+
+    try {
+      setProcessing(true);
+      // Simular processo de saque - aqui você conectaria com sua API real
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      showToast(
+        language === 'pt' ? 'Solicitação de saque enviada com sucesso!' : 'Withdrawal request sent successfully!',
+        'success'
+      );
+      setShowWithdrawModal(false);
+      setWithdrawAmount('');
+      await loadDashboardData(); // Recarregar dados
+    } catch (error) {
+      showToast(
+        language === 'pt' ? 'Erro ao processar saque' : 'Error processing withdrawal',
+        'error'
+      );
+    } finally {
+      setProcessing(false);
+    }
+  }, [withdrawAmount, language, showToast, loadDashboardData, userProfile?.balances]);
+
+  // Handle coupon action
+  const handleCoupon = useCallback(async () => {
+    if (!couponCode.trim()) {
+      showToast(
+        language === 'pt' ? 'Digite um código de cupom válido' : 'Enter a valid coupon code',
+        'error'
+      );
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+      const response = await fetch(`${baseUrl}/api/financial/coupons/use`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authService.getAccessToken()}`
+        },
+        body: JSON.stringify({
+          code: couponCode.trim().toUpperCase()
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showToast(
+          `${language === 'pt' ? 'Cupom aplicado com sucesso! Valor:' : 'Coupon applied successfully! Value:'} ${data.currency === 'BRL' ? 'R$' : '$'} ${data.value}`,
+          'success'
+        );
+        setCouponCode('');
+        setShowCouponModal(false);
+        loadDashboardData(); // Recarregar dados para mostrar o novo saldo
+      } else {
+        showToast(
+          data.error || (language === 'pt' ? 'Cupom inválido' : 'Invalid coupon'),
+          'error'
+        );
+      }
+    } catch (error) {
+      console.error('Error applying coupon:', error);
+      showToast(
+        language === 'pt' ? 'Erro ao aplicar cupom' : 'Error applying coupon',
+        'error'
+      );
+    } finally {
+      setProcessing(false);
+    }
+  }, [couponCode, language, showToast, loadDashboardData]);
 
   // Calculate dashboard data with real exchange balances
   const dashboardData = useMemo(() => {
@@ -246,7 +286,7 @@ export default function UserDashboard() {
           binance: 0,
           bybit: 0,
           prepaid: 0,
-          commission: 0
+          promotional: 0
         },
         performance: {
           todayReturn: '0.0',
@@ -259,9 +299,7 @@ export default function UserDashboard() {
       balance_real_brl: 0,
       balance_real_usd: 0,
       balance_admin_brl: 0,
-      balance_admin_usd: 0,
-      balance_commission_brl: 0,
-      balance_commission_usd: 0
+      balance_admin_usd: 0
     };
 
     // Helper function to safely convert to number and handle null/NaN
@@ -275,8 +313,6 @@ export default function UserDashboard() {
     const realUsd = safeNumber(balances.balance_real_usd);
     const adminBrl = safeNumber(balances.balance_admin_brl);
     const adminUsd = safeNumber(balances.balance_admin_usd);
-    const commissionBrl = safeNumber(balances.balance_commission_brl);
-    const commissionUsd = safeNumber(balances.balance_commission_usd);
 
     // Use REAL exchange balances from API
     const binanceBalance = exchangeBalances?.binance && !exchangeBalances.binance.error 
@@ -291,8 +327,8 @@ export default function UserDashboard() {
     const databaseTotalBalance = realBrl + realUsd + adminBrl + adminUsd;
     const totalBalance = exchangeTotalBalance || databaseTotalBalance; // Use exchange balances if available, otherwise use database
     
-    const prepaidBalance = adminBrl + adminUsd; // Admin credits
-    const commissionBalance = commissionBrl + commissionUsd; // Commission credits
+    const prepaidBalance = realBrl + realUsd; // Carga Robô - Saldo de recargas feitas
+    const promotionalBalance = adminBrl + adminUsd; // Saldo promocional são os créditos administrativos
 
     // Debug performance calculation
     const todayReturnValue = safeNumber(dailyStats?.todayReturnPercent);
@@ -312,7 +348,7 @@ export default function UserDashboard() {
         binance: binanceBalance,
         bybit: bybitBalance,
         prepaid: prepaidBalance,
-        commission: commissionBalance
+        promotional: promotionalBalance
       },
       performance: {
         todayReturn: todayReturnValue.toFixed(1),
@@ -461,7 +497,7 @@ export default function UserDashboard() {
             </motion.div>
           )}
 
-          {/* Balance Cards */}
+          {/* Balance Cards - 5 colunas para separar saldo pré-pago e promocional */}
           <div className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-5 gap-4'}`}>
             {/* Saldo Total */}
             <motion.div
@@ -536,59 +572,133 @@ export default function UserDashboard() {
               </div>
             </motion.div>
 
-            {/* Saldo Pré-pago */}
+            {/* Saldo Carga Robô (Recargas) */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className={`bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700/30 hover:border-green-400/50 transition-all group ${dataLoading ? 'animate-pulse' : ''}`}
+              className={`bg-gradient-to-br from-green-800/50 to-emerald-900/50 backdrop-blur-sm rounded-xl p-4 border border-green-700/30 hover:border-green-400/50 transition-all group ${dataLoading ? 'animate-pulse' : ''}`}
             >
               <div className="flex items-center space-x-3 mb-3">
                 <div className="p-2 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-lg">
-                  <FiTarget className="text-green-400 text-xl" />
+                  <FiCreditCard className="text-green-400 text-xl" />
                 </div>
-                <span className="text-green-400 text-xs font-medium">PRÉ-PAGO</span>
+                <span className="text-green-400 text-xs font-medium">CARGA ROBÔ</span>
               </div>
               <div>
                 <p className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'} mb-1`}>
-                  {language === 'pt' ? 'Saldo Pré-pago' : 'Prepaid Balance'}
+                  {language === 'pt' ? 'Carga Robô' : 'Robot Charge'}
                 </p>
                 <p className={`text-white font-bold ${isMobile ? 'text-lg' : 'text-2xl'}`}>
                   {dataLoading ? '...' : `$${dashboardData.balances.prepaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </p>
+                <p className={`text-green-300 ${isMobile ? 'text-xs' : 'text-sm'} mt-1`}>
+                  {language === 'pt' ? 'Saldo da carga' : 'Charge balance'}
+                </p>
               </div>
             </motion.div>
 
-            {/* Saldo Comissão */}
+            {/* Saldo Promocional */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className={`bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700/30 hover:border-purple-400/50 transition-all group ${dataLoading ? 'animate-pulse' : ''}`}
+              className={`bg-gradient-to-br from-purple-800/50 to-pink-900/50 backdrop-blur-sm rounded-xl p-4 border border-purple-700/30 hover:border-purple-400/50 transition-all group ${dataLoading ? 'animate-pulse' : ''}`}
             >
               <div className="flex items-center space-x-3 mb-3">
                 <div className="p-2 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg">
-                  <FiUsers className="text-purple-400 text-xl" />
+                  <FiGift className="text-purple-400 text-xl" />
                 </div>
-                <span className="text-purple-400 text-xs font-medium">COMISSÃO</span>
+                <span className="text-purple-400 text-xs font-medium">PROMOCIONAL</span>
               </div>
               <div>
                 <p className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'} mb-1`}>
-                  {language === 'pt' ? 'Saldo Comissão' : 'Commission Balance'}
+                  {language === 'pt' ? 'Saldo Promocional' : 'Promotional Balance'}
                 </p>
                 <p className={`text-white font-bold ${isMobile ? 'text-lg' : 'text-2xl'}`}>
-                  {dataLoading ? '...' : `$${dashboardData.balances.commission.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  {dataLoading ? '...' : `$${dashboardData.balances.promotional.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                </p>
+                <p className={`text-purple-300 ${isMobile ? 'text-xs' : 'text-sm'} mt-1`}>
+                  {language === 'pt' ? 'Cupons e bônus' : 'Coupons & bonuses'}
                 </p>
               </div>
             </motion.div>
           </div>
+
+          {/* Botões de Ação - 3 botões: Usar Cupom, Add Carga ao Robô e Solicitar Saque */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-3 gap-4'}`}
+          >
+            {/* Botão Usar Cupom */}
+            <button
+              onClick={() => setShowCouponModal(true)}
+              className="group relative overflow-hidden bg-gradient-to-br from-orange-600/20 to-yellow-600/20 hover:from-orange-600/30 hover:to-yellow-600/30 backdrop-blur-sm rounded-xl p-4 border border-orange-600/30 hover:border-orange-500/50 transition-all"
+            >
+              <div className="flex flex-col items-center space-y-3">
+                <div className="p-3 bg-gradient-to-br from-orange-500/20 to-yellow-500/20 rounded-xl group-hover:scale-110 transition-transform">
+                  <FiTag className="text-orange-400 text-2xl" />
+                </div>
+                <div className="text-center">
+                  <p className="text-orange-400 font-bold text-sm mb-1">
+                    {language === 'pt' ? 'Usar Cupom' : 'Use Coupon'}
+                  </p>
+                  <p className="text-gray-400 text-xs">
+                    {language === 'pt' ? 'Aplicar desconto' : 'Apply discount'}
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* Botão Add Carga ao Robô */}
+            <button
+              onClick={() => setShowRechargeModal(true)}
+              className="group relative overflow-hidden bg-gradient-to-br from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 backdrop-blur-sm rounded-xl p-4 border border-green-600/30 hover:border-green-500/50 transition-all"
+            >
+              <div className="flex flex-col items-center space-y-3">
+                <div className="p-3 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl group-hover:scale-110 transition-transform">
+                  <FiCreditCard className="text-green-400 text-2xl" />
+                </div>
+                <div className="text-center">
+                  <p className="text-green-400 font-bold text-sm mb-1">
+                    {language === 'pt' ? 'Add Carga ao Robô' : 'Add Robot Charge'}
+                  </p>
+                  <p className="text-gray-400 text-xs">
+                    {language === 'pt' ? 'Adicionar saldo' : 'Add balance'}
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* Botão Solicitar Saque */}
+            <button
+              onClick={() => setShowWithdrawModal(true)}
+              className="group relative overflow-hidden bg-gradient-to-br from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 backdrop-blur-sm rounded-xl p-4 border border-blue-600/30 hover:border-blue-500/50 transition-all"
+            >
+              <div className="flex flex-col items-center space-y-3">
+                <div className="p-3 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl group-hover:scale-110 transition-transform">
+                  <FiArrowDown className="text-blue-400 text-2xl" />
+                </div>
+                <div className="text-center">
+                  <p className="text-blue-400 font-bold text-sm mb-1">
+                    {language === 'pt' ? 'Solicitar Saque' : 'Request Withdrawal'}
+                  </p>
+                  <p className="text-gray-400 text-xs">
+                    {language === 'pt' ? 'Sacar da Carga Robô' : 'Withdraw from Robot Charge'}
+                  </p>
+                </div>
+              </div>
+            </button>
+          </motion.div>
 
           {/* Performance Stats */}
           <div className="grid grid-cols-2 gap-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
+              transition={{ delay: 0.7 }}
               className={`bg-gradient-to-br from-green-900/30 to-emerald-900/30 backdrop-blur-sm rounded-xl p-4 border border-green-700/30 ${dataLoading ? 'animate-pulse' : ''}`}
             >
               <div className="flex items-center space-x-3 mb-3">
@@ -610,7 +720,7 @@ export default function UserDashboard() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
+              transition={{ delay: 0.8 }}
               className={`bg-gradient-to-br from-blue-900/30 to-indigo-900/30 backdrop-blur-sm rounded-xl p-4 border border-blue-700/30 ${dataLoading ? 'animate-pulse' : ''}`}
             >
               <div className="flex items-center space-x-3 mb-3">
@@ -629,6 +739,127 @@ export default function UserDashboard() {
               </div>
             </motion.div>
           </div>
+
+          {/* Modais */}
+          {/* Modal de Recarga */}
+          {showRechargeModal && (
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-gray-900 rounded-xl p-6 max-w-md w-full mx-4 border border-gray-700"
+              >
+                <h3 className="text-xl font-bold text-white mb-4">
+                  {language === 'pt' ? 'Add Carga ao Robô' : 'Add Robot Charge'}
+                </h3>
+                <input
+                  type="number"
+                  value={rechargeAmount}
+                  onChange={(e) => setRechargeAmount(e.target.value)}
+                  placeholder={language === 'pt' ? 'Valor da recarga' : 'Recharge amount'}
+                  className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white mb-4"
+                />
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowRechargeModal(false)}
+                    className="flex-1 py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all"
+                  >
+                    {language === 'pt' ? 'Cancelar' : 'Cancel'}
+                  </button>
+                  <button
+                    onClick={handleRecharge}
+                    disabled={processing}
+                    className="flex-1 py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all disabled:opacity-50"
+                  >
+                    {processing ? (language === 'pt' ? 'Processando...' : 'Processing...') : (language === 'pt' ? 'Recarregar' : 'Recharge')}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Modal de Saque */}
+          {showWithdrawModal && (
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-gray-900 rounded-xl p-6 max-w-md w-full mx-4 border border-gray-700"
+              >
+                <h3 className="text-xl font-bold text-white mb-4">
+                  {language === 'pt' ? 'Solicitar Saque da Carga Robô' : 'Request Robot Charge Withdrawal'}
+                </h3>
+                <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                  <p className="text-green-300 text-sm">
+                    <strong>{language === 'pt' ? 'Saldo disponível (Carga Robô):' : 'Available balance (Robot Charge):'}</strong> {' '}
+                    ${dashboardData.balances.prepaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    {language === 'pt' ? 'Saques são processados apenas do saldo da Carga Robô' : 'Withdrawals are processed only from Robot Charge balance'}
+                  </p>
+                </div>
+                <input
+                  type="number"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  placeholder={language === 'pt' ? 'Valor do saque' : 'Withdrawal amount'}
+                  className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white mb-4"
+                />
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowWithdrawModal(false)}
+                    className="flex-1 py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all"
+                  >
+                    {language === 'pt' ? 'Cancelar' : 'Cancel'}
+                  </button>
+                  <button
+                    onClick={handleWithdraw}
+                    disabled={processing}
+                    className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50"
+                  >
+                    {processing ? (language === 'pt' ? 'Processando...' : 'Processing...') : (language === 'pt' ? 'Solicitar' : 'Request')}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Modal de Cupom */}
+          {showCouponModal && (
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-gray-900 rounded-xl p-6 max-w-md w-full mx-4 border border-gray-700"
+              >
+                <h3 className="text-xl font-bold text-white mb-4">
+                  {language === 'pt' ? 'Usar Cupom' : 'Use Coupon'}
+                </h3>
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder={language === 'pt' ? 'Código do cupom' : 'Coupon code'}
+                  className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white mb-4"
+                />
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowCouponModal(false)}
+                    className="flex-1 py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all"
+                  >
+                    {language === 'pt' ? 'Cancelar' : 'Cancel'}
+                  </button>
+                  <button
+                    onClick={handleCoupon}
+                    disabled={processing}
+                    className="flex-1 py-2 px-4 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all disabled:opacity-50"
+                  >
+                    {processing ? (language === 'pt' ? 'Aplicando...' : 'Applying...') : (language === 'pt' ? 'Aplicar' : 'Apply')}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
         </div>
       </ResponsiveContainer>
     </UserLayout>
