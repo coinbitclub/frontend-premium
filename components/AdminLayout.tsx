@@ -68,6 +68,11 @@ export default function AdminLayout({
       icon: FiDollarSign 
     },
     { 
+      name: language === 'pt' ? 'Cupons' : 'Coupons', 
+      href: '/admin/coupons', 
+      icon: FiGift 
+    },
+    { 
       name: language === 'pt' ? 'Transações' : 'Transactions', 
       href: '/admin/transactions', 
       icon: FiActivity 
