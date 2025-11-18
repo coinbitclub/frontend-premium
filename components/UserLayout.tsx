@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useLanguage } from '../hooks/useLanguage';
 import { useAuth } from '../src/contexts/AuthContext';
-import { FiHome, FiSettings, FiLogOut, FiMenu, FiX, FiBell, FiGlobe, FiBarChart, FiActivity, FiTrendingUp, FiUsers } from 'react-icons/fi';
+import { FiHome, FiSettings, FiLogOut, FiMenu, FiX, FiBell, FiGlobe, FiBarChart, FiActivity, FiTrendingUp, FiUsers, FiBookOpen } from 'react-icons/fi';
 
 interface UserLayoutProps {
   children: ReactNode;
@@ -37,6 +37,11 @@ export default function UserLayout({
       name: language === 'pt' ? 'Histórico de Operações' : 'Operations History', 
       href: '/user/historico-operacoes', 
       icon: FiTrendingUp 
+    },
+    { 
+      name: language === 'pt' ? 'Treinamentos' : 'Trainings', 
+      href: '/user/trainings', 
+      icon: FiBookOpen 
     },
     { 
       name: language === 'pt' ? 'Configurações' : 'Settings', 
